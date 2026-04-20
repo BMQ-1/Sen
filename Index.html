@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSend - Local P2P File Transfer</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PeerJS for WebRTC P2P connections -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { background-color: #f3f4f6; color: #1f2937; font-family: system-ui, -apple-system, sans-serif; }
+        .glass-panel { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); padding: 24px; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-md space-y-6">
+        <!-- Header -->
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-blue-600">WebSend</h1>
+            <p class="text-sm text-gray-500 mt-1">Secure, local P2P file transfer</p>
+        </div>
+
+        <!-- My Device Info -->
+        <div class="glass-panel text-center">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Your Device ID</h2>
+            <div class="text-4xl font-mono font-bold text-gray-800 tracking-widest bg-gray-100 py-3 rounded-lg" id="myId">
+                Loading...
+            </div>
+            <p class="text-xs text-gray-400 mt-2" id="statusText">Connecting to signaling server...</p>
+        </div>
+
+        <!-- Connection Area -->
+        <div class="glass-panel" id="connectArea">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Connect to Device</h2>
+            <div class="flex space-x-2">
+                <input type="text" id="targetId" placeholder="Enter 6-digit ID" maxlength="6" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-lg text-center shadow-sm">
+                <button id="connectBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition shadow-sm">Connect</button>
+            </div>
+        </div>
+
+        <!-- Transfer Area (Hidden until connected) -->
+        <div class="glass-panel hidden" id="transferArea">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-sm font-semibold text-green-600 uppercase tracking-wider">Connected to: <span id="connectedToId" class="font-mono text-gray-800"></span></h2>
+                <button id="disconnectBtn" class="text-xs text-red-500 hover:text-red-700 font-bold">Disconnect</button>
+            </div>
+            
+            <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition cursor-pointer relative" id="dropZone">
+                <input type="file" id="fileInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p class="mt-2 text-sm text-gray-600 font-medium">Tap to select a file or drag & drop</p>
+            </div>
+
+            <!-- Transfer Logs -->
+            <div class="mt-4 max-h-32 overflow-y-auto text-sm text-gray-600 space-y-1" id="logs"></div>
+        </div>
+    </div>
+
+    <script>
+        // Generate a random 6-digit ID for easy sharing
+        const myGeneratedId = Math.floor(100000 + Math.random() * 900000).toString();
+        let peer = null;
+        let currentConnection = null;
+
+        // DOM Elements
+        const myIdEl = document.getElementById('myId');
+        const statusTextEl = document.getElementById('statusText');
+        const targetIdInput = document.getElementById('targetId');
+        const connectBtn = document.getElementById('connectBtn');
+        const connectArea = document.getElementById('connectArea');
+        const transferArea = document.getElementById('transferArea');
+        const connectedToIdEl = document.getElementById('connectedToId');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const fileInput = document.getElementById('fileInput');
+        const logsEl = document.getElementById('logs');
+
+        function log(msg, isSuccess = false) {
+            const div = document.createElement('div');
+            div.textContent = `> ${msg}`;
+            if(isSuccess) div.classList.add('text-green-600', 'font-semibold');
+            logsEl.prepend(div);
+        }
+
+        // Initialize PeerJS
+        function initPeer() {
+            peer = new Peer(myGeneratedId, {
+                debug: 2
+            });
+
+            peer.on('open', (id) => {
+                myIdEl.textContent = id;
+                statusTextEl.textContent = "Ready to connect. (Same Wi-Fi recommended)";
+                statusTextEl.classList.add('text-green-600');
+            });
+
+            // Handle incoming connections
+            peer.on('connection', (conn) => {
+                if (currentConnection) {
+                    conn.close(); // Only allow one connection at a time
+                    return;
+                }
+                setupConnection(conn);
+            });
+
+            peer.on('error', (err) => {
+                alert("Error: " + err.type);
+                statusTextEl.textContent = "Connection error.";
+            });
+        }
+
+        // Setup Connection Handlers
+        function setupConnection(conn) {
+            currentConnection = conn;
+            
+            conn.on('open', () => {
+                connectArea.classList.add('hidden');
+                transferArea.classList.remove('hidden');
+                connectedToIdEl.textContent = conn.peer;
+                log(`Connected to ${conn.peer}`, true);
+            });
+
+            conn.on('data', (data) => {
+                if (data.type === 'file') {
+                    log(`Receiving file: ${data.filename} (${(data.filedata.byteLength / 1024 / 1024).toFixed(2)} MB)...`);
+                    
+                    // Convert received ArrayBuffer back to a Blob
+                    const blob = new Blob([data.filedata], { type: data.filetype });
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Create an invisible anchor tag to trigger download automatically
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = data.filename;
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 1000);
+
+                    log(`Successfully downloaded: ${data.filename}`, true);
+                }
+            });
+
+            conn.on('close', () => {
+                resetUI();
+                log("Connection closed.");
+            });
+        }
+
+        // Connect to target
+        connectBtn.addEventListener('click', () => {
+            const targetId = targetIdInput.value.trim();
+            if (targetId.length !== 6) {
+                alert("Please enter a valid 6-digit ID.");
+                return;
+            }
+            if (targetId === myGeneratedId) {
+                alert("You cannot connect to yourself.");
+                return;
+            }
+            
+            connectBtn.textContent = "Connecting...";
+            connectBtn.disabled = true;
+
+            const conn = peer.connect(targetId, { reliable: true });
+            setupConnection(conn);
+
+            // Reset button if connection takes too long
+            setTimeout(() => {
+                if(!currentConnection || !currentConnection.open) {
+                    connectBtn.textContent = "Connect";
+                    connectBtn.disabled = false;
+                }
+            }, 5000);
+        });
+
+        // Disconnect
+        disconnectBtn.addEventListener('click', () => {
+            if (currentConnection) {
+                currentConnection.close();
+            }
+            resetUI();
+        });
+
+        function resetUI() {
+            currentConnection = null;
+            connectArea.classList.remove('hidden');
+            transferArea.classList.add('hidden');
+            targetIdInput.value = '';
+            connectBtn.textContent = "Connect";
+            connectBtn.disabled = false;
+            logsEl.innerHTML = '';
+        }
+
+        // Handle File Selection and Sending
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file || !currentConnection) return;
+
+            log(`Preparing to send: ${file.name}...`);
+            
+            // Convert file to ArrayBuffer for safe WebRTC transmission
+            const arrayBuffer = await file.arrayBuffer();
+
+            try {
+                currentConnection.send({
+                    type: 'file',
+                    filename: file.name,
+                    filetype: file.type,
+                    filedata: arrayBuffer
+                });
+                log(`Sent successfully: ${file.name}`, true);
+            } catch (err) {
+                log(`Failed to send file. It might be too large.`);
+                console.error(err);
+            }
+
+            // Reset file input
+            fileInput.value = '';
+        });
+
+        // Start App
+        initPeer();
+
+    </script>
+</body>
+</html>
