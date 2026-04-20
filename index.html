@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#07070f">
     <title>وصلة — نقل آمن ومشفر</title>
 
-    <!-- تم تحديث CSP للسماح بخوادم الـ Fallback (jsdelivr, unpkg) -->
+    <!-- Content Security Policy: Updated to allow fallback CDNs -->
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self' blob: data:;
         script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com;
@@ -20,118 +20,242 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <style>
-        /* ── CSS المخصص والنظيف (بديل Tailwind و Inline Styles) ── */
+        /* =========================================
+           CSS VARIABLES & BASE
+        ========================================= */
         :root {
             --bg: #07070f;
             --surface: #0e0e1c;
             --surface2: #171728;
             --border: rgba(255,255,255,0.07);
             --accent: #4f8ef7;
+            --accent-hover: #3b7ae0;
             --accent2: #7b6cf7;
             --green: #22d37a;
             --text: #e8eaf6;
-            --muted: rgba(232,234,246,0.42);
+            --muted: #8c8ea0;
             --danger: #f75f5f;
             --warn: #f59e0b;
+            --radius-lg: 20px;
+            --radius-md: 12px;
+            --font-main: 'Tajawal', system-ui, sans-serif;
+            --font-mono: 'IBM Plex Mono', monospace;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { direction: rtl; font-family: 'Tajawal', system-ui, sans-serif; }
         
         body {
-            background: var(--bg); color: var(--text);
-            min-height: 100dvh; display: flex; flex-direction: column;
-            align-items: center; padding: 1rem; overflow-x: hidden;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-main);
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Layout */
-        .container { width: 100%; max-width: 64rem; z-index: 1; position: relative; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-        .main-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; flex: 1; align-items: start; }
-        @media (min-width: 768px) { .main-grid { grid-template-columns: 1fr 1fr; } }
-        .flex-col { display: flex; flex-direction: column; gap: 1rem; }
-        .flex-row { display: flex; gap: 0.5rem; align-items: center; }
+        /* Background glow */
+        body::before {
+            content: ''; position: fixed; top: -30%; right: -20%; width: 60vw; height: 60vw;
+            background: radial-gradient(circle, rgba(79,142,247,0.05) 0%, transparent 70%);
+            pointer-events: none; z-index: -1;
+        }
+
+        /* =========================================
+           LAYOUT & CONTAINERS
+        ========================================= */
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            flex: 1;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            flex: 1;
+        }
+
+        @media (min-width: 768px) {
+            .main-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* =========================================
+           TYPOGRAPHY & UTILITIES
+        ========================================= */
+        .title { font-size: 1.5rem; font-weight: 900; background: linear-gradient(135deg, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { font-size: 0.85rem; color: var(--muted); font-weight: 700; }
+        .text-center { text-align: center; }
+        .mono { font-family: var(--font-mono); }
         .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { display: flex; flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+        .mt-3 { margin-top: 0.75rem; }
+        .mt-4 { margin-top: 1rem; }
+        .w-full { width: 100%; }
 
-        /* UI Components */
-        .glass-card {
-            background: var(--surface); border-radius: 20px; border: 1px solid var(--border);
-            padding: 1.25rem; box-shadow: 0 8px 32px rgba(0,0,0,0.45); position: relative;
+        /* =========================================
+           COMPONENTS
+        ========================================= */
+        /* Badges */
+        .badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 700;
+            background: var(--surface2); border: 1px solid var(--border);
         }
+        .badge-green { color: var(--green); background: rgba(34,211,122,0.1); border-color: rgba(34,211,122,0.2); }
+        .badge-warn { color: var(--warn); background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.2); }
         
-        .mono { font-family: 'IBM Plex Mono', monospace; }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            color: white; font-weight: 700; border-radius: 12px; padding: 12px 22px;
-            border: none; cursor: pointer; transition: 0.2s; font-family: inherit;
+        .status-dot {
+            width: 8px; height: 8px; border-radius: 50%; background: var(--warn);
+            box-shadow: 0 0 8px var(--warn); transition: 0.3s;
         }
-        .btn-primary:hover:not(:disabled) { box-shadow: 0 4px 16px rgba(79,142,247,0.4); transform: translateY(-1px); }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .btn-ghost {
-            background: var(--surface2); color: var(--muted); border: 1px solid var(--border);
-            border-radius: 12px; padding: 12px 16px; cursor: pointer; transition: 0.2s;
-        }
-        .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
-
-        .input-field {
-            background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
-            padding: 12px 16px; color: var(--text); outline: none; transition: 0.2s; width: 100%;
-        }
-        .input-field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,142,247,0.15); }
-        .input-center { text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 1.2rem; letter-spacing: 0.15em; direction: ltr; }
-
-        /* Badges & Text */
-        .status-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 99px; padding: 4px 12px; font-size: 0.75rem; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
         .status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); }
         .status-dot.error { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+        /* Buttons & Inputs */
+        .btn {
+            padding: 12px 20px; border-radius: var(--radius-md); font-weight: 700; font-family: var(--font-main);
+            cursor: pointer; border: none; transition: transform 0.1s, box-shadow 0.2s, opacity 0.2s;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
         
-        .id-display { background: transparent; border: none; cursor: pointer; text-align: center; width: 100%; transition: 0.2s; }
-        .id-display:active { transform: scale(0.95); }
-        .id-number { font-size: clamp(2rem, 8vw, 3rem); font-weight: 700; letter-spacing: 0.2em; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; box-shadow: 0 4px 15px rgba(79,142,247,0.3); }
+        .btn-primary:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(79,142,247,0.5); }
+        
+        .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+        .btn-ghost:hover:not(:disabled) { background: rgba(255,255,255,0.05); }
 
-        /* Messages & Logs */
-        .logs-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; max-height: 40vh; padding-right: 5px; }
-        .msg-bubble { max-width: 85%; padding: 10px 14px; border-radius: 16px; font-size: 0.875rem; line-height: 1.5; word-wrap: break-word;}
-        .msg-sent { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; align-self: flex-end; border-bottom-left-radius: 4px; }
-        .msg-received { background: var(--surface2); border: 1px solid var(--border); align-self: flex-start; border-bottom-right-radius: 4px; }
-        .msg-system { background: rgba(255,255,255,0.05); color: var(--muted); font-size: 0.7rem; align-self: center; padding: 4px 12px; border-radius: 99px; }
+        .input-field {
+            width: 100%; background: var(--surface2); border: 1px solid var(--border);
+            border-radius: var(--radius-md); padding: 12px 16px; color: var(--text);
+            font-family: var(--font-mono); font-size: 1.1rem; outline: none; transition: 0.2s;
+        }
+        .input-field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,142,247,0.15); }
 
+        /* ID Display */
+        .id-display {
+            background: transparent; border: none; cursor: pointer; width: 100%; padding: 1rem;
+            border-radius: var(--radius-md); transition: 0.2s;
+        }
+        .id-display:hover { background: rgba(255,255,255,0.02); }
+        .id-number {
+            font-family: var(--font-mono); font-size: clamp(2.5rem, 8vw, 3.5rem); font-weight: 700;
+            letter-spacing: 0.15em; color: var(--accent); display: block;
+        }
+
+        /* QR Code */
+        #qrcode { background: #fff; padding: 10px; border-radius: 16px; display: inline-block; margin: 1rem auto; }
+        #qrcode img { display: block; }
+
+        /* Chat & Logs */
+        .chat-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 5px; margin-bottom: 1rem; }
+        .msg-bubble { max-width: 85%; padding: 10px 14px; border-radius: 16px; font-size: 0.9rem; line-height: 1.5; word-break: break-word; }
+        .msg-sent { background: var(--accent); color: #fff; align-self: flex-end; border-bottom-left-radius: 4px; }
+        .msg-recv { background: var(--surface2); color: var(--text); border: 1px solid var(--border); align-self: flex-start; border-bottom-right-radius: 4px; }
+        .msg-sys { background: rgba(255,255,255,0.05); color: var(--muted); align-self: center; font-size: 0.75rem; border-radius: 99px; padding: 4px 12px; }
+        
         /* Progress Bar */
-        .progress-bg { height: 4px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 8px; }
-        .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.1s linear; }
+        .progress-container { background: var(--surface2); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border); }
+        .progress-track { height: 6px; background: rgba(0,0,0,0.5); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+        .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s ease; }
 
         /* Modals & Toasts */
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--surface2); border: 1px solid var(--border); padding: 10px 20px; border-radius: 12px; opacity: 0; transition: 0.3s; z-index: 1000; font-size: 0.85rem; }
-        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-        
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 999; }
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+            display: none; align-items: center; justify-content: center; z-index: 1000; padding: 1rem;
+        }
         .modal-overlay.active { display: flex; }
+        .modal-content { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; max-width: 400px; width: 100%; text-align: center; }
         
-        /* Error State UI */
-        .error-banner { background: rgba(247,95,95,0.1); border: 1px solid rgba(247,95,95,0.3); color: #ff8a8a; padding: 15px; border-radius: 12px; text-align: center; font-size: 0.9rem; line-height: 1.6; display: none; }
+        #toast {
+            position: fixed; bottom: 2rem; left: 50%; transform: translate(-50%, 20px);
+            background: var(--surface2); border: 1px solid var(--border); padding: 10px 20px;
+            border-radius: 99px; font-size: 0.85rem; font-weight: 700; opacity: 0; pointer-events: none;
+            transition: all 0.3s; z-index: 2000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        #toast.show { opacity: 1; transform: translate(-50%, 0); }
+        #toast.danger { border-color: var(--danger); color: var(--danger); }
+        #toast.success { border-color: var(--green); color: var(--green); }
+
+        /* Info Box */
+        .info-box {
+            background: rgba(79,142,247,0.05); border: 1px solid rgba(79,142,247,0.15);
+            padding: 12px; border-radius: var(--radius-md); font-size: 0.8rem; color: var(--muted);
+            line-height: 1.6; text-align: right;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
     </style>
 </head>
 <body>
 
-<div id="toast" class="toast"></div>
+<!-- Toast Notification -->
+<div id="toast"></div>
 
-<!-- Modal -->
-<div id="authModal" class="modal-overlay">
-    <div class="glass-card" style="width: 90%; max-width: 350px; text-align: center;">
-        <h3 style="margin-bottom: 10px;">طلب اتصال وارد</h3>
-        <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 20px;">
-            جهاز <span id="reqId" class="mono" style="color: white;">---</span> يطلب الاقتران معك.
+<!-- Fallback Modal (For PeerJS Error Solution) -->
+<div id="fallbackModal" class="modal-overlay">
+    <div class="modal-content">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+        <h3 style="margin-bottom: 1rem;">تعذر تحميل مكتبات الاتصال</h3>
+        <p style="color: var(--muted); font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem;">
+            يبدو أن متصفحك أو مانع الإعلانات (Ad-Blocker) قام بحظر ملفات التشغيل الأساسية للتطبيق.<br><br>
+            <strong>الحل:</strong> يرجى إيقاف مانع الإعلانات مؤقتاً لهذه الصفحة، أو التحقق من اتصال الإنترنت، ثم أعد تحميل الصفحة.
         </p>
-        <div class="flex-row">
-            <button id="btnDecline" class="btn-ghost" style="flex: 1;">رفض</button>
-            <button id="btnAccept" class="btn-primary" style="flex: 1;">قبول</button>
+        <button class="btn btn-primary w-full" onclick="location.reload()">إعادة تحميل الصفحة</button>
+    </div>
+</div>
+
+<!-- Auth Modal (Incoming Connection) -->
+<div id="authModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 style="margin-bottom: 0.5rem;">طلب اتصال وارد</h3>
+        <p class="subtitle" style="margin-bottom: 1rem;">الجهاز <span id="reqDeviceId" class="mono text-white">---</span> يطلب الاقتران</p>
+        
+        <div class="info-box" style="background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.2); color: var(--warn); margin-bottom: 1.5rem;">
+            ⚠️ <strong>تنبيه:</strong> سيتم إنشاء اتصال مباشر (P2P). قد يرى الطرف الآخر عنوان IP الخاص بك. اقبل فقط ممن تثق بهم.
+        </div>
+        
+        <div class="flex gap-2">
+            <button id="declineBtn" class="btn btn-ghost w-full">رفض</button>
+            <button id="acceptBtn" class="btn btn-primary w-full">قبول</button>
         </div>
     </div>
 </div>
@@ -140,122 +264,122 @@
     <!-- Header -->
     <header class="header">
         <div>
-            <h1 style="font-size: 1.5rem; color: var(--accent);">وصلة</h1>
-            <span style="font-size: 0.7rem; color: var(--muted);">تشفير E2E مباشر</span>
+            <div class="title">وصلة</div>
+            <div class="subtitle mt-3">نقل ملفات مباشر ومشفر E2E</div>
         </div>
-        <div class="status-badge">
-            <span id="statusDot" class="status-dot"></span>
-            <span id="statusText">جارٍ التحميل...</span>
+        <div class="flex flex-col items-center gap-2">
+            <div class="badge">
+                <span id="statusDot" class="status-dot"></span>
+                <span id="statusText">جارٍ التهيئة...</span>
+            </div>
+            <div class="badge badge-green">🔒 مشفر WebRTC</div>
         </div>
     </header>
 
-    <!-- Error Banner for AdBlockers -->
-    <div id="libErrorBanner" class="error-banner container mb-4">
-        ⚠️ <strong>تعذر تحميل مكتبة الاتصال (PeerJS)</strong><br>
-        يبدو أن المتصفح أو مانع الإعلانات (AdBlocker) يمنع تحميل السكربتات الأساسية.<br>
-        <button onclick="location.reload()" class="btn-ghost mt-2" style="padding: 6px 12px; font-size: 0.8rem;">تحديث الصفحة</button>
-    </div>
-
     <!-- Main Content -->
     <main class="main-grid">
-        <!-- Left: My Identity -->
-        <div class="glass-card flex-col" style="align-items: center; text-align: center;">
-            <span style="font-size: 0.75rem; color: var(--muted);">هويتك المؤقتة</span>
-            <button onclick="App.UI.copyId()" class="id-display">
-                <span id="myId" class="id-number mono">------</span>
+        
+        <!-- Left Panel: Identity -->
+        <section class="card items-center text-center">
+            <div class="subtitle">رقم هويتك المؤقتة</div>
+            <button id="myIdBtn" class="id-display mt-4">
+                <span id="myId" class="id-number">------</span>
+                <span class="subtitle mt-3">اضغط للنسخ</span>
             </button>
-            <div id="qrcode" style="background: white; padding: 10px; border-radius: 12px; margin-top: 10px;"></div>
-            <p style="font-size: 0.75rem; color: var(--muted); margin-top: 10px;">امسح الكود أو شارك الرقم</p>
-        </div>
-
-        <!-- Right: Connect & Transfer -->
-        <div class="flex-col">
             
-            <!-- Connect Panel -->
-            <div id="panelConnect" class="glass-card flex-col">
-                <h2 style="font-size: 1rem;">الاتصال بجهاز</h2>
-                <div class="flex-row">
-                    <input type="text" id="targetId" class="input-field input-center" placeholder="000000" maxlength="6" inputmode="numeric">
-                    <button id="btnConnect" class="btn-primary">اقتران</button>
+            <div id="qrcode"></div>
+            <div class="subtitle">امسح الكود للاقتران السريع</div>
+
+            <div class="info-box mt-4 w-full">
+                ✅ <strong>أمان كامل:</strong> الملفات والرسائل تنتقل من جهازك لجهاز الطرف الآخر مباشرة دون المرور بخوادمنا.
+            </div>
+        </section>
+
+        <!-- Right Panel: Connection & Transfer -->
+        <section class="flex flex-col gap-3">
+            
+            <!-- Connect Area -->
+            <div id="connectArea" class="card">
+                <h3 style="margin-bottom: 1rem;">الاتصال بجهاز آخر</h3>
+                
+                <div class="flex gap-2" style="direction: ltr;">
+                    <input type="text" id="targetId" class="input-field text-center" placeholder="أدخل 6 أرقام" maxlength="6" inputmode="numeric">
+                    <button id="connectBtn" class="btn btn-primary">اقتران</button>
                 </div>
-                <div style="font-size: 0.75rem; color: var(--warn); background: rgba(245,158,11,0.1); padding: 10px; border-radius: 8px;">
-                    <label style="display: flex; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" id="ipConsent">
-                        <span>أوافق على أن عنوان IP الخاص بي قد يكون مرئياً للطرف الآخر (WebRTC P2P).</span>
+
+                <div class="mt-4 flex items-center gap-2">
+                    <input type="checkbox" id="ipConsent" style="width: 16px; height: 16px; accent-color: var(--accent);">
+                    <label for="ipConsent" style="font-size: 0.85rem; color: var(--muted); cursor: pointer;">
+                        أوافق على الإفصاح عن عنوان IP للطرف الآخر (مطلوب لـ WebRTC).
                     </label>
                 </div>
             </div>
 
-            <!-- Transfer Panel -->
-            <div id="panelTransfer" class="glass-card flex-col hidden" style="height: 60vh; min-height: 400px;">
-                <div class="flex-row" style="justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+            <!-- Transfer Area (Hidden by default) -->
+            <div id="transferArea" class="card hidden" style="flex: 1; min-height: 400px;">
+                <div class="flex justify-between items-center" style="border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1rem;">
                     <div>
-                        <span style="font-size: 0.7rem; color: var(--muted);">متصل بـ</span>
-                        <div id="connId" class="mono" style="font-size: 1rem; font-weight: bold;">---</div>
+                        <div class="subtitle">متصل مع</div>
+                        <div id="connectedToId" class="mono font-bold" style="font-size: 1.1rem;">------</div>
                     </div>
-                    <button id="btnDisconnect" class="btn-ghost" style="padding: 6px 12px; font-size: 0.8rem;">قطع الاتصال</button>
+                    <button id="disconnectBtn" class="btn btn-ghost" style="padding: 6px 12px; font-size: 0.8rem;">قطع الاتصال</button>
                 </div>
 
-                <div id="logsArea" class="logs-container">
-                    <div class="msg-system">🔒 اتصال مشفر من طرف إلى طرف</div>
+                <!-- Chat / Logs -->
+                <div id="logs" class="chat-area">
+                    <div class="msg-sys">🔒 تم تأمين الاتصال بنجاح</div>
                 </div>
 
-                <div id="progressUI" class="hidden" style="background: var(--surface2); padding: 10px; border-radius: 8px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
-                        <span id="progName" style="max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">ملف...</span>
-                        <span id="progPct" class="mono" style="color: var(--accent);">0%</span>
+                <!-- Progress Bar -->
+                <div id="progressContainer" class="progress-container hidden mb-3">
+                    <div class="flex justify-between subtitle" style="font-size: 0.75rem;">
+                        <span id="progressFilename" style="max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                        <span id="progressPercent">0%</span>
                     </div>
-                    <div class="progress-bg"><div id="progBar" class="progress-fill"></div></div>
+                    <div class="progress-track"><div id="progressBar" class="progress-fill"></div></div>
                 </div>
 
-                <div class="flex-row" style="margin-top: auto;">
-                    <input type="text" id="msgInput" class="input-field" placeholder="اكتب رسالة...">
-                    <input type="file" id="fileInput" class="hidden" multiple>
-                    <button id="btnAttach" class="btn-ghost" style="padding: 12px;">📎</button>
-                    <button id="btnSendMsg" class="btn-primary" style="padding: 12px 18px;">إرسال</button>
+                <!-- Input Controls -->
+                <div class="flex gap-2">
+                    <input type="text" id="textInput" class="input-field" placeholder="اكتب رسالة..." style="font-family: var(--font-main);">
+                    <input type="file" id="fileInput" multiple class="hidden">
+                    <button id="attachBtn" class="btn btn-ghost" aria-label="إرفاق ملف">📎</button>
+                    <button id="sendBtn" class="btn btn-primary">إرسال</button>
                 </div>
             </div>
 
-        </div>
+        </section>
     </main>
+
+    <!-- Footer -->
+    <footer class="text-center subtitle" style="padding: 1rem 0;">
+        وصلة — صُنع في السعودية 🇸🇦 · الإصدار 3.0 (مستقر)
+    </footer>
 </div>
 
 <script>
-'use strict';
-
-/* ── 1. DYNAMIC SCRIPT LOADER (THE FIX FOR PEERJS) ── */
-// يحاول تحميل المكتبة من مسارات متعددة لتفادي حظر مانعات الإعلانات
-const ScriptLoader = {
-    cdns: [
-        "https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js",
-        "https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js",
-        "https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"
-    ],
-    async load() {
-        for (let url of this.cdns) {
-            try {
-                await this.inject(url);
-                return true; // نجح التحميل
-            } catch (e) {
-                console.warn(`Failed to load from ${url}, trying next...`);
-            }
-        }
-        return false; // فشلت جميع المحاولات
-    },
-    inject(url) {
-        return new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = url;
-            script.crossOrigin = "anonymous";
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
-    }
-};
-
-/* ── 2. MODULAR APP ARCHITECTURE ── */
+/**
+ * ============================================================================
+ *  APP ARCHITECTURE - CLEAN & MODULAR
+ * ============================================================================
+ */
 const App = {
+    Config: {
+        MAX_FILE_SIZE: 2 * 1024 * 1024 * 1024, // 2GB
+        CHUNK_SIZE: 65536, // 64KB
+        CDNS: {
+            PEERJS: [
+                "https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js",
+                "https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js",
+                "https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"
+            ],
+            QRCODE: [
+                "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js",
+                "https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"
+            ]
+        }
+    },
+    
     State: {
         myId: null,
         peer: null,
@@ -263,269 +387,405 @@ const App = {
         pendingConn: null,
         isAuthed: false,
         fileQueue: [],
-        isTransferring: false,
+        isSending: false,
         recvMeta: null,
-        recvBuf: []
+        recvBuf: [],
+        recvBytes: 0
+    },
+
+    DOM: {
+        $ : id => document.getElementById(id),
+        init() {
+            this.statusDot = this.$('statusDot');
+            this.statusText = this.$('statusText');
+            this.myId = this.$('myId');
+            this.qrcode = this.$('qrcode');
+            this.targetId = this.$('targetId');
+            this.connectBtn = this.$('connectBtn');
+            this.ipConsent = this.$('ipConsent');
+            this.connectArea = this.$('connectArea');
+            this.transferArea = this.$('transferArea');
+            this.connectedToId = this.$('connectedToId');
+            this.logs = this.$('logs');
+            this.textInput = this.$('textInput');
+            this.fileInput = this.$('fileInput');
+            this.progCont = this.$('progressContainer');
+            this.progFile = this.$('progressFilename');
+            this.progBar = this.$('progressBar');
+            this.progPct = this.$('progressPercent');
+            this.toast = this.$('toast');
+            this.authModal = this.$('authModal');
+            this.fallbackModal = this.$('fallbackModal');
+        }
     },
 
     Utils: {
-        generateId: () => Math.floor(100000 + Math.random() * 900000).toString(),
-        formatBytes: (b) => {
-            if (b === 0) return '0 B';
-            const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(b) / Math.log(k));
-            return parseFloat((b / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        generateId() {
+            const arr = new Uint32Array(1);
+            crypto.getRandomValues(arr);
+            return (100000 + (arr[0] % 900000)).toString(); // 6 digits
         },
-        safeName: (name) => name.replace(/[^a-zA-Z0-9.\-_أ-ي]/g, '_').substring(0, 50)
+        formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        },
+        sanitizeName(name) {
+            return name.replace(/[/\\?%*:|"<>\x00-\x1f]/g, '_').slice(0, 200) || 'file';
+        },
+        showToast(msg, type = 'info') {
+            const t = App.DOM.toast;
+            t.textContent = msg;
+            t.className = `show ${type}`;
+            clearTimeout(this.toastTimer);
+            this.toastTimer = setTimeout(() => t.className = '', 3500);
+        },
+        async loadScript(urls) {
+            for (const url of urls) {
+                try {
+                    await new Promise((resolve, reject) => {
+                        const s = document.createElement('script');
+                        s.src = url; s.onload = resolve; s.onerror = reject;
+                        document.head.appendChild(s);
+                    });
+                    return true;
+                } catch (e) { console.warn(`Failed to load: ${url}`); }
+            }
+            return false;
+        }
     },
 
     UI: {
-        els: {},
-        init() {
-            const ids = ['statusDot', 'statusText', 'myId', 'qrcode', 'targetId', 'btnConnect', 'ipConsent', 'panelConnect', 'panelTransfer', 'connId', 'btnDisconnect', 'logsArea', 'msgInput', 'btnSendMsg', 'btnAttach', 'fileInput', 'authModal', 'reqId', 'btnAccept', 'btnDecline', 'toast', 'progressUI', 'progName', 'progBar', 'progPct', 'libErrorBanner'];
-            ids.forEach(id => this.els[id] = document.getElementById(id));
-            this.bindEvents();
-        },
-        bindEvents() {
-            this.els.btnConnect.onclick = () => App.Network.connectToPeer();
-            this.els.btnDisconnect.onclick = () => App.Network.disconnect();
-            this.els.btnAccept.onclick = () => App.Network.acceptAuth();
-            this.els.btnDecline.onclick = () => App.Network.declineAuth();
-            this.els.btnAttach.onclick = () => this.els.fileInput.click();
-            this.els.btnSendMsg.onclick = () => App.Transfer.sendText();
-            this.els.msgInput.onkeypress = (e) => { if(e.key === 'Enter') App.Transfer.sendText(); };
-            this.els.fileInput.onchange = (e) => {
-                App.State.fileQueue.push(...Array.from(e.target.files));
-                App.Transfer.processQueue();
-            };
-        },
         setStatus(text, state) {
-            this.els.statusText.textContent = text;
-            this.els.statusDot.className = `status-dot ${state}`;
+            App.DOM.statusText.textContent = text;
+            App.DOM.statusDot.className = `status-dot ${state}`;
         },
-        showToast(msg, isError = false) {
-            this.els.toast.textContent = msg;
-            this.els.toast.style.borderColor = isError ? 'var(--danger)' : 'var(--border)';
-            this.els.toast.classList.add('show');
-            setTimeout(() => this.els.toast.classList.remove('show'), 3000);
+        logMsg(text, type = 'sys') {
+            const el = document.createElement('div');
+            el.className = `msg-bubble msg-${type}`;
+            el.textContent = text;
+            App.DOM.logs.appendChild(el);
+            App.DOM.logs.scrollTop = App.DOM.logs.scrollHeight;
         },
-        log(msg, type = 'system') {
-            const div = document.createElement('div');
-            div.className = type === 'system' ? 'msg-system' : type === 'sent' ? 'msg-sent' : 'msg-received';
-            div.textContent = msg;
-            this.els.logsArea.appendChild(div);
-            this.els.logsArea.scrollTop = this.els.logsArea.scrollHeight;
+        showProgress(filename, size) {
+            App.DOM.progCont.classList.remove('hidden');
+            App.DOM.progFile.textContent = filename;
+            this.updateProgress(0, size);
         },
-        copyId() {
-            if(!App.State.myId) return;
-            navigator.clipboard.writeText(App.State.myId).catch(()=>{});
-            this.showToast('تم نسخ المعرف!');
-        },
-        showProgress(name) {
-            this.els.progressUI.classList.remove('hidden');
-            this.els.progName.textContent = name;
-            this.updateProgress(0);
-        },
-        updateProgress(pct) {
-            this.els.progBar.style.width = pct + '%';
-            this.els.progPct.textContent = pct + '%';
+        updateProgress(current, total) {
+            const pct = Math.round((current / total) * 100);
+            App.DOM.progBar.style.width = `${pct}%`;
+            App.DOM.progPct.textContent = `${pct}%`;
         },
         hideProgress() {
-            this.els.progressUI.classList.add('hidden');
+            App.DOM.progCont.classList.add('hidden');
+        },
+        switchToTransfer(peerId) {
+            App.DOM.connectArea.classList.add('hidden');
+            App.DOM.transferArea.classList.remove('hidden');
+            App.DOM.connectedToId.textContent = peerId;
+            this.setStatus('متصل', 'online');
+        },
+        reset() {
+            App.State.conn = null;
+            App.State.isAuthed = false;
+            App.State.isSending = false;
+            App.State.fileQueue = [];
+            App.DOM.connectArea.classList.remove('hidden');
+            App.DOM.transferArea.classList.add('hidden');
+            App.DOM.targetId.value = '';
+            App.DOM.connectBtn.disabled = false;
+            App.DOM.connectBtn.textContent = 'اقتران';
+            this.setStatus('جاهز للاتصال', 'online');
+            this.hideProgress();
         }
     },
 
     Network: {
-        init() {
+        async init() {
+            App.UI.setStatus('جاري تحميل المكتبات...', '');
+            
+            const peerLoaded = await App.Utils.loadScript(App.Config.CDNS.PEERJS);
+            if (!peerLoaded) {
+                App.DOM.fallbackModal.classList.add('active');
+                App.UI.setStatus('فشل التحميل', 'error');
+                return;
+            }
+            
+            // Load QRCode optionally
+            App.Utils.loadScript(App.Config.CDNS.QRCODE).then(() => {
+                if(window.QRCode) new QRCode(App.DOM.qrcode, {text: App.State.myId, width: 140, height: 140});
+            });
+
             App.State.myId = App.Utils.generateId();
+            App.DOM.myId.textContent = App.State.myId;
+
             App.State.peer = new Peer(App.State.myId, {
-                host: '0.peerjs.com', secure: true, debug: 0
+                host: '0.peerjs.com', port: 443, secure: true, debug: 0
             });
 
-            App.State.peer.on('open', (id) => {
-                App.UI.setStatus('متصل بالخادم', 'online');
-                App.UI.els.myId.textContent = id;
-                new QRCode(App.UI.els.qrcode, { text: id, width: 120, height: 120 });
+            App.State.peer.on('open', () => App.UI.setStatus('جاهز للاتصال', 'online'));
+            App.State.peer.on('error', err => {
+                App.Utils.showToast(`خطأ في الشبكة: ${err.type}`, 'danger');
+                App.UI.reset();
             });
 
-            App.State.peer.on('connection', (conn) => {
-                if (App.State.conn) { conn.close(); return; } // رفض إذا كان مشغولاً
-                App.State.pendingConn = conn;
-                App.UI.els.reqId.textContent = conn.peer;
-                App.UI.els.authModal.classList.add('active');
-            });
-
-            App.State.peer.on('error', (err) => {
-                App.UI.setStatus('خطأ في الاتصال', 'error');
-                App.UI.showToast(err.message, true);
-            });
+            App.State.peer.on('connection', conn => this.handleIncoming(conn));
         },
-        connectToPeer() {
-            if (!App.UI.els.ipConsent.checked) return App.UI.showToast('يرجى الموافقة على الخصوصية أولاً', true);
-            const target = App.UI.els.targetId.value.trim();
-            if (target.length !== 6 || target === App.State.myId) return App.UI.showToast('معرف غير صالح', true);
 
-            App.UI.els.btnConnect.disabled = true;
-            App.UI.els.btnConnect.textContent = 'جارٍ الطلب...';
+        connect() {
+            if (!App.DOM.ipConsent.checked) return App.Utils.showToast('يجب الموافقة على شروط IP أولاً', 'danger');
             
+            const target = App.DOM.targetId.value.trim();
+            if (target.length !== 6) return App.Utils.showToast('أدخل 6 أرقام صحيحة', 'danger');
+            if (target === App.State.myId) return App.Utils.showToast('لا يمكنك الاتصال بنفسك', 'danger');
+
+            App.DOM.connectBtn.disabled = true;
+            App.DOM.connectBtn.textContent = 'جاري الاتصال...';
+
             const conn = App.State.peer.connect(target, { reliable: true });
-            conn.on('open', () => {}); // ننتظر موافقة الطرف الآخر عبر البيانات
             
-            conn.on('data', (data) => {
-                if(data.type === 'auth-accept') this.setupConnection(conn);
-                else if(data.type === 'auth-decline') {
-                    App.UI.showToast('تم رفض الطلب', true);
-                    this.disconnect();
+            conn.on('open', () => { /* wait for auth */ });
+            conn.on('data', data => {
+                if (data.type === 'auth-accept') {
+                    App.State.isAuthed = true;
+                    this.setupConnection(conn);
+                } else if (data.type === 'auth-decline') {
+                    App.Utils.showToast('تم رفض الاتصال من الطرف الآخر', 'danger');
+                    App.UI.reset();
                 }
             });
+            conn.on('close', () => App.UI.reset());
+            conn.on('error', () => App.UI.reset());
         },
-        acceptAuth() {
+
+        handleIncoming(conn) {
+            if (App.State.conn) {
+                conn.on('open', () => { conn.send({type: 'auth-decline'}); setTimeout(()=>conn.close(), 500); });
+                return;
+            }
+            
+            App.State.pendingConn = conn;
+            App.DOM.$('reqDeviceId').textContent = conn.peer;
+            App.DOM.authModal.classList.add('active');
+
+            conn.on('close', () => App.DOM.authModal.classList.remove('active'));
+        },
+
+        acceptIncoming() {
             const conn = App.State.pendingConn;
-            App.UI.els.authModal.classList.remove('active');
-            conn.send({ type: 'auth-accept' });
+            App.DOM.authModal.classList.remove('active');
+            App.State.isAuthed = true;
+            conn.send({type: 'auth-accept'});
             this.setupConnection(conn);
         },
-        declineAuth() {
-            if(App.State.pendingConn) {
-                App.State.pendingConn.send({ type: 'auth-decline' });
-                setTimeout(() => App.State.pendingConn.close(), 500);
-            }
-            App.UI.els.authModal.classList.remove('active');
+
+        declineIncoming() {
+            const conn = App.State.pendingConn;
+            App.DOM.authModal.classList.remove('active');
+            if(conn) { conn.send({type: 'auth-decline'}); setTimeout(()=>conn.close(), 500); }
             App.State.pendingConn = null;
         },
+
         setupConnection(conn) {
             App.State.conn = conn;
-            App.State.isAuthed = true;
-            App.UI.els.panelConnect.classList.add('hidden');
-            App.UI.els.panelTransfer.classList.remove('hidden');
-            App.UI.els.connId.textContent = conn.peer;
-            App.UI.setStatus('مقترن', 'online');
-            App.UI.log('✅ تم الاقتران بنجاح', 'system');
+            App.UI.switchToTransfer(conn.peer);
 
-            conn.on('data', (data) => App.Transfer.receiveData(data));
-            conn.on('close', () => this.disconnect());
-            conn.on('error', () => this.disconnect());
-        },
-        disconnect() {
-            if (App.State.conn) App.State.conn.close();
-            App.State.conn = null;
-            App.State.isAuthed = false;
-            App.State.fileQueue = [];
-            App.UI.els.panelConnect.classList.remove('hidden');
-            App.UI.els.panelTransfer.classList.add('hidden');
-            App.UI.els.btnConnect.disabled = false;
-            App.UI.els.btnConnect.textContent = 'اقتران';
-            App.UI.setStatus('متصل بالخادم', 'online');
-            App.UI.hideProgress();
+            conn.on('data', data => App.Transfer.handleData(data));
+            conn.on('close', () => {
+                App.Utils.showToast('انقطع الاتصال', 'danger');
+                App.UI.reset();
+            });
         }
     },
 
     Transfer: {
         sendText() {
-            const txt = App.UI.els.msgInput.value.trim();
-            if(!txt || !App.State.conn) return;
-            App.State.conn.send({ type: 'text', content: txt });
-            App.UI.log(txt, 'sent');
-            App.UI.els.msgInput.value = '';
+            const text = App.DOM.textInput.value.trim();
+            if (!text || !App.State.conn || !App.State.isAuthed) return;
+            
+            App.State.conn.send({ type: 'text', content: text });
+            App.UI.logMsg(text, 'sent');
+            App.DOM.textInput.value = '';
         },
-        /* ── استخدام Async/Await Loop بدلاً من الـ Recursion المعقد ── */
-        async processQueue() {
-            if (App.State.isTransferring || App.State.fileQueue.length === 0 || !App.State.conn) return;
-            App.State.isTransferring = true;
-            
-            const file = App.State.fileQueue.shift();
-            const safeName = App.Utils.safeName(file.name);
-            App.UI.showProgress('إرسال: ' + safeName);
-            
-            try {
-                App.State.conn.send({ type: 'file-start', name: safeName, size: file.size, mime: file.type });
-                
-                const chunkSize = 32768; // 32KB
-                for (let offset = 0; offset < file.size; offset += chunkSize) {
-                    // Backpressure: انتظر إذا كان الـ Buffer ممتلئاً لتجنب انهيار المتصفح
-                    while (App.State.conn.dataChannel.bufferedAmount > 2 * 1024 * 1024) {
-                        await new Promise(r => setTimeout(r, 50));
-                    }
-                    
-                    if(!App.State.conn || !App.State.conn.open) throw new Error("Connection lost");
 
-                    const chunk = await file.slice(offset, offset + chunkSize).arrayBuffer();
-                    App.State.conn.send({ type: 'file-chunk', data: chunk });
-                    App.UI.updateProgress(Math.round(((offset + chunk.byteLength) / file.size) * 100));
+        handleFiles(files) {
+            for (let f of files) {
+                if (f.size > App.Config.MAX_FILE_SIZE) {
+                    App.Utils.showToast(`الملف ${f.name} كبير جداً (الحد 2GB)`, 'danger');
+                    continue;
                 }
-                
-                App.State.conn.send({ type: 'file-end' });
-                App.UI.log('🚀 تم إرسال: ' + safeName, 'system');
-            } catch (e) {
-                App.UI.log('❌ فشل إرسال الملف', 'system');
+                App.State.fileQueue.push(f);
+            }
+            if (!App.State.isSending) this.processQueue();
+        },
+
+        async processQueue() {
+            if (App.State.fileQueue.length === 0 || !App.State.conn || !App.State.conn.open) {
+                App.State.isSending = false;
+                return;
             }
             
-            App.UI.hideProgress();
-            App.State.isTransferring = false;
+            App.State.isSending = true;
+            const file = App.State.fileQueue.shift();
+            const safeName = App.Utils.sanitizeName(file.name);
             
-            // معالجة الملف التالي إن وجد
-            if(App.State.fileQueue.length > 0) setTimeout(() => this.processQueue(), 500);
+            App.UI.showProgress(`إرسال: ${safeName}`, file.size);
+            App.State.conn.send({ type: 'file-start', name: safeName, size: file.size, mime: file.type });
+
+            let offset = 0;
+            let hasError = false;
+
+            while (offset < file.size) {
+                if (!App.State.conn.open) { hasError = true; break; }
+
+                // Backpressure handling
+                if (App.State.conn.dataChannel && App.State.conn.dataChannel.bufferedAmount > 2 * 1024 * 1024) {
+                    await new Promise(r => setTimeout(r, 50));
+                    continue;
+                }
+
+                try {
+                    const chunk = await file.slice(offset, offset + App.Config.CHUNK_SIZE).arrayBuffer();
+                    App.State.conn.send({ type: 'file-chunk', data: chunk });
+                    offset += chunk.byteLength;
+                    App.UI.updateProgress(offset, file.size);
+                } catch (e) {
+                    hasError = true; break;
+                }
+            }
+
+            if (App.State.conn.open) {
+                if (hasError) {
+                    App.State.conn.send({ type: 'file-error' });
+                    App.UI.logMsg(`❌ فشل إرسال: ${safeName}`, 'sys');
+                } else {
+                    App.State.conn.send({ type: 'file-end' });
+                    App.UI.logMsg(`✅ تم إرسال: ${safeName}`, 'sys');
+                }
+            }
+
+            App.UI.hideProgress();
+            setTimeout(() => this.processQueue(), 100); // Process next file
         },
-        receiveData(data) {
-            if (!data) return;
-            switch(data.type) {
+
+        async handleData(data) {
+            if (!data || typeof data !== 'object') return;
+
+            switch (data.type) {
                 case 'text':
-                    App.UI.log(data.content, 'received');
+                    App.UI.logMsg(data.content, 'recv');
                     break;
+                
                 case 'file-start':
                     App.State.recvMeta = { name: data.name, size: data.size, mime: data.mime };
                     App.State.recvBuf = [];
-                    App.UI.showProgress('استقبال: ' + data.name);
+                    App.State.recvBytes = 0;
+                    App.UI.showProgress(`استقبال: ${data.name}`, data.size);
                     break;
+                
                 case 'file-chunk':
+                    if (!App.State.recvMeta) return;
                     App.State.recvBuf.push(data.data);
-                    const currentSize = App.State.recvBuf.reduce((acc, val) => acc + val.byteLength, 0);
-                    App.UI.updateProgress(Math.round((currentSize / App.State.recvMeta.size) * 100));
+                    App.State.recvBytes += data.data.byteLength;
+                    App.UI.updateProgress(App.State.recvBytes, App.State.recvMeta.size);
                     break;
+                
                 case 'file-end':
+                    if (!App.State.recvMeta) return;
                     App.UI.hideProgress();
-                    const blob = new Blob(App.State.recvBuf, { type: App.State.recvMeta.mime });
+                    App.UI.logMsg(`⏳ جاري حفظ: ${App.State.recvMeta.name}...`, 'sys');
+                    
+                    const blob = new Blob(App.State.recvBuf, { type: App.State.recvMeta.mime || 'application/octet-stream' });
                     this.saveFile(blob, App.State.recvMeta.name);
+                    
+                    App.State.recvMeta = null;
+                    App.State.recvBuf = [];
+                    break;
+                
+                case 'file-error':
+                    App.UI.hideProgress();
+                    App.UI.logMsg('❌ خطأ أثناء استقبال الملف', 'sys');
                     App.State.recvMeta = null;
                     App.State.recvBuf = [];
                     break;
             }
         },
-        saveFile(blob, name) {
+
+        saveFile(blob, filename) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = name;
-            a.className = 'btn-primary';
-            a.style.display = 'inline-block';
-            a.style.marginTop = '5px';
-            a.style.fontSize = '0.8rem';
-            a.textContent = '💾 حفظ: ' + name;
+            a.download = filename;
+            a.className = 'btn btn-primary mt-3';
+            a.textContent = `⬇️ تحميل (${App.Utils.formatBytes(blob.size)})`;
             
             const wrapper = document.createElement('div');
-            wrapper.className = 'msg-received';
+            wrapper.className = 'msg-bubble msg-recv';
+            wrapper.innerHTML = `<strong>ملف مستلم:</strong><br>${filename}<br>`;
             wrapper.appendChild(a);
-            App.UI.els.logsArea.appendChild(wrapper);
-            App.UI.els.logsArea.scrollTop = App.UI.els.logsArea.scrollHeight;
+            
+            App.DOM.logs.appendChild(wrapper);
+            App.DOM.logs.scrollTop = App.DOM.logs.scrollHeight;
+
+            // Auto click for desktop, let user click for mobile
+            if (window.innerWidth > 768) {
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                a.textContent = '✅ تم الحفظ';
+                a.style.background = 'var(--green)';
+            }
         }
+    },
+
+    bindEvents() {
+        // Copy ID
+        this.DOM.$('myIdBtn').onclick = () => {
+            navigator.clipboard.writeText(this.State.myId).catch(()=>{});
+            this.Utils.showToast('تم نسخ المعرف', 'success');
+        };
+
+        // Connect
+        this.DOM.connectBtn.onclick = () => this.Network.connect();
+        
+        // Modals
+        this.DOM.$('acceptBtn').onclick = () => this.Network.acceptIncoming();
+        this.DOM.$('declineBtn').onclick = () => this.Network.declineIncoming();
+        this.DOM.$('disconnectBtn').onclick = () => {
+            if(this.State.conn) this.State.conn.close();
+            this.UI.reset();
+        };
+
+        // Chat & Files
+        this.DOM.$('sendBtn').onclick = () => this.Transfer.sendText();
+        this.DOM.textInput.onkeypress = e => { if(e.key === 'Enter') this.Transfer.sendText(); };
+        
+        this.DOM.$('attachBtn').onclick = () => this.DOM.fileInput.click();
+        this.DOM.fileInput.onchange = e => {
+            this.Transfer.handleFiles(e.target.files);
+            this.DOM.fileInput.value = '';
+        };
+
+        // Drag & Drop
+        this.DOM.transferArea.ondragover = e => e.preventDefault();
+        this.DOM.transferArea.ondrop = e => {
+            e.preventDefault();
+            if(this.State.isAuthed) this.Transfer.handleFiles(e.dataTransfer.files);
+        };
+    },
+
+    run() {
+        this.DOM.init();
+        this.bindEvents();
+        this.Network.init();
     }
 };
 
-/* ── 3. BOOTSTRAP APP ── */
-window.addEventListener('DOMContentLoaded', async () => {
-    App.UI.init();
-    
-    // محاولة تحميل PeerJS ديناميكياً
-    const isLoaded = await ScriptLoader.load();
-    if (isLoaded && typeof Peer !== 'undefined') {
-        App.Network.init();
-    } else {
-        // إذا فشل التحميل كلياً (بسبب AdBlocker قوي) نعرض واجهة الخطأ
-        App.UI.setStatus('فشل تحميل المكتبة', 'error');
-        App.UI.els.libErrorBanner.style.display = 'block';
-    }
-});
-
+// Start App
+window.addEventListener('DOMContentLoaded', () => App.run());
 </script>
+
 </body>
 </html>
