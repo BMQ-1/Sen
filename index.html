@@ -8,388 +8,404 @@
     <meta name="theme-color" content="#0a0a12">
     <title>وصلة — نقل آمن</title>
 
-    <!--
-    ╔══════════════════════════════════════════════════════════════╗
-    ║  PRIVACY & SECURITY OVERVIEW                                ║
-    ║  ─────────────────────────────────────────────────────────── ║
-    ║  • WebRTC DataChannel (DTLS 1.2+ / SRTP) — end-to-end      ║
-    ║    encrypted by the browser at the transport layer.         ║
-    ║  • No server stores files, messages, or metadata.           ║
-    ║  • PeerJS signalling server only exchanges SDP/ICE blobs;   ║
-    ║    it never sees payload data.                               ║
-    ║  • IDs are ephemeral 6-digit numbers generated with         ║
-    ║    crypto.getRandomValues() (modulo-bias-free).             ║
-    ║  • Auth handshake: receiver must explicitly tap "Accept"     ║
-    ║    before any data flows.                                    ║
-    ║  • All file MIME types are sanitised; active types          ║
-    ║    (HTML, SVG, JS, PHP …) are forced to octet-stream.       ║
-    ║  • All filenames are sanitised; path traversal chars are    ║
-    ║    stripped.  Max 255 chars.                                 ║
-    ║  • All DOM updates use textContent / DOM API — no           ║
-    ║    innerHTML — preventing XSS even from malicious payloads. ║
-    ║  • Incoming chunk size is validated (≤ 256 KB).             ║
-    ║  • Per-file receive timeout (30 s) aborts stalled           ║
-    ║    transfers.                                                ║
-    ║  • WakeLock keeps screen alive during transfers on mobile.  ║
-    ║  • Content-Security-Policy blocks external script injection.║
-    ╚══════════════════════════════════════════════════════════════╝
-    -->
+<!--
+╔══════════════════════════════════════════════════════════════╗
+║  PRIVACY & SECURITY OVERVIEW                                ║
+║  ─────────────────────────────────────────────────────────── ║
+║  • WebRTC DataChannel (DTLS 1.2+ / SRTP) — end-to-end      ║
+║    encrypted by the browser at the transport layer.         ║
+║  • No server stores files, messages, or metadata.           ║
+║  • PeerJS signalling server only exchanges SDP/ICE blobs;   ║
+║    it never sees payload data.                               ║
+║  • IDs are ephemeral 6-digit numbers generated with         ║
+║    crypto.getRandomValues() (modulo-bias-free).             ║
+║  • Auth handshake: receiver must explicitly tap "Accept"     ║
+║    before any data flows.                                    ║
+║  • All file MIME types are sanitised; active types          ║
+║    (HTML, SVG, JS, PHP …) are forced to octet-stream.       ║
+║  • All filenames are sanitised; path traversal chars are    ║
+║    stripped. Leading dots/spaces removed. Max 255 chars.    ║
+║  • All DOM updates use textContent / DOM API — no           ║
+║    innerHTML — preventing XSS even from malicious payloads. ║
+║  • Incoming chunk size is validated (≤ 256 KB).             ║
+║  • Per-file receive timeout (30 s) aborts stalled           ║
+║    transfers.                                                ║
+║  • WakeLock keeps screen alive during transfers on mobile.  ║
+║  • Content-Security-Policy blocks external script injection.║
+║  • Object URLs are retained until disconnect (FIX Save As). ║
+║  • Rate limiting prevents message-flood DoS attacks.        ║
+║  • No auto-download: user must explicitly press Save.       ║
+║  ⚠️ WebRTC (P2P) may expose your IP to the other party.    ║
+╚══════════════════════════════════════════════════════════════╝
+-->
 
-    <meta http-equiv="Content-Security-Policy" content="
-        default-src 'self' blob: data:;
-        script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com;
-        style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com;
-        font-src https://fonts.gstatic.com;
-        connect-src 'self' wss://*.peerjs.com https://*.peerjs.com https://0.peerjs.com stun: turn: blob: data:;
-        img-src 'self' blob: data:;
-        object-src 'none';
-        base-uri 'none';
-        form-action 'none';
-    ">
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="Referrer-Policy" content="no-referrer">
-    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
+<!-- FIX: Tightened CSP + Permissions-Policy blocking camera/mic/usb/payment/etc. -->
+<meta http-equiv="Content-Security-Policy" content="
+default-src 'self' blob: data:;
+script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com;
+style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com;
+font-src https://fonts.gstatic.com;
+connect-src 'self' wss://*.peerjs.com https://*.peerjs.com https://0.peerjs.com stun: turn: blob: data:;
+img-src 'self' blob: data:;
+object-src 'none';
+base-uri 'none';
+form-action 'none';
+frame-ancestors 'none';
+">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="Referrer-Policy" content="no-referrer">
+<!-- FIX: Extended Permissions-Policy — blocks camera, mic, usb, payment, geolocation, and more -->
+<meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=(), nfc=(), display-capture=(), screen-wake-lock=(self), accelerometer=(), gyroscope=(), magnetometer=(), picture-in-picture=()">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
 
-    <!-- Tailwind for utility classes only -->
-    <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- PeerJS 1.5.4 pinned — stable mobile WebRTC reconnect -->
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-    <!--
-        FIX #1 — PeerJS version pinned to 1.5.4 (latest stable).
-        1.5.2 has a known bug where the peer is destroyed instead of
-        reconnected on transient network hiccups, causing "stuck on
-        Connecting" on mobile WebRTC.
-    -->
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+    :root {
+        --safe-top: env(safe-area-inset-top, 0px);
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+        --bg: #0a0a12;
+        --surface: #111120;
+        --surface2: #1a1a2e;
+        --border: rgba(255,255,255,0.07);
+        --accent: #4f8ef7;
+        --accent2: #7b6cf7;
+        --green: #22d37a;
+        --text: #e8eaf6;
+        --muted: rgba(232,234,246,0.45);
+        --danger: #f75f5f;
+    }
 
-    <style>
-        :root {
-            --safe-top: env(safe-area-inset-top, 0px);
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
-            --bg: #0a0a12;
-            --surface: #111120;
-            --surface2: #1a1a2e;
-            --border: rgba(255,255,255,0.07);
-            --accent: #4f8ef7;
-            --accent2: #7b6cf7;
-            --green: #22d37a;
-            --text: #e8eaf6;
-            --muted: rgba(232,234,246,0.45);
-            --danger: #f75f5f;
-        }
+    * { box-sizing: border-box; }
+    html { direction: rtl; }
 
-        * { box-sizing: border-box; }
-        html { direction: rtl; }
+    body {
+        background: var(--bg);
+        font-family: 'Tajawal', system-ui, sans-serif;
+        min-height: 100dvh;
+        padding-top: max(1rem, var(--safe-top));
+        padding-bottom: max(1rem, var(--safe-bottom));
+        color: var(--text);
+        overflow-x: hidden;
+        -webkit-tap-highlight-color: transparent;
+    }
 
-        body {
-            background: var(--bg);
-            font-family: 'Tajawal', system-ui, sans-serif;
-            min-height: 100dvh;
-            padding-top: max(1rem, var(--safe-top));
-            padding-bottom: max(1rem, var(--safe-bottom));
-            color: var(--text);
-            overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
-        }
+    body::before {
+        content: '';
+        position: fixed;
+        top: -30%; right: -20%;
+        width: 60vw; height: 60vw;
+        background: radial-gradient(circle, rgba(79,142,247,0.07) 0%, transparent 70%);
+        pointer-events: none; z-index: 0;
+    }
+    body::after {
+        content: '';
+        position: fixed;
+        bottom: -20%; left: -10%;
+        width: 50vw; height: 50vw;
+        background: radial-gradient(circle, rgba(123,108,247,0.06) 0%, transparent 70%);
+        pointer-events: none; z-index: 0;
+    }
 
-        body::before {
-            content: '';
-            position: fixed;
-            top: -30%; right: -20%;
-            width: 60vw; height: 60vw;
-            background: radial-gradient(circle, rgba(79,142,247,0.07) 0%, transparent 70%);
-            pointer-events: none; z-index: 0;
-        }
-        body::after {
-            content: '';
-            position: fixed;
-            bottom: -20%; left: -10%;
-            width: 50vw; height: 50vw;
-            background: radial-gradient(circle, rgba(123,108,247,0.06) 0%, transparent 70%);
-            pointer-events: none; z-index: 0;
-        }
+    .glass-card {
+        background: var(--surface);
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        box-shadow: 0 0 0 0.5px rgba(255,255,255,0.04) inset, 0 8px 32px rgba(0,0,0,0.4);
+        position: relative;
+        overflow: hidden;
+    }
+    .glass-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        pointer-events: none;
+    }
 
-        .glass-card {
-            background: var(--surface);
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            box-shadow: 0 0 0 0.5px rgba(255,255,255,0.04) inset, 0 8px 32px rgba(0,0,0,0.4);
-            position: relative;
-            overflow: hidden;
-        }
-        .glass-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            pointer-events: none;
-        }
+    .mono { font-family: 'IBM Plex Mono', monospace; }
+    .tap-anim { transition: transform 0.1s, opacity 0.1s; }
+    .tap-anim:active { transform: scale(0.95); opacity: 0.85; }
 
-        .mono { font-family: 'IBM Plex Mono', monospace; }
-        .tap-anim { transition: transform 0.1s, opacity 0.1s; }
-        .tap-anim:active { transform: scale(0.95); opacity: 0.85; }
+    .id-display {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1.25rem 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        width: 100%;
+        border: none;
+        text-align: center;
+    }
+    .id-display:hover { border-color: rgba(79,142,247,0.3); background: rgba(79,142,247,0.06); }
+    .id-display:active { transform: scale(0.97); }
 
-        .id-display {
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 1.25rem 1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            width: 100%;
-            border: none;
-            text-align: center;
-        }
-        .id-display:hover { border-color: rgba(79,142,247,0.3); background: rgba(79,142,247,0.06); }
-        .id-display:active { transform: scale(0.97); }
+    .id-number {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: clamp(2rem, 9vw, 3rem);
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        display: block;
+    }
 
-        .id-number {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: clamp(2rem, 9vw, 3rem);
-            font-weight: 700;
-            letter-spacing: 0.2em;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            display: block;
-        }
+    #qrcode canvas, #qrcode img {
+        border-radius: 12px;
+        border: 3px solid var(--surface2);
+        max-width: 100%;
+    }
 
-        #qrcode canvas, #qrcode img {
-            border-radius: 12px;
-            border: 3px solid var(--surface2);
-            max-width: 100%;
-        }
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 99px;
+        padding: 4px 12px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+    .status-dot {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: #f59e0b;
+        box-shadow: 0 0 6px #f59e0b;
+        animation: pulse-dot 1.8s ease-in-out infinite;
+        flex-shrink: 0;
+    }
+    .status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); animation: none; }
+    .status-dot.connected { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: none; }
 
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 99px;
-            padding: 4px 12px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.04em;
-        }
-        .status-dot {
-            width: 7px; height: 7px;
-            border-radius: 50%;
-            background: #f59e0b;
-            box-shadow: 0 0 6px #f59e0b;
-            animation: pulse-dot 1.8s ease-in-out infinite;
-            flex-shrink: 0;
-        }
-        .status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); animation: none; }
-        .status-dot.connected { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: none; }
+    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
-        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+    .input-field {
+        width: 100%;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 16px;
+        color: var(--text);
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 1.1rem;
+        text-align: center;
+        letter-spacing: 0.15em;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        direction: ltr;
+    }
+    .input-field:focus { border-color: rgba(79,142,247,0.5); box-shadow: 0 0 0 3px rgba(79,142,247,0.12); }
+    .input-field::placeholder { color: rgba(232,234,246,0.2); letter-spacing: 0.05em; }
+    .msg-input { text-align: right; letter-spacing: normal; direction: rtl; }
 
-        .input-field {
-            width: 100%;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 12px 16px;
-            color: var(--text);
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 1.1rem;
-            text-align: center;
-            letter-spacing: 0.15em;
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            direction: ltr;
-        }
-        .input-field:focus { border-color: rgba(79,142,247,0.5); box-shadow: 0 0 0 3px rgba(79,142,247,0.12); }
-        .input-field::placeholder { color: rgba(232,234,246,0.2); letter-spacing: 0.05em; }
-        .msg-input { text-align: right; letter-spacing: normal; direction: rtl; }
+    .btn-primary {
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+        color: white;
+        font-weight: 700;
+        border-radius: 12px;
+        padding: 12px 22px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 16px rgba(79,142,247,0.3);
+        font-family: 'Tajawal', sans-serif;
+        font-size: 0.95rem;
+    }
+    .btn-primary:hover { box-shadow: 0 4px 24px rgba(79,142,247,0.5); transform: translateY(-1px); }
+    .btn-primary:active { transform: scale(0.96); }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
 
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
-            color: white;
-            font-weight: 700;
-            border-radius: 12px;
-            padding: 12px 22px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 16px rgba(79,142,247,0.3);
-            font-family: 'Tajawal', sans-serif;
-            font-size: 0.95rem;
-        }
-        .btn-primary:hover { box-shadow: 0 4px 24px rgba(79,142,247,0.5); transform: translateY(-1px); }
-        .btn-primary:active { transform: scale(0.96); }
-        .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-ghost {
+        background: var(--surface2);
+        color: var(--muted);
+        border: 1px solid var(--border);
+        font-weight: 700;
+        border-radius: 12px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: 'Tajawal', sans-serif;
+    }
+    .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
 
-        .btn-ghost {
-            background: var(--surface2);
-            color: var(--muted);
-            border: 1px solid var(--border);
-            font-weight: 700;
-            border-radius: 12px;
-            padding: 12px 16px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: 'Tajawal', sans-serif;
-        }
-        .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+    .msg-bubble { max-width: 82%; word-break: break-word; border-radius: 18px; padding: 10px 14px; font-size: 0.875rem; line-height: 1.55; }
+    .msg-sent { background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); color: white; border-bottom-left-radius: 5px; }
+    .msg-received { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-bottom-right-radius: 5px; }
+    .msg-system { background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--muted); font-size: 11px; border-radius: 99px; padding: 5px 14px; }
 
-        .msg-bubble { max-width: 82%; word-break: break-word; border-radius: 18px; padding: 10px 14px; font-size: 0.875rem; line-height: 1.55; }
-        .msg-sent { background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); color: white; border-bottom-left-radius: 5px; }
-        .msg-received { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-bottom-right-radius: 5px; }
-        .msg-system { background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--muted); font-size: 11px; border-radius: 99px; padding: 5px 14px; }
+    .progress-bar { height: 4px; border-radius: 99px; background: rgba(255,255,255,0.07); overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 99px; transition: width 0.15s ease-out; }
 
-        .progress-bar { height: 4px; border-radius: 99px; background: rgba(255,255,255,0.07); overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 99px; transition: width 0.15s ease-out; }
+    .modal-overlay {
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.75);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        z-index: 1000;
+        display: none;
+        align-items: center; justify-content: center;
+        padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 2rem 1.5rem;
+        max-width: 360px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    }
 
-        /* Modal — uses flex column so it contributes natural height; no position:fixed */
-        .modal-overlay {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.75);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            z-index: 1000;
-            display: none;
-            align-items: center; justify-content: center;
-            padding: 1rem;
-        }
-        .modal-overlay.open { display: flex; }
-        .modal-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 2rem 1.5rem;
-            max-width: 360px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 24px 64px rgba(0,0,0,0.6);
-        }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
 
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+    .drop-overlay {
+        position: absolute; inset: 0;
+        background: rgba(79,142,247,0.1);
+        backdrop-filter: blur(4px);
+        border: 2px dashed var(--accent);
+        border-radius: 20px;
+        z-index: 50;
+        display: none;
+        align-items: center; justify-content: center;
+        flex-direction: column;
+        gap: 12px;
+        pointer-events: none;
+    }
+    .drop-overlay.active { display: flex; }
 
-        .drop-overlay {
-            position: absolute; inset: 0;
-            background: rgba(79,142,247,0.1);
-            backdrop-filter: blur(4px);
-            border: 2px dashed var(--accent);
-            border-radius: 20px;
-            z-index: 50;
-            display: none;
-            align-items: center; justify-content: center;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .drop-overlay.active { display: flex; }
+    .saudi-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: linear-gradient(135deg, rgba(0,106,54,0.15), rgba(0,106,54,0.05));
+        border: 1px solid rgba(0,180,90,0.25);
+        border-radius: 99px;
+        padding: 4px 12px 4px 10px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #4dbb78;
+        letter-spacing: 0.03em;
+    }
 
-        .saudi-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: linear-gradient(135deg, rgba(0,106,54,0.15), rgba(0,106,54,0.05));
-            border: 1px solid rgba(0,180,90,0.25);
-            border-radius: 99px;
-            padding: 4px 12px 4px 10px;
-            font-size: 11px;
-            font-weight: 700;
-            color: #4dbb78;
-            letter-spacing: 0.03em;
-        }
+    .download-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #1a7a4a, #22d37a);
+        color: white;
+        font-weight: 700;
+        border-radius: 14px;
+        padding: 12px 20px;
+        font-size: 0.875rem;
+        text-decoration: none;
+        transition: all 0.2s;
+        box-shadow: 0 4px 20px rgba(34,211,122,0.3);
+        cursor: pointer;
+        border: none;
+        font-family: 'Tajawal', sans-serif;
+        max-width: 95%;
+    }
+    .download-btn:hover { box-shadow: 0 4px 28px rgba(34,211,122,0.5); transform: translateY(-1px); }
+    .download-btn:active { transform: scale(0.97); }
 
-        .download-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: linear-gradient(135deg, #1a7a4a, #22d37a);
-            color: white;
-            font-weight: 700;
-            border-radius: 14px;
-            padding: 12px 20px;
-            font-size: 0.875rem;
-            text-decoration: none;
-            transition: all 0.2s;
-            box-shadow: 0 4px 20px rgba(34,211,122,0.3);
-            cursor: pointer;
-            border: none;
-            font-family: 'Tajawal', sans-serif;
-            max-width: 95%;
-        }
-        .download-btn:hover { box-shadow: 0 4px 28px rgba(34,211,122,0.5); transform: translateY(-1px); }
-        .download-btn:active { transform: scale(0.97); }
+    .enc-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(34,211,122,0.08);
+        border: 1px solid rgba(34,211,122,0.2);
+        color: var(--green);
+        border-radius: 99px;
+        padding: 3px 10px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+    }
 
-        .enc-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            background: rgba(34,211,122,0.08);
-            border: 1px solid rgba(34,211,122,0.2);
-            color: var(--green);
-            border-radius: 99px;
-            padding: 3px 10px;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-        }
+    /* NEW: IP warning badge */
+    .ip-warn-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(245,158,11,0.08);
+        border: 1px solid rgba(245,158,11,0.2);
+        color: #f59e0b;
+        border-radius: 99px;
+        padding: 3px 10px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        margin-top: 4px;
+    }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-in { animation: fadeIn 0.25s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.25s ease-out forwards; }
 
-        @keyframes shimmer {
-            0% { background-position: -200% center; }
-            100% { background-position: 200% center; }
-        }
-        .logo-text {
-            font-family: 'Tajawal', sans-serif;
-            font-weight: 900;
-            font-size: 1.75rem;
-            background: linear-gradient(135deg, #e8eaf6 30%, var(--accent) 60%, var(--accent2) 100%);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: shimmer 4s linear infinite;
-            letter-spacing: -0.01em;
-        }
+    @keyframes shimmer {
+        0% { background-position: -200% center; }
+        100% { background-position: 200% center; }
+    }
+    .logo-text {
+        font-family: 'Tajawal', sans-serif;
+        font-weight: 900;
+        font-size: 1.75rem;
+        background: linear-gradient(135deg, #e8eaf6 30%, var(--accent) 60%, var(--accent2) 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: shimmer 4s linear infinite;
+        letter-spacing: -0.01em;
+    }
 
-        /* "Connecting" spinner shown on ID area before peer is ready */
-        .id-skeleton {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: clamp(2rem, 9vw, 3rem);
-            font-weight: 700;
-            letter-spacing: 0.2em;
-            color: var(--muted);
-            animation: pulse-dot 1.2s ease-in-out infinite;
-            display: block;
-        }
+    .id-skeleton {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: clamp(2rem, 9vw, 3rem);
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        color: var(--muted);
+        animation: pulse-dot 1.2s ease-in-out infinite;
+        display: block;
+    }
 
-        /* Toast */
-        #toast {
-            position: fixed;
-            bottom: calc(1.5rem + var(--safe-bottom));
-            left: 50%; transform: translateX(-50%);
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 10px 20px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: var(--text);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            z-index: 2000;
-            white-space: nowrap;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.25s;
-        }
-        #toast.show { opacity: 1; }
-    </style>
+    /* Toast */
+    #toast {
+        position: fixed;
+        bottom: calc(1.5rem + var(--safe-bottom));
+        left: 50%; transform: translateX(-50%);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 20px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--text);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        z-index: 2000;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.25s;
+    }
+    #toast.show { opacity: 1; }
+</style>
+
 </head>
 <body class="flex flex-col items-center px-4 md:px-8 relative">
 
@@ -403,8 +419,12 @@
             <svg width="24" height="24" fill="none" stroke="#4f8ef7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
         </div>
         <h3 id="modalTitle" style="font-size:1.1rem;font-weight:900;margin-bottom:8px;">طلب اتصال</h3>
-        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:20px;">
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;">
             الجهاز <span id="reqDeviceId" style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);background:var(--surface2);padding:2px 8px;border-radius:6px;font-size:0.95em;"></span> يطلب الاقتران
+        </p>
+        <!-- FIX: IP disclosure notice in auth modal -->
+        <p style="font-size:10px;color:#f59e0b;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.18);border-radius:8px;padding:7px 10px;margin-bottom:16px;line-height:1.5;">
+            ⚠️ القبول سيُنشئ اتصالاً مباشراً (P2P). قد يرى الطرف الآخر عنوان IP جهازك — وهذا أمر طبيعي في WebRTC.
         </p>
         <div style="display:flex;gap:10px;">
             <button id="declineBtn" class="btn-ghost tap-anim" style="flex:1;">رفض</button>
@@ -439,105 +459,112 @@
 <!-- Main -->
 <main class="w-full max-w-4xl grid md:grid-cols-2 gap-4 sm:gap-5 flex-1 items-start pb-4" style="position:relative;z-index:1;">
 
-    <!-- LEFT: Identity & QR -->
-    <div class="glass-card p-5 flex flex-col items-center text-center w-full">
-        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px;">هويتك الآمنة</div>
+<!-- LEFT: Identity & QR -->
+<div class="glass-card p-5 flex flex-col items-center text-center w-full">
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px;">هويتك الآمنة</div>
 
-        <button onclick="copyMyId()" class="id-display tap-anim" aria-label="انسخ معرفك">
-            <span class="id-skeleton" id="myId">— — —</span>
-            <div style="font-size:11px;color:var(--muted);margin-top:8px;font-weight:700;" id="idSubtext">جارٍ التهيئة...</div>
+    <button onclick="copyMyId()" class="id-display tap-anim" aria-label="انسخ معرفك">
+        <span class="id-skeleton" id="myId">— — —</span>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;font-weight:700;" id="idSubtext">جارٍ التهيئة...</div>
+    </button>
+
+    <div style="width:100%;margin-top:18px;padding-top:18px;border-top:1px solid var(--border);display:flex;flex-direction:column;align-items:center;">
+        <div id="qrcode" style="padding:8px;background:white;border-radius:14px;display:inline-block;min-width:144px;min-height:144px;"></div>
+        <p style="font-size:11px;color:var(--muted);margin-top:10px;font-weight:700;">امسح للاقتران فوراً</p>
+    </div>
+
+    <div style="width:100%;margin-top:14px;padding:10px 14px;background:rgba(79,142,247,0.04);border:1px solid rgba(79,142,247,0.1);border-radius:12px;text-align:right;">
+        <p style="font-size:10px;color:var(--muted);line-height:1.6;">
+            🔒 <strong style="color:var(--text);">الاتصال مشفر</strong> — نقل مباشر بين الأجهزة عبر WebRTC DTLS. لا تُخزَّن ملفاتك أو رسائلك على أي خادم أبداً.
+        </p>
+    </div>
+
+    <!-- FIX: IP disclosure notice -->
+    <div style="width:100%;margin-top:8px;padding:8px 12px;background:rgba(245,158,11,0.04);border:1px solid rgba(245,158,11,0.12);border-radius:12px;text-align:right;">
+        <p style="font-size:10px;color:#f59e0b;line-height:1.6;">
+            ⚠️ <strong style="color:#f59e0b;">تنبيه:</strong> الاتصال P2P مباشر — قد يرى الطرف الآخر عنوان IP جهازك.
+        </p>
+    </div>
+</div>
+
+<!-- RIGHT: Connect + Transfer -->
+<div class="flex flex-col gap-4 h-full w-full">
+
+<!-- Connect Panel -->
+<div class="glass-card p-5 w-full" id="connectArea">
+    <div style="font-size:0.875rem;font-weight:900;margin-bottom:14px;color:var(--text);">الاتصال بجهاز</div>
+    <div style="display:flex;gap:10px;direction:ltr;">
+        <input type="text" id="targetId" placeholder="000000" maxlength="6" inputmode="numeric"
+            class="input-field"
+            style="flex:1;width:0;"
+            autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+            aria-label="معرف الجهاز الهدف">
+        <button id="connectBtn" class="btn-primary tap-anim" style="white-space:nowrap;">اقتران</button>
+    </div>
+    <p id="connectHint" style="font-size:10px;color:var(--muted);margin-top:10px;font-weight:700;text-align:center;">أدخل الرقم السداسي للجهاز الآخر</p>
+</div>
+
+<!-- Transfer Panel (hidden until connected) -->
+<div class="glass-card p-4 hidden flex-col relative w-full" id="transferArea"
+    style="height:60dvh;min-height:420px;"
+    role="region" aria-label="لوحة النقل">
+
+    <!-- Transfer Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border);flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:10px;overflow:hidden;">
+            <div style="width:34px;height:34px;background:rgba(79,142,247,0.1);border:1px solid rgba(79,142,247,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="16" height="16" fill="#4f8ef7" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/></svg>
+            </div>
+            <div style="overflow:hidden;">
+                <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">متصل بـ</div>
+                <div class="mono" style="font-size:0.875rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="connectedToId">---</div>
+            </div>
+        </div>
+        <button id="disconnectBtn" class="tap-anim" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all 0.2s;font-family:'Tajawal',sans-serif;">
+            قطع
         </button>
+    </div>
 
-        <div style="width:100%;margin-top:18px;padding-top:18px;border-top:1px solid var(--border);display:flex;flex-direction:column;align-items:center;">
-            <div id="qrcode" style="padding:8px;background:white;border-radius:14px;display:inline-block;min-width:144px;min-height:144px;"></div>
-            <p style="font-size:11px;color:var(--muted);margin-top:10px;font-weight:700;">امسح للاقتران فوراً</p>
+    <!-- Chat log -->
+    <div id="logs" style="flex:1;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;padding-left:4px;" role="log" aria-live="polite">
+        <div id="logPlaceholder" style="margin:auto;text-align:center;" class="msg-system">🔒 مشفر من طرف إلى طرف</div>
+    </div>
+
+    <!-- Progress -->
+    <div id="progressContainer" style="display:none;flex-shrink:0;margin-bottom:10px;background:var(--surface2);padding:10px 12px;border-radius:12px;border:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span id="progressFilename" style="font-size:11px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%;direction:ltr;"></span>
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                <span id="progressStats" style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;"></span>
+                <span id="progressPercent" style="font-size:11px;font-weight:700;color:var(--accent);font-family:'IBM Plex Mono',monospace;">0%</span>
+            </div>
         </div>
+        <div class="progress-bar"><div class="progress-fill" id="progressBar" style="width:0%"></div></div>
+    </div>
 
-        <div style="width:100%;margin-top:14px;padding:10px 14px;background:rgba(79,142,247,0.04);border:1px solid rgba(79,142,247,0.1);border-radius:12px;text-align:right;">
-            <p style="font-size:10px;color:var(--muted);line-height:1.6;">
-                🔒 <strong style="color:var(--text);">الاتصال مشفر</strong> — نقل مباشر بين الأجهزة عبر WebRTC DTLS. لا تُخزَّن ملفاتك أو رسائلك على أي خادم أبداً.
-            </p>
+    <!-- Input Row -->
+    <div style="flex-shrink:0;display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;gap:8px;direction:rtl;">
+            <input type="text" id="textInput" placeholder="رسالة أو رابط..."
+                class="input-field msg-input"
+                style="flex:1;width:0;padding:11px 14px;font-size:0.9rem;"
+                autocomplete="off" autocorrect="off" spellcheck="false"
+                aria-label="حقل الرسالة">
+            <button id="attachBtn" class="btn-ghost tap-anim" style="padding:11px 14px;flex-shrink:0;" title="إرسال ملف" aria-label="إرسال ملف">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+            </button>
+            <input type="file" id="fileInput" multiple class="hidden" aria-label="اختر ملفات">
+            <button id="sendTextBtn" class="btn-primary tap-anim" style="flex-shrink:0;padding:11px 18px;font-size:0.875rem;">إرسال</button>
         </div>
     </div>
 
-    <!-- RIGHT: Connect + Transfer -->
-    <div class="flex flex-col gap-4 h-full w-full">
-
-        <!-- Connect Panel -->
-        <div class="glass-card p-5 w-full" id="connectArea">
-            <div style="font-size:0.875rem;font-weight:900;margin-bottom:14px;color:var(--text);">الاتصال بجهاز</div>
-            <div style="display:flex;gap:10px;direction:ltr;">
-                <input type="text" id="targetId" placeholder="000000" maxlength="6" inputmode="numeric"
-                    class="input-field"
-                    style="flex:1;width:0;"
-                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-                    aria-label="معرف الجهاز الهدف">
-                <button id="connectBtn" class="btn-primary tap-anim" style="white-space:nowrap;">اقتران</button>
-            </div>
-            <p id="connectHint" style="font-size:10px;color:var(--muted);margin-top:10px;font-weight:700;text-align:center;">أدخل الرقم السداسي للجهاز الآخر</p>
-        </div>
-
-        <!-- Transfer Panel (hidden until connected) -->
-        <div class="glass-card p-4 hidden flex-col relative w-full" id="transferArea"
-            style="height:60dvh;min-height:420px;"
-            role="region" aria-label="لوحة النقل">
-
-            <!-- Transfer Header -->
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border);flex-shrink:0;">
-                <div style="display:flex;align-items:center;gap:10px;overflow:hidden;">
-                    <div style="width:34px;height:34px;background:rgba(79,142,247,0.1);border:1px solid rgba(79,142,247,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <svg width="16" height="16" fill="#4f8ef7" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/></svg>
-                    </div>
-                    <div style="overflow:hidden;">
-                        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">متصل بـ</div>
-                        <div class="mono" style="font-size:0.875rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="connectedToId">---</div>
-                    </div>
-                </div>
-                <button id="disconnectBtn" class="tap-anim" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all 0.2s;font-family:'Tajawal',sans-serif;">
-                    قطع
-                </button>
-            </div>
-
-            <!-- Chat log -->
-            <div id="logs" style="flex:1;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;padding-left:4px;" role="log" aria-live="polite">
-                <div id="logPlaceholder" style="margin:auto;text-align:center;" class="msg-system">🔒 مشفر من طرف إلى طرف</div>
-            </div>
-
-            <!-- Progress -->
-            <div id="progressContainer" style="display:none;flex-shrink:0;margin-bottom:10px;background:var(--surface2);padding:10px 12px;border-radius:12px;border:1px solid var(--border);">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                    <span id="progressFilename" style="font-size:11px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%;direction:ltr;"></span>
-                    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                        <span id="progressStats" style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;"></span>
-                        <span id="progressPercent" style="font-size:11px;font-weight:700;color:var(--accent);font-family:'IBM Plex Mono',monospace;">0%</span>
-                    </div>
-                </div>
-                <div class="progress-bar"><div class="progress-fill" id="progressBar" style="width:0%"></div></div>
-            </div>
-
-            <!-- Input Row -->
-            <div style="flex-shrink:0;display:flex;flex-direction:column;gap:8px;">
-                <div style="display:flex;gap:8px;direction:rtl;">
-                    <input type="text" id="textInput" placeholder="رسالة أو رابط..."
-                        class="input-field msg-input"
-                        style="flex:1;width:0;padding:11px 14px;font-size:0.9rem;"
-                        autocomplete="off" autocorrect="off" spellcheck="false"
-                        aria-label="حقل الرسالة">
-                    <button id="attachBtn" class="btn-ghost tap-anim" style="padding:11px 14px;flex-shrink:0;" title="إرسال ملف" aria-label="إرسال ملف">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-                    </button>
-                    <input type="file" id="fileInput" multiple class="hidden" aria-label="اختر ملفات">
-                    <button id="sendTextBtn" class="btn-primary tap-anim" style="flex-shrink:0;padding:11px 18px;font-size:0.875rem;">إرسال</button>
-                </div>
-            </div>
-
-            <!-- Drag-drop overlay -->
-            <div id="dropZone" class="drop-overlay" aria-hidden="true">
-                <svg width="40" height="40" fill="none" stroke="var(--accent)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                <p style="font-size:1rem;font-weight:900;color:var(--accent);">أفلِت الملفات هنا</p>
-            </div>
-        </div>
+    <!-- Drag-drop overlay -->
+    <div id="dropZone" class="drop-overlay" aria-hidden="true">
+        <svg width="40" height="40" fill="none" stroke="var(--accent)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        <p style="font-size:1rem;font-weight:900;color:var(--accent);">أفلِت الملفات هنا</p>
     </div>
+</div>
+</div>
 </main>
 
 <!-- Footer -->
@@ -551,37 +578,33 @@
 'use strict';
 
 /* ═══════════════════════════════════════════════════════════════════
-   FIX LOG — every major fix is documented inline
+   FIX LOG
    ═══════════════════════════════════════════════════════════════════
    #1  PeerJS 1.5.4 — fixes silent reconnect bug on mobile WebRTC
-   #2  Multiplied ICE/STUN servers — prevents "stuck connecting" on
-       restricted networks (corporate/carrier NAT)
-   #3  peer.on('open') waits for the signalling server to assign the
-       custom ID; the old code didn't protect against the race where
-       peer.id was undefined on first paint.
-   #4  connectToPeer() now guards against calling peer.connect()
-       while the peer itself isn't open yet (prevents TypeError crash)
-   #5  Reconnect logic: only call peer.reconnect() when NOT destroyed;
-       prevents "Cannot reconnect to server, use `new Peer`" error.
-   #6  Binary serialisation explicitly forced on sender side too, and
-       'binary' serialization verified before attaching file listeners.
-   #7  processFileQueue: await-based chunk flow; zero-copy ArrayBuffer
-       slice; Blob compaction every 250 chunks prevents OOM on mobile.
-   #8  File download: revokeObjectURL only AFTER the save intent fires
-       (300ms timeout). Original code revoked immediately, killing the
-       download on some Android/iOS browsers.
-   #9  saveFileToDisk: anchor click() dispatched *after* the element
-       is appended to DOM (some browsers block detached anchor DL).
-   #10 Mobile share fallback: navigator.share() used when available
-       (iOS Safari blocks .click() downloads from script on large files).
-   #11 Toast helper replaces plain alert() for non-blocking UX.
-   #12 dragCounter guard: uses a Set of pointer IDs, preventing the
-       counter from going negative and leaving the overlay stuck.
-   #13 All incoming data validated with strict type-guards before use.
-   #14 ID display area shows a clear "جارٍ التهيئة" skeleton until the
-       peer is open, so users aren't confused by "—  —  —".
-   #15 XSS: all DOM mutations use textContent / createElement — zero
-       innerHTML calls anywhere in the file.
+   #2  Multiple STUN servers — prevents stuck-ICE on restricted NAT
+   #3  peer.on('open') guards against race where peer.id is undefined
+   #4  connectToPeer() guards against peer.connect() before open
+   #5  Reconnect: only call peer.reconnect() when NOT destroyed
+   #6  Binary serialisation forced on sender side too
+   #7  Blob compaction every 200 chunks — prevents OOM on mobile
+   #8  SAVE AS FIX: Object URLs stored in pendingUrls[] and only
+       revoked at disconnect — fixes "Save As" dialog on PC where
+       user might take >1s to choose save location
+   #9  Anchor appended to DOM BEFORE .click() — required on some browsers
+   #10 Mobile share fallback: navigator.share() for iOS/Android
+   #11 Toast replaces alert() for non-blocking UX
+   #12 DRAG & DROP FIX: dragCounter (integer) replaces boolean flag —
+       prevents flicker when mouse crosses child elements on desktop
+   #13 Strict type-guards on all incoming data
+   #14 Skeleton shown until peer is open
+   #15 XSS: zero innerHTML — all DOM mutations via textContent/DOM API
+   #16 NO AUTO-DOWNLOAD: removed auto .click() on desktop; user must
+       explicitly press the green Save button (anti drive-by download)
+   #17 RATE LIMITING: text messages capped at 20/sec to prevent DoS
+   #18 FILENAME SANITISE: leading dots/spaces stripped to prevent
+       hidden-file injection (.bashrc, .htaccess, etc.)
+   #19 IP DISCLOSURE: warning shown in auth modal and on main card
+   #20 Permissions-Policy: camera/mic/usb/payment/etc all blocked
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ── WAKELOCK ─────────────────────────────────────────────────────── */
@@ -604,7 +627,7 @@ function vibrate(p) {
     try { if ('vibrate' in navigator) navigator.vibrate(p); } catch(_) {}
 }
 
-/* ── TOAST (replaces alert() for non-critical messages) ─────────── */
+/* ── TOAST ────────────────────────────────────────────────────────── */
 let toastTimer;
 function showToast(msg, duration = 3000) {
     const t = document.getElementById('toast');
@@ -625,8 +648,8 @@ function generateSecureId() {
 /* ── STATE ────────────────────────────────────────────────────────── */
 const MY_ID = generateSecureId();
 let peer = null;
-let currentConn = null;   // active authenticated connection
-let pendingConn = null;   // incoming connection awaiting user approval
+let currentConn = null;
+let pendingConn = null;
 let connTimeout = null;
 let isAuthed = false;
 
@@ -636,10 +659,19 @@ let transferStart = 0;
 
 let recvBuf = [];
 let recvBytes = 0;
-let recvMeta = null;  // { name, size, type }
+let recvMeta = null;
 let recvTimeout = null;
 
-let dragActive = false; // FIX #12: simple boolean, reset on drop/leave
+// FIX #8: track all pending Object URLs — revoke only on disconnect
+let pendingUrls = [];
+
+// FIX #17: rate limiting state
+let msgCount = 0;
+let msgWindowStart = 0;
+const MSG_RATE_LIMIT = 20;   // max messages per second from remote
+
+/* ── DRAG COUNTER (FIX #12: integer counter, not boolean) ────────── */
+let dragCounter = 0;
 
 /* ── DOM REFS ─────────────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
@@ -680,7 +712,7 @@ function fmtBytes(b) {
     return (b / Math.pow(k, i)).toFixed(i ? 1 : 0) + ' ' + u[i];
 }
 
-/* ── SAFE DOM helpers (XSS-safe: no innerHTML anywhere) ──────────── */
+/* ── SAFE DOM helpers ─────────────────────────────────────────────── */
 function copyMyId() {
     if (!peer || !peer.open) return;
     try { navigator.clipboard.writeText(MY_ID); } catch(_) {}
@@ -773,9 +805,8 @@ function setStatus(text, state) {
         (state === 'online' ? ' online' : state === 'connected' ? ' connected' : '');
 }
 
-/* ── PEERJS INIT  (FIX #1, #2, #3, #5) ─────────────────────────── */
+/* ── PEERJS INIT ─────────────────────────────────────────────────── */
 function initPeer() {
-    // FIX #2: diverse STUN/TURN pool prevents stuck-ICE on carrier NAT
     const iceServers = [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
@@ -786,19 +817,15 @@ function initPeer() {
 
     peer = new Peer(MY_ID, {
         config: { iceServers, iceCandidatePoolSize: 10 },
-        // FIX #1: debug:0 in prod but keep serialization safe
         debug: 0,
     });
 
-    // FIX #3: peer 'open' fires after signalling server confirms ID
     peer.on('open', (id) => {
-        // Update ID display
-        UI.myId.className = 'id-number';  // swap skeleton → styled
+        UI.myId.className = 'id-number';
         UI.myId.textContent = id;
         UI.idSubtext.textContent = 'اضغط للنسخ';
         setStatus('جاهز للاتصال', 'online');
 
-        // Generate QR
         UI.qrcode.innerHTML = '';
         const connectUrl = `${location.origin}${location.pathname}?connect=${encodeURIComponent(id)}`;
         try {
@@ -810,7 +837,6 @@ function initPeer() {
             });
         } catch(_) {}
 
-        // Auto-fill from URL (but never auto-connect — CSRF/hijack guard)
         const params = new URLSearchParams(location.search);
         if (params.has('connect')) {
             const t = params.get('connect').replace(/\D/g, '').slice(0, 6);
@@ -827,7 +853,6 @@ function initPeer() {
             showToast('الجهاز غير متاح. تأكد من فتح التطبيق على الطرف الآخر.');
             resetUI();
         } else if (err.type === 'unavailable-id') {
-            // ID collision (very rare with 6-digit space) — regenerate
             showToast('تعارض في المعرف — جارٍ إعادة التوليد…');
             setTimeout(() => location.reload(), 1200);
         } else if (err.type === 'network' || err.type === 'server-error') {
@@ -837,7 +862,6 @@ function initPeer() {
         }
     });
 
-    // FIX #5: only reconnect if peer is not destroyed
     peer.on('disconnected', () => {
         if (peer && !peer.destroyed) {
             setStatus('إعادة الاتصال بالخادم…', 'connecting');
@@ -846,7 +870,6 @@ function initPeer() {
     });
 
     peer.on('connection', (conn) => {
-        // Reject if already busy
         if (currentConn || pendingConn) {
             try { conn.send({ type: 'auth-decline' }); setTimeout(() => conn.close(), 300); } catch(_) {}
             return;
@@ -898,13 +921,12 @@ UI.declineBtn.addEventListener('click', () => {
     closeAuthModal();
 });
 
-/* ── OUTGOING: connect to peer (FIX #4, #6) ─────────────────────── */
+/* ── OUTGOING: connect to peer ───────────────────────────────────── */
 function connectToPeer() {
     const raw = UI.targetId.value.replace(/\D/g, '').slice(0, 6);
     if (raw.length !== 6) { showToast('يرجى إدخال رقم مكون من 6 أرقام.'); return; }
     if (raw === MY_ID) { showToast('لا يمكنك الاتصال بنفسك.'); return; }
 
-    // FIX #4: guard — don't connect before peer is open
     if (!peer || !peer.open) {
         showToast('جارٍ الاتصال بالخادم… حاول مرة أخرى بعد لحظة.');
         return;
@@ -914,7 +936,6 @@ function connectToPeer() {
     UI.connectBtn.disabled = true;
     UI.connectHint.textContent = 'أرسلنا طلب الاقتران — انتظر قبول الطرف الآخر';
 
-    // FIX #6: force binary serialisation for correct ArrayBuffer handling
     const conn = peer.connect(raw, { reliable: true, serialization: 'binary' });
 
     conn.on('open', () => {
@@ -971,7 +992,18 @@ function resetRecvTimeout() {
     }, 30000);
 }
 
-/* ── DATA LISTENERS (FIX #13: strict type-guards) ───────────────── */
+/* ── FIX #17: rate limit helper ──────────────────────────────────── */
+function isRateLimited() {
+    const now = Date.now();
+    if (now - msgWindowStart > 1000) {
+        msgWindowStart = now;
+        msgCount = 0;
+    }
+    msgCount++;
+    return msgCount > MSG_RATE_LIMIT;
+}
+
+/* ── DATA LISTENERS ──────────────────────────────────────────────── */
 function attachDataListeners(conn) {
     conn.on('data', async (data) => {
         if (!isAuthed) return;
@@ -979,6 +1011,8 @@ function attachDataListeners(conn) {
 
         switch (data.type) {
             case 'text': {
+                // FIX #17: rate limit incoming text messages
+                if (isRateLimited()) return;
                 if (typeof data.content !== 'string') return;
                 if (data.content.length > 100000) return;
                 vibrate(80);
@@ -995,7 +1029,7 @@ function attachDataListeners(conn) {
 
             case 'file-start': {
                 if (typeof data.name !== 'string' || typeof data.size !== 'number') return;
-                if (recvMeta) return; // reject overlapping transfer
+                if (recvMeta) return;
                 if (data.size > 10 * 1024 * 1024 * 1024) {
                     logMessage('⚠️ الملف أكبر من 10 جيجابايت — تم الرفض', 'system'); return;
                 }
@@ -1010,10 +1044,10 @@ function attachDataListeners(conn) {
             case 'file-chunk': {
                 if (!recvMeta) return;
                 if (!(data.data instanceof ArrayBuffer)) return;
-                if (data.data.byteLength > 256 * 1024) return; // FIX: reject oversized chunks
+                if (data.data.byteLength > 256 * 1024) return;
                 recvBuf.push(data.data);
                 recvBytes += data.data.byteLength;
-                // FIX #7: Blob compaction — prevents OOM on large files on mobile
+                // FIX #7: Blob compaction — prevents OOM on large files
                 if (recvBuf.length >= 200) {
                     const merged = new Blob(recvBuf, { type: safeMime(recvMeta.type) });
                     recvBuf = [merged];
@@ -1064,19 +1098,29 @@ function safeMime(mime) {
     return UNSAFE_MIMES.has(c) ? 'application/octet-stream' : c;
 }
 
-/* ── FILENAME SANITISE ───────────────────────────────────────────── */
+/* ── FILENAME SANITISE (FIX #18: strip leading dots/spaces) ─────── */
 function sanitizeName(name) {
     if (typeof name !== 'string') return 'file';
-    return name.replace(/[/\\?%*:|"<>\x00-\x1f]/g, '_').slice(0, 255) || 'file';
+    // Strip path traversal chars
+    let safe = name.replace(/[/\\?%*:|"<>\x00-\x1f]/g, '_');
+    // FIX #18: strip leading dots and spaces — prevents hidden file injection
+    safe = safe.replace(/^[\s.]+/, '');
+    safe = safe.slice(0, 255);
+    return safe || 'file';
 }
 
-/* ── SAVE FILE TO DISK (FIX #8, #9, #10) ────────────────────────── */
+/* ── REVOKE ALL PENDING URLS ─────────────────────────────────────── */
+function revokeAllPendingUrls() {
+    for (const url of pendingUrls) {
+        try { URL.revokeObjectURL(url); } catch(_) {}
+    }
+    pendingUrls = [];
+}
+
+/* ── SAVE FILE TO DISK (FIX #8, #9, #10, #16) ───────────────────── */
 async function saveFileToDisk(blob, filename) {
     const safe = sanitizeName(filename);
 
-    // FIX #10: Mobile share API (iOS Safari, some Android) is the only
-    // reliable download mechanism for blobs > ~50 MB on mobile browsers.
-    // We try it first; fall back to anchor download.
     const canShare = navigator.share && navigator.canShare &&
         navigator.canShare({ files: [new File([blob], safe, { type: blob.type })] });
 
@@ -1084,10 +1128,8 @@ async function saveFileToDisk(blob, filename) {
     wrapper.style.cssText = 'display:flex;justify-content:center;width:100%;padding:6px 0;';
 
     if (canShare) {
-        // Share button — opens iOS/Android native share sheet
         const btn = document.createElement('button');
         btn.className = 'download-btn tap-anim';
-        btn.style.cssText += ';max-width:95%;';
 
         const svgNS = 'http://www.w3.org/2000/svg';
         const svg = document.createElementNS(svgNS, 'svg');
@@ -1128,10 +1170,13 @@ async function saveFileToDisk(blob, filename) {
         UI.logs.appendChild(wrapper);
 
     } else {
-        // FIX #9: anchor appended to DOM BEFORE .click() — required on some browsers
+        // FIX #8: create URL and store it — DON'T revoke until disconnect
         const url = URL.createObjectURL(blob);
+        pendingUrls.push(url);   // will be revoked in revokeAllPendingUrls() on disconnect
+
         const a = document.createElement('a');
-        a.href = url; a.download = safe;
+        a.href = url;
+        a.download = safe;
         a.className = 'download-btn tap-anim';
 
         const svgNS = 'http://www.w3.org/2000/svg';
@@ -1155,18 +1200,22 @@ async function saveFileToDisk(blob, filename) {
 
         a.appendChild(svg); a.appendChild(label); a.appendChild(size);
 
-        // FIX #8: revoke AFTER download intent, not before
+        // Visual feedback on click
         a.addEventListener('click', () => {
-            btn_clicked(a, label, url);
+            setTimeout(() => {
+                a.style.background = 'linear-gradient(135deg,#1a4a2e,#2d7a4a)';
+                a.style.pointerEvents = 'none';
+                a.style.boxShadow = 'none';
+                label.textContent = 'تم الحفظ ✓';
+            }, 800);
         });
 
+        // FIX #9: append to DOM BEFORE click
         wrapper.appendChild(a);
-        UI.logs.appendChild(wrapper);  // FIX #9: in DOM first
+        UI.logs.appendChild(wrapper);
 
-        // Auto-trigger download on desktop
-        if (!('ontouchstart' in window)) {
-            requestAnimationFrame(() => a.click());
-        }
+        // FIX #16: NO auto-download — user must explicitly press the Save button.
+        // (removed the auto .click() that was here before)
     }
 
     requestAnimationFrame(() => { UI.logs.scrollTop = UI.logs.scrollHeight; });
@@ -1176,22 +1225,16 @@ async function saveFileToDisk(blob, filename) {
     vibrate([50, 100, 50]);
 }
 
-function btn_clicked(a, label, url) {
-    setTimeout(() => {
-        URL.revokeObjectURL(url);
-        a.style.background = 'linear-gradient(135deg,#1a4a2e,#2d7a4a)';
-        a.style.pointerEvents = 'none';
-        a.style.boxShadow = 'none';
-        label.textContent = 'تم الحفظ ✓';
-    }, 1000); // FIX #8: longer delay, after browser initiates download
-}
-
 function fallbackDownload(blob, safe, btn, label) {
     const url = URL.createObjectURL(blob);
+    pendingUrls.push(url);
     const a = document.createElement('a');
     a.href = url; a.download = safe;
-    document.body.appendChild(a); a.click();
-    setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+    // FIX #9: append to DOM before click
+    document.body.appendChild(a);
+    a.click();
+    // FIX #8: don't revoke immediately — leave in pendingUrls for disconnect cleanup
+    setTimeout(() => { try { document.body.removeChild(a); } catch(_) {} }, 500);
     btn.style.background = 'linear-gradient(135deg,#1a4a2e,#2d7a4a)';
     btn.style.pointerEvents = 'none';
     label.textContent = 'تم الحفظ ✓';
@@ -1200,7 +1243,6 @@ function fallbackDownload(blob, safe, btn, label) {
 /* ── CONNECT / DISCONNECT ────────────────────────────────────────── */
 $('connectBtn').addEventListener('click', connectToPeer);
 UI.targetId.addEventListener('keydown', (e) => { if (e.key === 'Enter') connectToPeer(); });
-// Only digits in ID field
 UI.targetId.addEventListener('input', () => {
     UI.targetId.value = UI.targetId.value.replace(/\D/g, '').slice(0, 6);
 });
@@ -1211,8 +1253,12 @@ $('disconnectBtn').addEventListener('click', () => {
 });
 
 function resetUI() {
+    // FIX #8: revoke all pending object URLs now that user is done
+    revokeAllPendingUrls();
+
     currentConn = null; isAuthed = false; pendingConn = null;
     isSending = false; fileQueue = [];
+    msgCount = 0; msgWindowStart = 0;
     clearTimeout(connTimeout); clearTimeout(recvTimeout);
     closeAuthModal();
     UI.connectArea.style.display = '';
@@ -1226,6 +1272,8 @@ function resetUI() {
     setStatus('جاهز للاتصال', 'online');
     history.replaceState({}, '', location.pathname);
     releaseWakeLock();
+    dragCounter = 0;
+    UI.dropZone.classList.remove('active');
 }
 
 /* ── SEND TEXT ───────────────────────────────────────────────────── */
@@ -1243,7 +1291,7 @@ function sendText() {
 UI.sendTextBtn.addEventListener('click', sendText);
 UI.textInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) sendText(); });
 
-/* ── SEND FILES (FIX #7: await-based chunk flow) ─────────────────── */
+/* ── SEND FILES ───────────────────────────────────────────────────── */
 UI.attachBtn.addEventListener('click', () => UI.fileInput.click());
 UI.fileInput.addEventListener('change', (e) => {
     for (const f of e.target.files) {
@@ -1269,7 +1317,6 @@ async function processFileQueue() {
     try {
         currentConn.send({ type: 'file-start', name: safe, size: file.size, filetype: file.type });
 
-        // FIX #7: adaptive chunk size; larger chunks for big files (fewer messages)
         const chunkSize = file.size > 50 * 1024 * 1024 ? 65536 : 32768;
         let offset = 0, hasError = false;
 
@@ -1280,7 +1327,6 @@ async function processFileQueue() {
             try { buf = await file.slice(offset, offset + chunkSize).arrayBuffer(); }
             catch(e) { hasError = true; break; }
 
-            // Back-pressure: wait while DataChannel buffer is full
             let waited = 0;
             while (
                 currentConn?.dataChannel &&
@@ -1322,27 +1368,35 @@ async function processFileQueue() {
     setTimeout(processFileQueue, 300);
 }
 
-/* ── DRAG & DROP (FIX #12: simple flag instead of buggy counter) ── */
+/* ── DRAG & DROP (FIX #12: dragCounter integer — no flicker on PC) ── */
 const transferEl = UI.transferArea;
+
 transferEl.addEventListener('dragenter', (e) => {
     if (!currentConn || !isAuthed) return;
     e.preventDefault();
-    if (!dragActive) { dragActive = true; UI.dropZone.classList.add('active'); }
+    dragCounter++;
+    if (dragCounter === 1) UI.dropZone.classList.add('active');
 });
+
 transferEl.addEventListener('dragover', (e) => {
     if (!currentConn || !isAuthed) return;
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
 });
+
 transferEl.addEventListener('dragleave', (e) => {
     if (!currentConn || !isAuthed) return;
-    // Only clear if leaving the transferArea entirely
-    if (!transferEl.contains(e.relatedTarget)) {
-        dragActive = false; UI.dropZone.classList.remove('active');
+    dragCounter--;
+    if (dragCounter <= 0) {
+        dragCounter = 0;
+        UI.dropZone.classList.remove('active');
     }
 });
+
 transferEl.addEventListener('drop', (e) => {
     e.preventDefault();
-    dragActive = false; UI.dropZone.classList.remove('active');
+    dragCounter = 0;
+    UI.dropZone.classList.remove('active');
     if (!currentConn || !isAuthed) return;
     for (const f of e.dataTransfer.files) fileQueue.push(f);
     if (!isSending) processFileQueue();
@@ -1370,5 +1424,6 @@ function hideProgress() { UI.progCont.style.display = 'none'; }
 /* ── BOOT ────────────────────────────────────────────────────────── */
 initPeer();
 </script>
+
 </body>
 </html>
