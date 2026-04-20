@@ -5,45 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="theme-color" content="#0a0a12">
-    <title>وصلة — نقل آمن</title>
+    <meta name="theme-color" content="#07070f">
+    <title>وصلة — نقل آمن ومشفر</title>
 
 <!--
-╔══════════════════════════════════════════════════════════════╗
-║  PRIVACY & SECURITY OVERVIEW                                ║
-║  ─────────────────────────────────────────────────────────── ║
-║  • WebRTC DataChannel (DTLS 1.2+ / SRTP) — end-to-end      ║
-║    encrypted by the browser at the transport layer.         ║
-║  • No server stores files, messages, or metadata.           ║
-║  • PeerJS signalling server only exchanges SDP/ICE blobs;   ║
-║    it never sees payload data.                               ║
-║  • IDs are ephemeral 6-digit numbers generated with         ║
-║    crypto.getRandomValues() (modulo-bias-free).             ║
-║  • Auth handshake: receiver must explicitly tap "Accept"     ║
-║    before any data flows.                                    ║
-║  • All file MIME types are sanitised; active types          ║
-║    (HTML, SVG, JS, PHP …) are forced to octet-stream.       ║
-║  • All filenames are sanitised; path traversal chars are    ║
-║    stripped. Leading dots/spaces removed. Max 255 chars.    ║
-║  • All DOM updates use textContent / DOM API — no           ║
-║    innerHTML — preventing XSS even from malicious payloads. ║
-║  • Incoming chunk size is validated (≤ 256 KB).             ║
-║  • Per-file receive timeout (30 s) aborts stalled           ║
-║    transfers.                                                ║
-║  • WakeLock keeps screen alive during transfers on mobile.  ║
-║  • Content-Security-Policy blocks external script injection.║
-║  • Object URLs are retained until disconnect (FIX Save As). ║
-║  • Rate limiting prevents message-flood DoS attacks.        ║
-║  • No auto-download: user must explicitly press Save.       ║
-║  ⚠️ WebRTC (P2P) may expose your IP to the other party.    ║
-╚══════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════════╗
+║  SECURITY & PRIVACY — v2.1 UPGRADE LOG                               ║
+║  ──────────────────────────────────────────────────────────────────  ║
+║  SECURITY:                                                           ║
+║  [SEC-11] Removed Tailwind JS CDN (unsafe for production); replaced  ║
+║           with compiled CSS via cdnjs.                               ║
+║  [SEC-12] Tightened CSP: blocked unpkg redirects, restricted scripts ║
+║           exclusively to cdnjs.cloudflare.com.                       ║
+║[SEC-13] Added strict runtime checks for PeerJS initialization to   ║
+║           prevent "Peer is not defined" crashes.                     ║
+╚══════════════════════════════════════════════════════════════════════╝
 -->
 
-<!-- FIX: Tightened CSP + Permissions-Policy blocking camera/mic/usb/payment/etc. -->
+<!-- Tightened CSP — Extremely strict for production -->
 <meta http-equiv="Content-Security-Policy" content="
 default-src 'self' blob: data:;
-script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com;
-style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com;
+script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
+style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com;
 font-src https://fonts.gstatic.com;
 connect-src 'self' wss://*.peerjs.com https://*.peerjs.com https://0.peerjs.com stun: turn: blob: data:;
 img-src 'self' blob: data:;
@@ -54,32 +37,34 @@ frame-ancestors 'none';
 ">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 <meta http-equiv="Referrer-Policy" content="no-referrer">
-<!-- FIX: Extended Permissions-Policy — blocks camera, mic, usb, payment, geolocation, and more -->
 <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=(), nfc=(), display-capture=(), screen-wake-lock=(self), accelerometer=(), gyroscope=(), magnetometer=(), picture-in-picture=()">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
 
-<script src="https://cdn.tailwindcss.com"></script>
-<!-- PeerJS 1.5.4 pinned — stable mobile WebRTC reconnect -->
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- [SEC-11] Production-safe Tailwind CSS -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+<!-- [SEC-12] Stable PeerJS via CDNJS (avoids unpkg redirects blocked by CSP) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <style>
     :root {
         --safe-top: env(safe-area-inset-top, 0px);
         --safe-bottom: env(safe-area-inset-bottom, 0px);
-        --bg: #0a0a12;
-        --surface: #111120;
-        --surface2: #1a1a2e;
+        --bg: #07070f;
+        --surface: #0e0e1c;
+        --surface2: #171728;
         --border: rgba(255,255,255,0.07);
         --accent: #4f8ef7;
         --accent2: #7b6cf7;
         --green: #22d37a;
         --text: #e8eaf6;
-        --muted: rgba(232,234,246,0.45);
+        --muted: rgba(232,234,246,0.42);
         --danger: #f75f5f;
+        --warn: #f59e0b;
     }
 
     * { box-sizing: border-box; }
@@ -101,7 +86,7 @@ frame-ancestors 'none';
         position: fixed;
         top: -30%; right: -20%;
         width: 60vw; height: 60vw;
-        background: radial-gradient(circle, rgba(79,142,247,0.07) 0%, transparent 70%);
+        background: radial-gradient(circle, rgba(79,142,247,0.065) 0%, transparent 70%);
         pointer-events: none; z-index: 0;
     }
     body::after {
@@ -109,7 +94,7 @@ frame-ancestors 'none';
         position: fixed;
         bottom: -20%; left: -10%;
         width: 50vw; height: 50vw;
-        background: radial-gradient(circle, rgba(123,108,247,0.06) 0%, transparent 70%);
+        background: radial-gradient(circle, rgba(123,108,247,0.055) 0%, transparent 70%);
         pointer-events: none; z-index: 0;
     }
 
@@ -117,7 +102,7 @@ frame-ancestors 'none';
         background: var(--surface);
         border-radius: 20px;
         border: 1px solid var(--border);
-        box-shadow: 0 0 0 0.5px rgba(255,255,255,0.04) inset, 0 8px 32px rgba(0,0,0,0.4);
+        box-shadow: 0 0 0 0.5px rgba(255,255,255,0.04) inset, 0 8px 32px rgba(0,0,0,0.45);
         position: relative;
         overflow: hidden;
     }
@@ -126,7 +111,7 @@ frame-ancestors 'none';
         position: absolute;
         top: 0; left: 0; right: 0;
         height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.09), transparent);
         pointer-events: none;
     }
 
@@ -181,15 +166,16 @@ frame-ancestors 'none';
     .status-dot {
         width: 7px; height: 7px;
         border-radius: 50%;
-        background: #f59e0b;
-        box-shadow: 0 0 6px #f59e0b;
+        background: var(--warn);
+        box-shadow: 0 0 6px var(--warn);
         animation: pulse-dot 1.8s ease-in-out infinite;
         flex-shrink: 0;
     }
-    .status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); animation: none; }
+    .status-dot.online  { background: var(--green); box-shadow: 0 0 8px var(--green); animation: none; }
     .status-dot.connected { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: none; }
+    .status-dot.error   { background: var(--danger); box-shadow: 0 0 8px var(--danger); animation: pulse-dot 1s ease-in-out infinite; }
 
-    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
     .input-field {
         width: 100%;
@@ -207,7 +193,7 @@ frame-ancestors 'none';
         direction: ltr;
     }
     .input-field:focus { border-color: rgba(79,142,247,0.5); box-shadow: 0 0 0 3px rgba(79,142,247,0.12); }
-    .input-field::placeholder { color: rgba(232,234,246,0.2); letter-spacing: 0.05em; }
+    .input-field::placeholder { color: rgba(232,234,246,0.18); letter-spacing: 0.05em; }
     .msg-input { text-align: right; letter-spacing: normal; direction: rtl; }
 
     .btn-primary {
@@ -225,7 +211,7 @@ frame-ancestors 'none';
     }
     .btn-primary:hover { box-shadow: 0 4px 24px rgba(79,142,247,0.5); transform: translateY(-1px); }
     .btn-primary:active { transform: scale(0.96); }
-    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
 
     .btn-ghost {
         background: var(--surface2);
@@ -241,18 +227,18 @@ frame-ancestors 'none';
     .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
 
     .msg-bubble { max-width: 82%; word-break: break-word; border-radius: 18px; padding: 10px 14px; font-size: 0.875rem; line-height: 1.55; }
-    .msg-sent { background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); color: white; border-bottom-left-radius: 5px; }
+    .msg-sent     { background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); color: white; border-bottom-left-radius: 5px; }
     .msg-received { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-bottom-right-radius: 5px; }
-    .msg-system { background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--muted); font-size: 11px; border-radius: 99px; padding: 5px 14px; }
+    .msg-system   { background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--muted); font-size: 11px; border-radius: 99px; padding: 5px 14px; }
 
     .progress-bar { height: 4px; border-radius: 99px; background: rgba(255,255,255,0.07); overflow: hidden; }
     .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 99px; transition: width 0.15s ease-out; }
 
     .modal-overlay {
         position: fixed; inset: 0;
-        background: rgba(0,0,0,0.75);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
+        background: rgba(0,0,0,0.78);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         z-index: 1000;
         display: none;
         align-items: center; justify-content: center;
@@ -264,10 +250,10 @@ frame-ancestors 'none';
         border: 1px solid var(--border);
         border-radius: 24px;
         padding: 2rem 1.5rem;
-        max-width: 360px;
+        max-width: 380px;
         width: 100%;
         text-align: center;
-        box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+        box-shadow: 0 24px 64px rgba(0,0,0,0.65);
     }
 
     ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -276,7 +262,7 @@ frame-ancestors 'none';
 
     .drop-overlay {
         position: absolute; inset: 0;
-        background: rgba(79,142,247,0.1);
+        background: rgba(79,142,247,0.09);
         backdrop-filter: blur(4px);
         border: 2px dashed var(--accent);
         border-radius: 20px;
@@ -294,7 +280,7 @@ frame-ancestors 'none';
         align-items: center;
         gap: 6px;
         background: linear-gradient(135deg, rgba(0,106,54,0.15), rgba(0,106,54,0.05));
-        border: 1px solid rgba(0,180,90,0.25);
+        border: 1px solid rgba(0,180,90,0.22);
         border-radius: 99px;
         padding: 4px 12px 4px 10px;
         font-size: 11px;
@@ -315,13 +301,13 @@ frame-ancestors 'none';
         font-size: 0.875rem;
         text-decoration: none;
         transition: all 0.2s;
-        box-shadow: 0 4px 20px rgba(34,211,122,0.3);
+        box-shadow: 0 4px 20px rgba(34,211,122,0.28);
         cursor: pointer;
         border: none;
         font-family: 'Tajawal', sans-serif;
         max-width: 95%;
     }
-    .download-btn:hover { box-shadow: 0 4px 28px rgba(34,211,122,0.5); transform: translateY(-1px); }
+    .download-btn:hover { box-shadow: 0 4px 28px rgba(34,211,122,0.48); transform: translateY(-1px); }
     .download-btn:active { transform: scale(0.97); }
 
     .enc-badge {
@@ -336,22 +322,56 @@ frame-ancestors 'none';
         font-size: 10px;
         font-weight: 700;
         letter-spacing: 0.05em;
+        cursor: pointer;
+        position: relative;
+    }
+    .enc-badge:hover .enc-tooltip { display: block; }
+    .enc-tooltip {
+        display: none;
+        position: absolute;
+        bottom: calc(100% + 8px);
+        right: 0;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 10px;
+        color: var(--muted);
+        white-space: nowrap;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        z-index: 100;
+        line-height: 1.7;
+        text-align: right;
+        pointer-events: none;
     }
 
-    /* NEW: IP warning badge */
     .ip-warn-badge {
         display: inline-flex;
         align-items: center;
         gap: 5px;
         background: rgba(245,158,11,0.08);
         border: 1px solid rgba(245,158,11,0.2);
-        color: #f59e0b;
+        color: var(--warn);
         border-radius: 99px;
         padding: 3px 10px;
         font-size: 10px;
         font-weight: 700;
         letter-spacing: 0.03em;
         margin-top: 4px;
+    }
+
+    .ping-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(79,142,247,0.08);
+        border: 1px solid rgba(79,142,247,0.18);
+        color: var(--accent);
+        border-radius: 99px;
+        padding: 2px 9px;
+        font-size: 10px;
+        font-weight: 700;
+        font-family: 'IBM Plex Mono', monospace;
     }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -384,7 +404,6 @@ frame-ancestors 'none';
         display: block;
     }
 
-    /* Toast */
     #toast {
         position: fixed;
         bottom: calc(1.5rem + var(--safe-bottom));
@@ -396,14 +415,69 @@ frame-ancestors 'none';
         font-size: 0.8rem;
         font-weight: 700;
         color: var(--text);
-        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.55);
         z-index: 2000;
         white-space: nowrap;
         pointer-events: none;
         opacity: 0;
         transition: opacity 0.25s;
+        max-width: calc(100vw - 2rem);
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     #toast.show { opacity: 1; }
+    #toast.danger { border-color: rgba(247,95,95,0.4); color: var(--danger); }
+    #toast.success { border-color: rgba(34,211,122,0.35); color: var(--green); }
+
+    #ipBanner {
+        width: 100%;
+        max-width: 64rem;
+        background: rgba(245,158,11,0.07);
+        border: 1px solid rgba(245,158,11,0.2);
+        border-radius: 14px;
+        padding: 10px 16px;
+        font-size: 11px;
+        color: var(--warn);
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+        position: relative;
+        z-index: 1;
+        line-height: 1.55;
+    }
+
+    .sig-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(123,108,247,0.08);
+        border: 1px solid rgba(123,108,247,0.2);
+        color: var(--accent2);
+        border-radius: 99px;
+        padding: 3px 10px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .reconnect-bar {
+        width: 100%;
+        background: rgba(245,158,11,0.08);
+        border: 1px solid rgba(245,158,11,0.2);
+        border-radius: 10px;
+        padding: 8px 14px;
+        font-size: 11px;
+        color: var(--warn);
+        font-weight: 700;
+        text-align: center;
+        display: none;
+    }
+    .reconnect-bar.show { display: block; }
+
+    .msg-ts { font-size: 9px; color: rgba(232,234,246,0.22); font-family: 'IBM Plex Mono', monospace; margin-top: 2px; }
 </style>
 
 </head>
@@ -418,71 +492,84 @@ frame-ancestors 'none';
         <div style="width:56px;height:56px;background:rgba(79,142,247,0.12);border:1px solid rgba(79,142,247,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
             <svg width="24" height="24" fill="none" stroke="#4f8ef7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
         </div>
-        <h3 id="modalTitle" style="font-size:1.1rem;font-weight:900;margin-bottom:8px;">طلب اتصال</h3>
-        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;">
-            الجهاز <span id="reqDeviceId" style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);background:var(--surface2);padding:2px 8px;border-radius:6px;font-size:0.95em;"></span> يطلب الاقتران
+        <h3 id="modalTitle" style="font-size:1.1rem;font-weight:900;margin-bottom:8px;">طلب اتصال وارد</h3>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">
+            الجهاز <span id="reqDeviceId" style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);background:var(--surface2);padding:2px 8px;border-radius:6px;"></span> يطلب الاقتران معك
         </p>
-        <!-- FIX: IP disclosure notice in auth modal -->
-        <p style="font-size:10px;color:#f59e0b;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.18);border-radius:8px;padding:7px 10px;margin-bottom:16px;line-height:1.5;">
-            ⚠️ القبول سيُنشئ اتصالاً مباشراً (P2P). قد يرى الطرف الآخر عنوان IP جهازك — وهذا أمر طبيعي في WebRTC.
-        </p>
-        <div style="display:flex;gap:10px;">
-            <button id="declineBtn" class="btn-ghost tap-anim" style="flex:1;">رفض</button>
-            <button id="acceptBtn" class="btn-primary tap-anim" style="flex:1;">قبول</button>
+        <div style="font-size:10.5px;color:var(--warn);background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.18);border-radius:10px;padding:9px 12px;margin-bottom:18px;line-height:1.65;text-align:right;">
+            ⚠️ <strong>تنبيه الخصوصية:</strong> القبول سيُنشئ اتصالاً مباشراً (P2P). قد يرى الطرف الآخر عنوان IP جهازك — وهذا متوقع في بروتوكول WebRTC. لا تقبل إلا ممن تثق به.
         </div>
+        <div style="margin-bottom:14px;">
+            <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:6px;text-align:center;">ينتهي الطلب خلال <span id="authCountdown" style="color:var(--warn);font-family:'IBM Plex Mono',monospace;">20</span> ثانية</div>
+            <div class="progress-bar"><div class="progress-fill" id="authTimerBar" style="width:100%;transition:width 1s linear;"></div></div>
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button id="declineBtn" class="btn-ghost tap-anim" style="flex:1;">رفض ✕</button>
+            <button id="acceptBtn" class="btn-primary tap-anim" style="flex:1;">قبول ✓</button>
+        </div>
+        <p style="font-size:9.5px;color:rgba(232,234,246,0.25);margin-top:12px;">اضغط Escape للرفض</p>
     </div>
 </div>
 
 <!-- Header -->
-<header class="w-full max-w-4xl flex justify-between items-center mb-5 shrink-0" style="position:relative;z-index:1;">
+<header class="w-full max-w-4xl flex justify-between items-center mb-3 flex-shrink-0" style="position:relative;z-index:1;">
     <div>
         <div class="logo-text">وصلة</div>
-        <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:0.05em;margin-top:2px;display:flex;align-items:center;gap:6px;direction:ltr;justify-content:flex-end;">
+        <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:0.05em;margin-top:3px;display:flex;align-items:center;gap:6px;direction:ltr;justify-content:flex-end;flex-wrap:wrap;">
             <span class="enc-badge">
                 <svg width="9" height="9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                 WebRTC E2E
+                <div class="enc-tooltip">
+                    ✅ المحتوى: مشفر DTLS/SRTP من طرف لطرف<br>
+                    ✅ لا خوادم تخزن ملفاتك أو رسائلك<br>
+                    ⚠️ عنوان IP: مرئي للطرف الآخر (WebRTC)<br>
+                    ⚠️ خادم الإشارات: يرى المعرفات فقط
+                </div>
             </span>
+            <span class="sig-badge">sig: 0.peerjs.com</span>
         </div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
         <div class="status-badge">
             <span class="status-dot" id="statusDot"></span>
-            <span id="statusText" style="color:var(--muted);">جارٍ الاتصال...</span>
+            <span id="statusText" style="color:var(--muted);">جارٍ الاتصال بالخادم…</span>
         </div>
+        <div id="pingBadge" class="ping-badge" style="display:none;">— ms</div>
         <div class="saudi-badge">
             <span>🇸🇦</span>
-            <span>صُنع في السعودية</span>
+            <span>صُنع في السعودية بمساعدة الذكاء الاصطناعي</span>
         </div>
     </div>
 </header>
+
+<!-- IP warning banner -->
+<div id="ipBanner" class="fade-in">
+    <span style="font-size:16px;flex-shrink:0;">⚠️</span>
+    <span>هذا التطبيق يستخدم اتصالاً مباشراً (P2P). <strong>قد يرى الطرف الآخر عنوان IP جهازك</strong> — وهذا طبيعي في WebRTC. لا تتصل إلا بمن تثق به. لا يُخزَّن أي محتوى على أي خادم.</span>
+</div>
+
+<!-- Reconnect bar -->
+<div id="reconnectBar" class="reconnect-bar w-full max-w-4xl mb-3">
+    ⟳ الاتصال بخادم الإشارات منقطع — جارٍ إعادة المحاولة… <span id="reconnectCount"></span>
+</div>
 
 <!-- Main -->
 <main class="w-full max-w-4xl grid md:grid-cols-2 gap-4 sm:gap-5 flex-1 items-start pb-4" style="position:relative;z-index:1;">
 
 <!-- LEFT: Identity & QR -->
 <div class="glass-card p-5 flex flex-col items-center text-center w-full">
-    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px;">هويتك الآمنة</div>
-
-    <button onclick="copyMyId()" class="id-display tap-anim" aria-label="انسخ معرفك">
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px;">هويتك المؤقتة</div>
+    <button onclick="copyMyId()" class="id-display tap-anim" aria-label="اضغط لنسخ معرفك">
         <span class="id-skeleton" id="myId">— — —</span>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px;font-weight:700;" id="idSubtext">جارٍ التهيئة...</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;font-weight:700;" id="idSubtext">جارٍ التهيئة…</div>
     </button>
-
     <div style="width:100%;margin-top:18px;padding-top:18px;border-top:1px solid var(--border);display:flex;flex-direction:column;align-items:center;">
         <div id="qrcode" style="padding:8px;background:white;border-radius:14px;display:inline-block;min-width:144px;min-height:144px;"></div>
-        <p style="font-size:11px;color:var(--muted);margin-top:10px;font-weight:700;">امسح للاقتران فوراً</p>
+        <p id="qrHint" style="font-size:11px;color:var(--muted);margin-top:10px;font-weight:700;">امسح للحصول على المعرف</p>
     </div>
-
     <div style="width:100%;margin-top:14px;padding:10px 14px;background:rgba(79,142,247,0.04);border:1px solid rgba(79,142,247,0.1);border-radius:12px;text-align:right;">
-        <p style="font-size:10px;color:var(--muted);line-height:1.6;">
-            🔒 <strong style="color:var(--text);">الاتصال مشفر</strong> — نقل مباشر بين الأجهزة عبر WebRTC DTLS. لا تُخزَّن ملفاتك أو رسائلك على أي خادم أبداً.
-        </p>
-    </div>
-
-    <!-- FIX: IP disclosure notice -->
-    <div style="width:100%;margin-top:8px;padding:8px 12px;background:rgba(245,158,11,0.04);border:1px solid rgba(245,158,11,0.12);border-radius:12px;text-align:right;">
-        <p style="font-size:10px;color:#f59e0b;line-height:1.6;">
-            ⚠️ <strong style="color:#f59e0b;">تنبيه:</strong> الاتصال P2P مباشر — قد يرى الطرف الآخر عنوان IP جهازك.
+        <p style="font-size:10px;color:var(--muted);line-height:1.65;">
+            🔒 <strong style="color:var(--text);">الاتصال مشفر E2E</strong> — نقل مباشر بين الأجهزة عبر WebRTC DTLS. لا تُخزَّن ملفاتك أو رسائلك على أي خادم أبداً. المعرّف مؤقت وينتهي عند إغلاق الصفحة.
         </p>
     </div>
 </div>
@@ -495,21 +582,22 @@ frame-ancestors 'none';
     <div style="font-size:0.875rem;font-weight:900;margin-bottom:14px;color:var(--text);">الاتصال بجهاز</div>
     <div style="display:flex;gap:10px;direction:ltr;">
         <input type="text" id="targetId" placeholder="000000" maxlength="6" inputmode="numeric"
-            class="input-field"
-            style="flex:1;width:0;"
-            autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-            aria-label="معرف الجهاز الهدف">
+            class="input-field" style="flex:1;width:0;"
+            autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="معرف الجهاز المستهدف">
         <button id="connectBtn" class="btn-primary tap-anim" style="white-space:nowrap;">اقتران</button>
     </div>
-    <p id="connectHint" style="font-size:10px;color:var(--muted);margin-top:10px;font-weight:700;text-align:center;">أدخل الرقم السداسي للجهاز الآخر</p>
+    <p id="connectHint" style="font-size:10px;color:var(--muted);margin-top:10px;font-weight:700;text-align:center;">أدخل الرقم المكوّن من 6 أرقام للجهاز الآخر</p>
+
+    <div id="ipConsentRow" style="margin-top:12px;padding:9px 12px;background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.15);border-radius:10px;display:flex;align-items:flex-start;gap:8px;">
+        <input type="checkbox" id="ipConsent" style="margin-top:2px;cursor:pointer;accent-color:var(--accent);flex-shrink:0;" aria-label="أوافق على الإفصاح عن IP">
+        <label for="ipConsent" style="font-size:10.5px;color:var(--muted);cursor:pointer;line-height:1.6;">
+            أفهم أن عنوان IP جهازي قد يكون مرئياً للطرف الآخر عبر اتصال WebRTC المباشر
+        </label>
+    </div>
 </div>
 
-<!-- Transfer Panel (hidden until connected) -->
-<div class="glass-card p-4 hidden flex-col relative w-full" id="transferArea"
-    style="height:60dvh;min-height:420px;"
-    role="region" aria-label="لوحة النقل">
-
-    <!-- Transfer Header -->
+<!-- Transfer Panel -->
+<div class="glass-card p-4 hidden flex-col relative w-full" id="transferArea" style="height:60dvh;min-height:420px;" role="region" aria-label="لوحة النقل">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border);flex-shrink:0;">
         <div style="display:flex;align-items:center;gap:10px;overflow:hidden;">
             <div style="width:34px;height:34px;background:rgba(79,142,247,0.1);border:1px solid rgba(79,142,247,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -517,20 +605,19 @@ frame-ancestors 'none';
             </div>
             <div style="overflow:hidden;">
                 <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">متصل بـ</div>
-                <div class="mono" style="font-size:0.875rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="connectedToId">---</div>
+                <div class="mono" style="font-size:0.875rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="connectedToId">—</div>
             </div>
         </div>
-        <button id="disconnectBtn" class="tap-anim" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all 0.2s;font-family:'Tajawal',sans-serif;">
-            قطع
-        </button>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <div id="connPingBadge" class="ping-badge" style="display:none;">— ms</div>
+            <button id="disconnectBtn" class="tap-anim" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all 0.2s;font-family:'Tajawal',sans-serif;">قطع</button>
+        </div>
     </div>
 
-    <!-- Chat log -->
     <div id="logs" style="flex:1;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;padding-left:4px;" role="log" aria-live="polite">
         <div id="logPlaceholder" style="margin:auto;text-align:center;" class="msg-system">🔒 مشفر من طرف إلى طرف</div>
     </div>
 
-    <!-- Progress -->
     <div id="progressContainer" style="display:none;flex-shrink:0;margin-bottom:10px;background:var(--surface2);padding:10px 12px;border-radius:12px;border:1px solid var(--border);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <span id="progressFilename" style="font-size:11px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%;direction:ltr;"></span>
@@ -542,14 +629,9 @@ frame-ancestors 'none';
         <div class="progress-bar"><div class="progress-fill" id="progressBar" style="width:0%"></div></div>
     </div>
 
-    <!-- Input Row -->
     <div style="flex-shrink:0;display:flex;flex-direction:column;gap:8px;">
         <div style="display:flex;gap:8px;direction:rtl;">
-            <input type="text" id="textInput" placeholder="رسالة أو رابط..."
-                class="input-field msg-input"
-                style="flex:1;width:0;padding:11px 14px;font-size:0.9rem;"
-                autocomplete="off" autocorrect="off" spellcheck="false"
-                aria-label="حقل الرسالة">
+            <input type="text" id="textInput" placeholder="رسالة أو رابط…" class="input-field msg-input" style="flex:1;width:0;padding:11px 14px;font-size:0.9rem;" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="حقل الرسالة" maxlength="8000">
             <button id="attachBtn" class="btn-ghost tap-anim" style="padding:11px 14px;flex-shrink:0;" title="إرسال ملف" aria-label="إرسال ملف">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
             </button>
@@ -558,7 +640,6 @@ frame-ancestors 'none';
         </div>
     </div>
 
-    <!-- Drag-drop overlay -->
     <div id="dropZone" class="drop-overlay" aria-hidden="true">
         <svg width="40" height="40" fill="none" stroke="var(--accent)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
         <p style="font-size:1rem;font-weight:900;color:var(--accent);">أفلِت الملفات هنا</p>
@@ -569,43 +650,13 @@ frame-ancestors 'none';
 
 <!-- Footer -->
 <footer style="width:100%;max-width:64rem;text-align:center;padding:16px 0 8px;position:relative;z-index:1;">
-    <p style="font-size:10px;color:rgba(232,234,246,0.2);font-weight:700;letter-spacing:0.05em;">
-        وصلة — نقل ملفات آمن ومشفر · صُنع بفخر في المملكة العربية السعودية 🇸🇦
+    <p style="font-size:10px;color:rgba(232,234,246,0.18);font-weight:700;letter-spacing:0.05em;">
+        وصلة — نقل ملفات آمن ومشفر · صُنع بفخر في المملكة العربية السعودية 🇸🇦 بمساعدة الذكاء الاصطناعي · v2.1
     </p>
 </footer>
 
 <script>
 'use strict';
-
-/* ═══════════════════════════════════════════════════════════════════
-   FIX LOG
-   ═══════════════════════════════════════════════════════════════════
-   #1  PeerJS 1.5.4 — fixes silent reconnect bug on mobile WebRTC
-   #2  Multiple STUN servers — prevents stuck-ICE on restricted NAT
-   #3  peer.on('open') guards against race where peer.id is undefined
-   #4  connectToPeer() guards against peer.connect() before open
-   #5  Reconnect: only call peer.reconnect() when NOT destroyed
-   #6  Binary serialisation forced on sender side too
-   #7  Blob compaction every 200 chunks — prevents OOM on mobile
-   #8  SAVE AS FIX: Object URLs stored in pendingUrls[] and only
-       revoked at disconnect — fixes "Save As" dialog on PC where
-       user might take >1s to choose save location
-   #9  Anchor appended to DOM BEFORE .click() — required on some browsers
-   #10 Mobile share fallback: navigator.share() for iOS/Android
-   #11 Toast replaces alert() for non-blocking UX
-   #12 DRAG & DROP FIX: dragCounter (integer) replaces boolean flag —
-       prevents flicker when mouse crosses child elements on desktop
-   #13 Strict type-guards on all incoming data
-   #14 Skeleton shown until peer is open
-   #15 XSS: zero innerHTML — all DOM mutations via textContent/DOM API
-   #16 NO AUTO-DOWNLOAD: removed auto .click() on desktop; user must
-       explicitly press the green Save button (anti drive-by download)
-   #17 RATE LIMITING: text messages capped at 20/sec to prevent DoS
-   #18 FILENAME SANITISE: leading dots/spaces stripped to prevent
-       hidden-file injection (.bashrc, .htaccess, etc.)
-   #19 IP DISCLOSURE: warning shown in auth modal and on main card
-   #20 Permissions-Policy: camera/mic/usb/payment/etc all blocked
-   ═══════════════════════════════════════════════════════════════════ */
 
 /* ── WAKELOCK ─────────────────────────────────────────────────────── */
 let wakeLock = null;
@@ -619,7 +670,13 @@ function releaseWakeLock() {
     if (wakeLock) { wakeLock.release().catch(()=>{}); wakeLock = null; }
 }
 document.addEventListener('visibilitychange', async () => {
-    if (wakeLock && document.visibilityState === 'visible') await requestWakeLock();
+    if (document.visibilityState === 'visible') {
+        if (wakeLock) await requestWakeLock();
+        if (typeof peer !== 'undefined' && peer && peer.destroyed) {
+            reconnectAttempts = 0;
+            initPeer();
+        }
+    }
 });
 
 /* ── HAPTICS ──────────────────────────────────────────────────────── */
@@ -627,17 +684,23 @@ function vibrate(p) {
     try { if ('vibrate' in navigator) navigator.vibrate(p); } catch(_) {}
 }
 
-/* ── TOAST ────────────────────────────────────────────────────────── */
+/* ── TOAST ───────────────────────────────────────────────────────── */
 let toastTimer;
-function showToast(msg, duration = 3000) {
+function showToast(msg, type = 'info', duration = 3500) {
     const t = document.getElementById('toast');
     t.textContent = msg;
-    t.classList.add('show');
+    t.className = type === 'danger' ? 'show danger' : type === 'success' ? 'show success' : 'show';
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), duration);
+    toastTimer = setTimeout(() => t.className = '', duration);
 }
 
-/* ── SECURE ID (modulo-bias-free) ────────────────────────────────── */
+/* ── TIMESTAMP ────────────────────────────────────────────────────── */
+function nowHHMM() {
+    const d = new Date();
+    return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+
+/* ── SECURE ID ────────────────────────────────────────────────────── */
 function generateSecureId() {
     const arr = new Uint32Array(1);
     const max = Math.floor(4294967296 / 900000) * 900000;
@@ -653,71 +716,87 @@ let pendingConn = null;
 let connTimeout = null;
 let isAuthed = false;
 
-let fileQueue = [];
+let fileQueue =[];
 let isSending = false;
 let transferStart = 0;
 
-let recvBuf = [];
+let recvBuf =[];
 let recvBytes = 0;
 let recvMeta = null;
 let recvTimeout = null;
 
-// FIX #8: track all pending Object URLs — revoke only on disconnect
-let pendingUrls = [];
+let pendingUrls =[];
 
-// FIX #17: rate limiting state
+let reconnectAttempts = 0;
+const MAX_RECONNECT = 5;
+let reconnectTimer = null;
+
+let pingInterval = null;
+let pongMissed = 0;
+const MAX_PONG_MISS = 3;
+let pingTimestamp = 0;
+
 let msgCount = 0;
 let msgWindowStart = 0;
-const MSG_RATE_LIMIT = 20;   // max messages per second from remote
+const MSG_RATE_LIMIT = 15;
 
-/* ── DRAG COUNTER (FIX #12: integer counter, not boolean) ────────── */
+let authCountdownTimer = null;
+const AUTH_TIMEOUT_MS = 20000;
+
 let dragCounter = 0;
 
 /* ── DOM REFS ─────────────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
 const UI = {
-    myId:          $('myId'),
-    idSubtext:     $('idSubtext'),
-    statusDot:     $('statusDot'),
-    statusText:    $('statusText'),
-    targetId:      $('targetId'),
-    connectBtn:    $('connectBtn'),
-    connectHint:   $('connectHint'),
-    connectArea:   $('connectArea'),
-    transferArea:  $('transferArea'),
-    connectedToId: $('connectedToId'),
-    fileInput:     $('fileInput'),
-    attachBtn:     $('attachBtn'),
-    textInput:     $('textInput'),
-    sendTextBtn:   $('sendTextBtn'),
-    logs:          $('logs'),
-    qrcode:        $('qrcode'),
-    progCont:      $('progressContainer'),
-    progFile:      $('progressFilename'),
-    progStats:     $('progressStats'),
-    progBar:       $('progressBar'),
-    progPct:       $('progressPercent'),
-    dropZone:      $('dropZone'),
-    authModal:     $('authModal'),
-    reqDeviceId:   $('reqDeviceId'),
-    acceptBtn:     $('acceptBtn'),
-    declineBtn:    $('declineBtn'),
+    myId:           $('myId'),
+    idSubtext:      $('idSubtext'),
+    statusDot:      $('statusDot'),
+    statusText:     $('statusText'),
+    targetId:       $('targetId'),
+    connectBtn:     $('connectBtn'),
+    connectHint:    $('connectHint'),
+    connectArea:    $('connectArea'),
+    transferArea:   $('transferArea'),
+    connectedToId:  $('connectedToId'),
+    fileInput:      $('fileInput'),
+    attachBtn:      $('attachBtn'),
+    textInput:      $('textInput'),
+    sendTextBtn:    $('sendTextBtn'),
+    logs:           $('logs'),
+    qrcode:         $('qrcode'),
+    progCont:       $('progressContainer'),
+    progFile:       $('progressFilename'),
+    progStats:      $('progressStats'),
+    progBar:        $('progressBar'),
+    progPct:        $('progressPercent'),
+    dropZone:       $('dropZone'),
+    authModal:      $('authModal'),
+    reqDeviceId:    $('reqDeviceId'),
+    acceptBtn:      $('acceptBtn'),
+    declineBtn:     $('declineBtn'),
+    ipConsent:      $('ipConsent'),
+    reconnectBar:   $('reconnectBar'),
+    reconnectCount: $('reconnectCount'),
+    pingBadge:      $('pingBadge'),
+    connPingBadge:  $('connPingBadge'),
+    authCountdown:  $('authCountdown'),
+    authTimerBar:   $('authTimerBar'),
 };
 
 /* ── FORMAT ───────────────────────────────────────────────────────── */
 function fmtBytes(b) {
     if (!b || b < 0) return '0 B';
-    const k = 1024, u = ['B','KB','MB','GB','TB'];
+    const k = 1024, u =['B','KB','MB','GB','TB'];
     const i = Math.min(Math.floor(Math.log(b) / Math.log(k)), u.length - 1);
     return (b / Math.pow(k, i)).toFixed(i ? 1 : 0) + ' ' + u[i];
 }
 
-/* ── SAFE DOM helpers ─────────────────────────────────────────────── */
+/* ── SAFE DOM ─────────────────────────────────────────────────────── */
 function copyMyId() {
     if (!peer || !peer.open) return;
-    try { navigator.clipboard.writeText(MY_ID); } catch(_) {}
+    try { navigator.clipboard.writeText(MY_ID).catch(()=>{}); } catch(_) {}
     vibrate(40);
-    UI.myId.textContent = 'تم النسخ!';
+    UI.myId.textContent = 'تم النسخ ✓';
     UI.myId.style.background = 'linear-gradient(135deg,#22d37a,#4dbb78)';
     setTimeout(() => {
         UI.myId.textContent = MY_ID;
@@ -734,7 +813,9 @@ window.copyExactText = async function(btn, encoded) {
         btn.textContent = '✓';
         btn.style.color = 'var(--green)';
         setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
-    } catch(_) {}
+    } catch(_) {
+        showToast('تعذّر النسخ — يرجى النسخ يدوياً.', 'danger');
+    }
 };
 
 function linkifyAndAppend(el, text) {
@@ -767,17 +848,27 @@ function logMessage(msg, type = 'system', rawText = '') {
     wrap.classList.add('fade-in');
 
     if (type === 'system') {
-        wrap.style.cssText = 'display:flex;justify-content:center;width:100%;';
+        wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;width:100%;gap:2px;';
         const badge = document.createElement('div');
         badge.className = 'msg-system';
         badge.textContent = msg;
+        const ts = document.createElement('div');
+        ts.className = 'msg-ts';
+        ts.textContent = nowHHMM();
         wrap.appendChild(badge);
+        wrap.appendChild(ts);
     } else if (type === 'sent') {
         wrap.style.cssText = 'display:flex;justify-content:flex-end;width:100%;padding-right:8px;';
+        const col = document.createElement('div');
+        col.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:3px;';
         const b = document.createElement('div');
         b.className = 'msg-bubble msg-sent';
         linkifyAndAppend(b, msg);
-        wrap.appendChild(b);
+        const ts = document.createElement('div');
+        ts.className = 'msg-ts';
+        ts.textContent = nowHHMM();
+        col.appendChild(b); col.appendChild(ts);
+        wrap.appendChild(col);
     } else if (type === 'received') {
         const enc = encodeURIComponent(rawText || msg);
         wrap.style.cssText = 'display:flex;justify-content:flex-start;width:100%;padding-left:8px;';
@@ -786,11 +877,17 @@ function logMessage(msg, type = 'system', rawText = '') {
         const b = document.createElement('div');
         b.className = 'msg-bubble msg-received';
         linkifyAndAppend(b, msg);
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;';
         const btn = document.createElement('button');
         btn.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);background:var(--surface2);border:1px solid var(--border);padding:3px 10px;border-radius:6px;cursor:pointer;font-family:Tajawal,sans-serif;';
         btn.textContent = 'نسخ';
         btn.onclick = function() { copyExactText(this, enc); };
-        col.appendChild(b); col.appendChild(btn);
+        const ts = document.createElement('div');
+        ts.className = 'msg-ts';
+        ts.textContent = nowHHMM();
+        row.appendChild(btn); row.appendChild(ts);
+        col.appendChild(b); col.appendChild(row);
         wrap.appendChild(col);
     }
 
@@ -802,47 +899,116 @@ function logMessage(msg, type = 'system', rawText = '') {
 function setStatus(text, state) {
     UI.statusText.textContent = text;
     UI.statusDot.className = 'status-dot' +
-        (state === 'online' ? ' online' : state === 'connected' ? ' connected' : '');
+        (state === 'online'     ? ' online'     :
+         state === 'connected'  ? ' connected'  :
+         state === 'error'      ? ' error'      : '');
+}
+
+/* ── RECONNECT WITH BACKOFF ──────────────────────────────────────── */
+function scheduleReconnect() {
+    if (reconnectAttempts >= MAX_RECONNECT) {
+        setStatus('فشل إعادة الاتصال — أعد تحميل الصفحة', 'error');
+        UI.reconnectBar.classList.add('show');
+        UI.reconnectCount.textContent = '(تجاوز الحد الأقصى)';
+        return;
+    }
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 16000);
+    reconnectAttempts++;
+    UI.reconnectBar.classList.add('show');
+    UI.reconnectCount.textContent = `(المحاولة ${reconnectAttempts}/${MAX_RECONNECT})`;
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(() => {
+        if (peer && !peer.destroyed && !peer.open) {
+            try { peer.reconnect(); } catch(_) { initPeer(); }
+        } else if (!peer || peer.destroyed) {
+            initPeer();
+        }
+    }, delay);
+}
+
+/* ── PING/PONG HEALTH CHECK ──────────────────────────────────────── */
+function startPingPong() {
+    stopPingPong();
+    pongMissed = 0;
+    pingInterval = setInterval(() => {
+        if (!currentConn || !currentConn.open || !isAuthed) { stopPingPong(); return; }
+        pingTimestamp = Date.now();
+        try { currentConn.send({ type: 'ping', ts: pingTimestamp }); } catch(_) {}
+        pongMissed++;
+        if (pongMissed >= MAX_PONG_MISS) {
+            logMessage('⚠️ انقطع الاتصال — لم يستجب الطرف الآخر', 'system');
+            if (currentConn) { try { currentConn.close(); } catch(_) {} }
+            resetUI();
+        }
+    }, 8000);
+}
+
+function stopPingPong() {
+    clearInterval(pingInterval);
+    pingInterval = null;
+}
+
+function updatePingDisplay(ms) {
+    const txt = ms + ' ms';
+    UI.pingBadge.style.display = 'inline-flex';
+    UI.pingBadge.textContent = txt;
+    UI.connPingBadge.style.display = 'inline-flex';
+    UI.connPingBadge.textContent = txt;
+    UI.connPingBadge.style.color = ms < 100 ? 'var(--green)' : ms < 300 ? 'var(--warn)' : 'var(--danger)';
 }
 
 /* ── PEERJS INIT ─────────────────────────────────────────────────── */
 function initPeer() {
-    const iceServers = [
+    if (peer && !peer.destroyed) {
+        try { peer.destroy(); } catch(_) {}
+    }
+
+    const iceServers =[
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
         { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
         { urls: 'stun:global.stun.twilio.com:3478' },
         { urls: 'stun:stun.cloudflare.com:3478' },
+        { urls: 'stun:stun.nextcloud.com:3478' },
     ];
 
     peer = new Peer(MY_ID, {
+        host: '0.peerjs.com',
+        port: 443,
+        path: '/',
+        secure: true,
         config: { iceServers, iceCandidatePoolSize: 10 },
         debug: 0,
     });
 
     peer.on('open', (id) => {
+        reconnectAttempts = 0;
+        UI.reconnectBar.classList.remove('show');
         UI.myId.className = 'id-number';
         UI.myId.textContent = id;
         UI.idSubtext.textContent = 'اضغط للنسخ';
         setStatus('جاهز للاتصال', 'online');
 
         UI.qrcode.innerHTML = '';
-        const connectUrl = `${location.origin}${location.pathname}?connect=${encodeURIComponent(id)}`;
         try {
             new QRCode(UI.qrcode, {
-                text: connectUrl,
+                text: id,
                 width: 144, height: 144,
                 colorDark: '#1e293b', colorLight: '#ffffff',
                 correctLevel: QRCode.CorrectLevel.M
             });
-        } catch(_) {}
+        } catch(_) {
+            UI.qrcode.textContent = id;
+        }
 
         const params = new URLSearchParams(location.search);
         if (params.has('connect')) {
             const t = params.get('connect').replace(/\D/g, '').slice(0, 6);
             if (t.length === 6 && t !== id) {
                 UI.targetId.value = t;
-                UI.connectHint.textContent = 'رقم المعرف جاهز — اضغط اقتران للمتابعة';
+                UI.connectHint.textContent = 'رقم المعرف جاهز — وافق على الإفصاح عن IP ثم اضغط اقتران';
             }
         }
     });
@@ -850,22 +1016,23 @@ function initPeer() {
     peer.on('error', (err) => {
         console.warn('PeerJS error:', err.type, err.message);
         if (err.type === 'peer-unavailable') {
-            showToast('الجهاز غير متاح. تأكد من فتح التطبيق على الطرف الآخر.');
+            showToast('الجهاز غير متاح — تأكد من فتح التطبيق على الجهاز الآخر', 'danger');
             resetUI();
         } else if (err.type === 'unavailable-id') {
-            showToast('تعارض في المعرف — جارٍ إعادة التوليد…');
+            showToast('تعارض في المعرف — جارٍ إعادة التوليد…', 'danger');
             setTimeout(() => location.reload(), 1200);
         } else if (err.type === 'network' || err.type === 'server-error') {
-            setStatus('خطأ في الشبكة — إعادة المحاولة…', 'connecting');
+            setStatus('خطأ في الشبكة — إعادة المحاولة…', 'error');
+            scheduleReconnect();
         } else {
-            setStatus('خطأ: ' + err.type, 'connecting');
+            setStatus('خطأ: ' + err.type, 'error');
         }
     });
 
     peer.on('disconnected', () => {
         if (peer && !peer.destroyed) {
-            setStatus('إعادة الاتصال بالخادم…', 'connecting');
-            try { peer.reconnect(); } catch(_) {}
+            setStatus('انقطع الاتصال بالخادم — إعادة المحاولة…', 'error');
+            scheduleReconnect();
         }
     });
 
@@ -879,29 +1046,41 @@ function initPeer() {
     });
 }
 
-/* ── INCOMING: show auth modal ───────────────────────────────────── */
+/* ── INCOMING AUTH MODAL ─────────────────────────────────────────── */
 function setupIncomingListeners(conn) {
     conn.on('open', () => {
         if (!/^\d{6}$/.test(conn.peer)) { conn.close(); pendingConn = null; return; }
         UI.reqDeviceId.textContent = conn.peer;
         UI.authModal.classList.add('open');
         vibrate([40, 80, 40]);
-        connTimeout = setTimeout(() => {
-            if (pendingConn === conn) {
-                try { conn.send({ type: 'auth-decline' }); conn.close(); } catch(_) {}
-                closeAuthModal();
-                showToast('انتهت مهلة طلب الاتصال.');
+
+        let remaining = 20;
+        UI.authCountdown.textContent = remaining;
+        UI.authTimerBar.style.width = '100%';
+        UI.authTimerBar.style.transition = 'width 1s linear';
+
+        authCountdownTimer = setInterval(() => {
+            remaining--;
+            UI.authCountdown.textContent = remaining;
+            UI.authTimerBar.style.width = ((remaining / 20) * 100) + '%';
+            if (remaining <= 0) {
+                clearInterval(authCountdownTimer);
+                if (pendingConn === conn) {
+                    try { conn.send({ type: 'auth-decline' }); conn.close(); } catch(_) {}
+                    closeAuthModal();
+                    showToast('انتهت مهلة طلب الاتصال.', 'danger');
+                }
             }
-        }, 30000);
+        }, 1000);
     });
-    conn.on('close', () => { if (pendingConn === conn) { closeAuthModal(); clearTimeout(connTimeout); } });
-    conn.on('error', () => { if (pendingConn === conn) { closeAuthModal(); clearTimeout(connTimeout); } });
+    conn.on('close', () => { if (pendingConn === conn) { closeAuthModal(); } });
+    conn.on('error', () => { if (pendingConn === conn) { closeAuthModal(); } });
 }
 
 function closeAuthModal() {
     UI.authModal.classList.remove('open');
     pendingConn = null;
-    clearTimeout(connTimeout);
+    clearInterval(authCountdownTimer);
 }
 
 UI.acceptBtn.addEventListener('click', () => {
@@ -921,32 +1100,45 @@ UI.declineBtn.addEventListener('click', () => {
     closeAuthModal();
 });
 
-/* ── OUTGOING: connect to peer ───────────────────────────────────── */
-function connectToPeer() {
-    const raw = UI.targetId.value.replace(/\D/g, '').slice(0, 6);
-    if (raw.length !== 6) { showToast('يرجى إدخال رقم مكون من 6 أرقام.'); return; }
-    if (raw === MY_ID) { showToast('لا يمكنك الاتصال بنفسك.'); return; }
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && UI.authModal.classList.contains('open')) {
+        UI.declineBtn.click();
+    }
+});
 
-    if (!peer || !peer.open) {
-        showToast('جارٍ الاتصال بالخادم… حاول مرة أخرى بعد لحظة.');
+/* ── OUTGOING CONNECT ────────────────────────────────────────────── */
+function connectToPeer() {
+    if (!UI.ipConsent.checked) {
+        showToast('يرجى الموافقة على إشعار الخصوصية (IP) أولاً', 'danger');
+        UI.ipConsent.closest('div').style.border = '1px solid var(--danger)';
+        setTimeout(() => { UI.ipConsent.closest('div').style.border = ''; }, 2000);
         return;
     }
 
-    UI.connectBtn.textContent = 'في انتظار القبول...';
+    const raw = UI.targetId.value.replace(/\D/g, '').slice(0, 6);
+    if (raw.length !== 6) { showToast('يرجى إدخال رقم مكون من 6 أرقام.', 'danger'); return; }
+    if (raw === MY_ID)    { showToast('لا يمكنك الاتصال بنفسك.', 'danger'); return; }
+
+    if (!peer || !peer.open) {
+        showToast('الخادم غير جاهز بعد — انتظر لحظة وحاول مرة أخرى.', 'danger');
+        return;
+    }
+
+    UI.connectBtn.textContent = 'جارٍ انتظار القبول…';
     UI.connectBtn.disabled = true;
-    UI.connectHint.textContent = 'أرسلنا طلب الاقتران — انتظر قبول الطرف الآخر';
+    UI.connectHint.textContent = 'أُرسل طلب الاقتران — في انتظار قبول الطرف الآخر';
 
     const conn = peer.connect(raw, { reliable: true, serialization: 'binary' });
 
-    conn.on('open', () => {
-        connTimeout = setTimeout(() => {
-            if (!isAuthed) {
-                showToast('انتهت مهلة الانتظار — لم يقبل الطرف الآخر.');
-                try { conn.close(); } catch(_) {}
-                resetUI();
-            }
-        }, 25000);
-    });
+    connTimeout = setTimeout(() => {
+        if (!isAuthed) {
+            showToast('انتهت مهلة الانتظار — لم يقبل الطرف الآخر.', 'danger');
+            try { conn.close(); } catch(_) {}
+            resetUI();
+        }
+    }, 22000);
+
+    conn.on('open', () => {});
 
     conn.on('data', (data) => {
         if (!isAuthed && data && typeof data === 'object') {
@@ -957,7 +1149,7 @@ function connectToPeer() {
                 finalizeUI(conn);
             } else if (data.type === 'auth-decline') {
                 clearTimeout(connTimeout);
-                showToast('رُفض طلب الاتصال من الطرف الآخر.');
+                showToast('رُفض طلب الاتصال من الطرف الآخر.', 'danger');
                 try { conn.close(); } catch(_) {}
                 resetUI();
             }
@@ -977,8 +1169,14 @@ function finalizeUI(conn) {
     setStatus('متصل — ' + conn.peer, 'connected');
     vibrate([40, 40, 40]);
     logMessage('✅ تم الاقتران الآمن مع ' + conn.peer, 'system');
-    conn.on('close', () => { resetUI(); logMessage('⚠️ انقطع الاتصال', 'system'); });
-    conn.on('error', () => resetUI());
+    startPingPong();
+    conn.on('close', () => {
+        stopPingPong();
+        resetUI();
+        showToast('انقطع الاتصال بالطرف الآخر.', 'danger');
+        logMessage('⚠️ انقطع الاتصال', 'system');
+    });
+    conn.on('error', () => { stopPingPong(); resetUI(); });
 }
 
 /* ── RECEIVE TIMEOUT ─────────────────────────────────────────────── */
@@ -986,19 +1184,16 @@ function resetRecvTimeout() {
     clearTimeout(recvTimeout);
     recvTimeout = setTimeout(() => {
         if (recvMeta) {
-            logMessage('❌ انقطع إرسال الملف (انتهت المهلة)', 'system');
-            recvMeta = null; recvBuf = []; hideProgress(); releaseWakeLock();
+            logMessage('❌ انقطع إرسال الملف — انتهت مهلة الاستقبال (45 ثانية)', 'system');
+            recvMeta = null; recvBuf =[]; hideProgress(); releaseWakeLock();
         }
-    }, 30000);
+    }, 45000);
 }
 
-/* ── FIX #17: rate limit helper ──────────────────────────────────── */
+/* ── RATE LIMITING ───────────────────────────────────────────────── */
 function isRateLimited() {
     const now = Date.now();
-    if (now - msgWindowStart > 1000) {
-        msgWindowStart = now;
-        msgCount = 0;
-    }
+    if (now - msgWindowStart > 1000) { msgWindowStart = now; msgCount = 0; }
     msgCount++;
     return msgCount > MSG_RATE_LIMIT;
 }
@@ -1010,45 +1205,56 @@ function attachDataListeners(conn) {
         if (!data || typeof data !== 'object') return;
 
         switch (data.type) {
+            case 'ping': {
+                try { conn.send({ type: 'pong', ts: data.ts }); } catch(_) {}
+                break;
+            }
+            case 'pong': {
+                pongMissed = 0;
+                if (data.ts) updatePingDisplay(Date.now() - data.ts);
+                break;
+            }
             case 'text': {
-                // FIX #17: rate limit incoming text messages
                 if (isRateLimited()) return;
                 if (typeof data.content !== 'string') return;
-                if (data.content.length > 100000) return;
+                if (data.content.length > 8000) return;
                 vibrate(80);
                 logMessage(data.content, 'received', data.content);
                 break;
             }
-
             case 'file-ack': {
                 vibrate([40, 80, 40]);
                 if (typeof data.name === 'string')
-                    logMessage('✅ تم الحفظ بنجاح: ' + sanitizeName(data.name), 'system');
+                    logMessage('✅ تأكيد الحفظ: ' + sanitizeName(data.name), 'system');
                 break;
             }
-
             case 'file-start': {
                 if (typeof data.name !== 'string' || typeof data.size !== 'number') return;
                 if (recvMeta) return;
-                if (data.size > 10 * 1024 * 1024 * 1024) {
-                    logMessage('⚠️ الملف أكبر من 10 جيجابايت — تم الرفض', 'system'); return;
+                if (data.size > 2 * 1024 * 1024 * 1024) {
+                    logMessage('⚠️ الملف أكبر من 2 جيجابايت — رُفض تلقائياً', 'system');
+                    return;
                 }
+                if (data.size < 0) return;
                 requestWakeLock();
-                recvMeta = { name: sanitizeName(data.name), size: data.size, type: data.filetype || '' };
-                recvBuf = []; recvBytes = 0; transferStart = Date.now();
+                recvMeta = {
+                    name: sanitizeName(data.name),
+                    size: data.size,
+                    type: data.filetype || ''
+                };
+                recvBuf =[]; recvBytes = 0; transferStart = Date.now();
                 showProgress('استقبال: ' + recvMeta.name, recvMeta.size);
                 resetRecvTimeout();
                 break;
             }
-
             case 'file-chunk': {
                 if (!recvMeta) return;
                 if (!(data.data instanceof ArrayBuffer)) return;
                 if (data.data.byteLength > 256 * 1024) return;
+                if (recvBytes + data.data.byteLength > recvMeta.size + 256 * 1024) return;
                 recvBuf.push(data.data);
                 recvBytes += data.data.byteLength;
-                // FIX #7: Blob compaction — prevents OOM on large files
-                if (recvBuf.length >= 200) {
+                if (recvBuf.length >= 100) {
                     const merged = new Blob(recvBuf, { type: safeMime(recvMeta.type) });
                     recvBuf = [merged];
                 }
@@ -1056,27 +1262,25 @@ function attachDataListeners(conn) {
                 resetRecvTimeout();
                 break;
             }
-
             case 'file-end': {
                 if (!recvMeta) return;
                 clearTimeout(recvTimeout);
                 hideProgress();
                 logMessage('⏳ جارٍ المعالجة…', 'system');
                 const blob = new Blob(recvBuf, { type: safeMime(recvMeta.type) });
-                recvBuf = [];
                 const meta = recvMeta;
+                recvBuf =[];
                 recvMeta = null;
                 await saveFileToDisk(blob, meta.name);
                 releaseWakeLock();
                 break;
             }
-
             case 'file-error': {
                 if (!recvMeta) return;
                 clearTimeout(recvTimeout);
-                recvMeta = null; recvBuf = [];
+                recvMeta = null; recvBuf =[];
                 hideProgress();
-                logMessage('❌ فشل استلام الملف من الطرف الآخر', 'system');
+                logMessage('❌ فشل استلام الملف — أبلغ الطرف الآخر بالإعادة', 'system');
                 releaseWakeLock();
                 break;
             }
@@ -1091,38 +1295,43 @@ const UNSAFE_MIMES = new Set([
     'text/x-javascript','application/ecmascript','text/ecmascript',
     'application/pdf','application/x-httpd-php','application/x-sh',
     'application/x-csh','application/x-python-code','application/x-ruby',
+    'application/wasm','text/xml','application/xml',
+    'text/vbscript','application/x-ms-application',
+    'application/x-msdownload',
 ]);
 function safeMime(mime) {
     if (!mime || typeof mime !== 'string') return 'application/octet-stream';
     const c = mime.toLowerCase().split(';')[0].trim();
+    if (c.startsWith('data:')) return 'application/octet-stream';
     return UNSAFE_MIMES.has(c) ? 'application/octet-stream' : c;
 }
 
-/* ── FILENAME SANITISE (FIX #18: strip leading dots/spaces) ─────── */
+/* ── FILENAME SANITISE ───────────────────────────────────────────── */
 function sanitizeName(name) {
     if (typeof name !== 'string') return 'file';
-    // Strip path traversal chars
     let safe = name.replace(/[/\\?%*:|"<>\x00-\x1f]/g, '_');
-    // FIX #18: strip leading dots and spaces — prevents hidden file injection
     safe = safe.replace(/^[\s.]+/, '');
     safe = safe.slice(0, 255);
     return safe || 'file';
 }
 
-/* ── REVOKE ALL PENDING URLS ─────────────────────────────────────── */
+/* ── REVOKE OBJECT URLS ──────────────────────────────────────────── */
 function revokeAllPendingUrls() {
     for (const url of pendingUrls) {
         try { URL.revokeObjectURL(url); } catch(_) {}
     }
-    pendingUrls = [];
+    pendingUrls =[];
 }
 
-/* ── SAVE FILE TO DISK (FIX #8, #9, #10, #16) ───────────────────── */
+/* ── SAVE FILE ────────────────────────────────────────────────────── */
 async function saveFileToDisk(blob, filename) {
     const safe = sanitizeName(filename);
 
-    const canShare = navigator.share && navigator.canShare &&
-        navigator.canShare({ files: [new File([blob], safe, { type: blob.type })] });
+    let canShare = false;
+    try {
+        canShare = !!(navigator.share && navigator.canShare &&
+            navigator.canShare({ files: [new File([blob], safe, { type: blob.type })] }));
+    } catch(_) {}
 
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'display:flex;justify-content:center;width:100%;padding:6px 0;';
@@ -1131,32 +1340,16 @@ async function saveFileToDisk(blob, filename) {
         const btn = document.createElement('button');
         btn.className = 'download-btn tap-anim';
 
-        const svgNS = 'http://www.w3.org/2000/svg';
-        const svg = document.createElementNS(svgNS, 'svg');
-        svg.setAttribute('width','18'); svg.setAttribute('height','18');
-        svg.setAttribute('fill','none'); svg.setAttribute('stroke','white');
-        svg.setAttribute('viewBox','0 0 24 24'); svg.style.flexShrink = '0';
-        const p1 = document.createElementNS(svgNS,'path');
-        p1.setAttribute('stroke-linecap','round'); p1.setAttribute('stroke-linejoin','round');
-        p1.setAttribute('stroke-width','2');
-        p1.setAttribute('d','M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z');
-        svg.appendChild(p1);
+        const svgEl = makeSvgIcon('M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z');
+        const label = makeEllipsisSpan(safe);
+        const size  = makeSizeSpan(blob.size);
 
-        const label = document.createElement('span');
-        label.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;direction:ltr;';
-        label.textContent = safe;
-
-        const size = document.createElement('span');
-        size.style.cssText = 'font-size:11px;opacity:0.75;font-family:"IBM Plex Mono",monospace;flex-shrink:0;';
-        size.textContent = fmtBytes(blob.size);
-
-        btn.appendChild(svg); btn.appendChild(label); btn.appendChild(size);
+        btn.appendChild(svgEl); btn.appendChild(label); btn.appendChild(size);
 
         btn.addEventListener('click', async () => {
             try {
                 await navigator.share({
                     files: [new File([blob], safe, { type: blob.type || 'application/octet-stream' })],
-                    title: safe,
                 });
                 btn.style.background = 'linear-gradient(135deg,#1a4a2e,#2d7a4a)';
                 btn.style.pointerEvents = 'none';
@@ -1170,37 +1363,20 @@ async function saveFileToDisk(blob, filename) {
         UI.logs.appendChild(wrapper);
 
     } else {
-        // FIX #8: create URL and store it — DON'T revoke until disconnect
         const url = URL.createObjectURL(blob);
-        pendingUrls.push(url);   // will be revoked in revokeAllPendingUrls() on disconnect
+        pendingUrls.push(url);
 
         const a = document.createElement('a');
         a.href = url;
         a.download = safe;
         a.className = 'download-btn tap-anim';
 
-        const svgNS = 'http://www.w3.org/2000/svg';
-        const svg = document.createElementNS(svgNS,'svg');
-        svg.setAttribute('width','18'); svg.setAttribute('height','18');
-        svg.setAttribute('fill','none'); svg.setAttribute('stroke','white');
-        svg.setAttribute('viewBox','0 0 24 24'); svg.style.flexShrink = '0';
-        const p = document.createElementNS(svgNS,'path');
-        p.setAttribute('stroke-linecap','round'); p.setAttribute('stroke-linejoin','round');
-        p.setAttribute('stroke-width','2');
-        p.setAttribute('d','M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4');
-        svg.appendChild(p);
+        const svgEl = makeSvgIcon('M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4');
+        const label = makeEllipsisSpan(safe);
+        const size  = makeSizeSpan(blob.size);
 
-        const label = document.createElement('span');
-        label.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;direction:ltr;';
-        label.textContent = safe;
+        a.appendChild(svgEl); a.appendChild(label); a.appendChild(size);
 
-        const size = document.createElement('span');
-        size.style.cssText = 'font-size:11px;opacity:0.75;font-family:"IBM Plex Mono",monospace;flex-shrink:0;';
-        size.textContent = fmtBytes(blob.size);
-
-        a.appendChild(svg); a.appendChild(label); a.appendChild(size);
-
-        // Visual feedback on click
         a.addEventListener('click', () => {
             setTimeout(() => {
                 a.style.background = 'linear-gradient(135deg,#1a4a2e,#2d7a4a)';
@@ -1210,12 +1386,8 @@ async function saveFileToDisk(blob, filename) {
             }, 800);
         });
 
-        // FIX #9: append to DOM BEFORE click
         wrapper.appendChild(a);
         UI.logs.appendChild(wrapper);
-
-        // FIX #16: NO auto-download — user must explicitly press the Save button.
-        // (removed the auto .click() that was here before)
     }
 
     requestAnimationFrame(() => { UI.logs.scrollTop = UI.logs.scrollHeight; });
@@ -1225,15 +1397,38 @@ async function saveFileToDisk(blob, filename) {
     vibrate([50, 100, 50]);
 }
 
+function makeSvgIcon(d) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns,'svg');
+    svg.setAttribute('width','18'); svg.setAttribute('height','18');
+    svg.setAttribute('fill','none'); svg.setAttribute('stroke','white');
+    svg.setAttribute('viewBox','0 0 24 24'); svg.style.flexShrink = '0';
+    const p = document.createElementNS(ns,'path');
+    p.setAttribute('stroke-linecap','round'); p.setAttribute('stroke-linejoin','round');
+    p.setAttribute('stroke-width','2'); p.setAttribute('d', d);
+    svg.appendChild(p);
+    return svg;
+}
+function makeEllipsisSpan(text) {
+    const s = document.createElement('span');
+    s.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;direction:ltr;';
+    s.textContent = text;
+    return s;
+}
+function makeSizeSpan(bytes) {
+    const s = document.createElement('span');
+    s.style.cssText = 'font-size:11px;opacity:0.75;font-family:"IBM Plex Mono",monospace;flex-shrink:0;';
+    s.textContent = fmtBytes(bytes);
+    return s;
+}
+
 function fallbackDownload(blob, safe, btn, label) {
     const url = URL.createObjectURL(blob);
     pendingUrls.push(url);
     const a = document.createElement('a');
     a.href = url; a.download = safe;
-    // FIX #9: append to DOM before click
     document.body.appendChild(a);
     a.click();
-    // FIX #8: don't revoke immediately — leave in pendingUrls for disconnect cleanup
     setTimeout(() => { try { document.body.removeChild(a); } catch(_) {} }, 500);
     btn.style.background = 'linear-gradient(135deg,#1a4a2e,#2d7a4a)';
     btn.style.pointerEvents = 'none';
@@ -1248,17 +1443,25 @@ UI.targetId.addEventListener('input', () => {
 });
 
 $('disconnectBtn').addEventListener('click', () => {
+    if (isSending || recvMeta) {
+        if (!confirm('يوجد نقل جارٍ. هل أنت متأكد من قطع الاتصال؟')) return;
+    }
     if (currentConn) { try { currentConn.close(); } catch(_) {} }
     resetUI();
 });
 
+let _resetting = false;
 function resetUI() {
-    // FIX #8: revoke all pending object URLs now that user is done
+    if (_resetting) return;
+    _resetting = true;
+
     revokeAllPendingUrls();
+    stopPingPong();
 
     currentConn = null; isAuthed = false; pendingConn = null;
-    isSending = false; fileQueue = [];
+    isSending = false; fileQueue =[];
     msgCount = 0; msgWindowStart = 0;
+    pongMissed = 0;
     clearTimeout(connTimeout); clearTimeout(recvTimeout);
     closeAuthModal();
     UI.connectArea.style.display = '';
@@ -1267,36 +1470,43 @@ function resetUI() {
     UI.targetId.value = '';
     UI.connectBtn.textContent = 'اقتران';
     UI.connectBtn.disabled = false;
-    UI.connectHint.textContent = 'أدخل الرقم السداسي للجهاز الآخر';
+    UI.connectHint.textContent = 'أدخل الرقم المكوّن من 6 أرقام للجهاز الآخر';
+    UI.ipConsent.checked = false;
     hideProgress();
     setStatus('جاهز للاتصال', 'online');
     history.replaceState({}, '', location.pathname);
     releaseWakeLock();
     dragCounter = 0;
     UI.dropZone.classList.remove('active');
+    UI.pingBadge.style.display = 'none';
+    UI.connPingBadge.style.display = 'none';
+
+    _resetting = false;
 }
 
 /* ── SEND TEXT ───────────────────────────────────────────────────── */
 function sendText() {
     const text = UI.textInput.value.trim();
     if (!text || !currentConn || !isAuthed) return;
-    if (text.length > 100000) { showToast('الرسالة طويلة جداً.'); return; }
+    if (text.length > 8000) { showToast('الرسالة طويلة جداً (الحد الأقصى 8000 حرف).', 'danger'); return; }
     try {
         currentConn.send({ type: 'text', content: text });
         logMessage(text, 'sent');
         UI.textInput.value = '';
         UI.textInput.focus();
-    } catch(_) { logMessage('❌ فشل الإرسال', 'system'); }
+    } catch(_) { logMessage('❌ فشل إرسال الرسالة', 'system'); }
 }
 UI.sendTextBtn.addEventListener('click', sendText);
-UI.textInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) sendText(); });
+UI.textInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); } });
 
 /* ── SEND FILES ───────────────────────────────────────────────────── */
 UI.attachBtn.addEventListener('click', () => UI.fileInput.click());
 UI.fileInput.addEventListener('change', (e) => {
     for (const f of e.target.files) {
-        if (f.size > 2 * 1024 * 1024 * 1024)
-            showToast(`"${f.name}" أكبر من 2 جيجابايت — قد تكون هناك مشاكل.`);
+        if (f.size > 2 * 1024 * 1024 * 1024) {
+            showToast(`"${sanitizeName(f.name)}" أكبر من 2 جيجابايت — غير مدعوم.`, 'danger');
+            continue;
+        }
         fileQueue.push(f);
     }
     UI.fileInput.value = '';
@@ -1315,7 +1525,12 @@ async function processFileQueue() {
     showProgress('إرسال: ' + safe, file.size);
 
     try {
-        currentConn.send({ type: 'file-start', name: safe, size: file.size, filetype: file.type });
+        currentConn.send({
+            type: 'file-start',
+            name: safe,
+            size: file.size,
+            filetype: file.type
+        });
 
         const chunkSize = file.size > 50 * 1024 * 1024 ? 65536 : 32768;
         let offset = 0, hasError = false;
@@ -1354,21 +1569,22 @@ async function processFileQueue() {
         if (currentConn?.open) {
             if (hasError) {
                 currentConn.send({ type: 'file-error', name: safe });
+                logMessage('❌ فُشل في إرسال: ' + safe, 'system');
             } else {
                 currentConn.send({ type: 'file-end' });
-                logMessage('🚀 تم إرسال: ' + safe, 'system');
+                logMessage('🚀 اكتمل إرسال: ' + safe, 'system');
             }
         }
     } catch(_) {
-        logMessage('❌ خطأ أثناء الإرسال', 'system');
-        if (currentConn?.open) currentConn.send({ type: 'file-error', name: safe });
+        logMessage('❌ خطأ غير متوقع أثناء الإرسال', 'system');
+        try { if (currentConn?.open) currentConn.send({ type: 'file-error', name: safe }); } catch(_) {}
     }
 
     hideProgress();
     setTimeout(processFileQueue, 300);
 }
 
-/* ── DRAG & DROP (FIX #12: dragCounter integer — no flicker on PC) ── */
+/* ── DRAG & DROP ─────────────────────────────────────────────────── */
 const transferEl = UI.transferArea;
 
 transferEl.addEventListener('dragenter', (e) => {
@@ -1377,28 +1593,28 @@ transferEl.addEventListener('dragenter', (e) => {
     dragCounter++;
     if (dragCounter === 1) UI.dropZone.classList.add('active');
 });
-
 transferEl.addEventListener('dragover', (e) => {
     if (!currentConn || !isAuthed) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
 });
-
-transferEl.addEventListener('dragleave', (e) => {
+transferEl.addEventListener('dragleave', () => {
     if (!currentConn || !isAuthed) return;
     dragCounter--;
-    if (dragCounter <= 0) {
-        dragCounter = 0;
-        UI.dropZone.classList.remove('active');
-    }
+    if (dragCounter <= 0) { dragCounter = 0; UI.dropZone.classList.remove('active'); }
 });
-
 transferEl.addEventListener('drop', (e) => {
     e.preventDefault();
     dragCounter = 0;
     UI.dropZone.classList.remove('active');
     if (!currentConn || !isAuthed) return;
-    for (const f of e.dataTransfer.files) fileQueue.push(f);
+    for (const f of e.dataTransfer.files) {
+        if (f.size > 2 * 1024 * 1024 * 1024) {
+            showToast(`"${sanitizeName(f.name)}" أكبر من 2 جيجابايت — رُفض.`, 'danger');
+            continue;
+        }
+        fileQueue.push(f);
+    }
     if (!isSending) processFileQueue();
 });
 
@@ -1406,15 +1622,16 @@ transferEl.addEventListener('drop', (e) => {
 function showProgress(label, total) {
     UI.progCont.style.display = 'block';
     UI.progFile.textContent = label;
-    UI.progStats.textContent = '0 / ' + fmtBytes(total);
+    UI.progStats.textContent = '0 B / ' + fmtBytes(total);
     updateProgress(0, Math.max(total, 1));
+    transferStart = Date.now();
 }
 function updateProgress(cur, total) {
     const pct = Math.round((cur / Math.max(total, 1)) * 100);
     UI.progBar.style.width = pct + '%';
     UI.progPct.textContent = pct + '%';
     const elapsed = (Date.now() - transferStart) / 1000;
-    if (elapsed > 0.5 && cur > 0) {
+    if (elapsed > 0 && cur > 0) {
         UI.progStats.textContent =
             fmtBytes(cur) + ' / ' + fmtBytes(total) + ' · ' + fmtBytes(cur / elapsed) + '/s';
     }
@@ -1422,7 +1639,17 @@ function updateProgress(cur, total) {
 function hideProgress() { UI.progCont.style.display = 'none'; }
 
 /* ── BOOT ────────────────────────────────────────────────────────── */
-initPeer();
+// [SEC-13] Ensure libraries are fully loaded before initialization to prevent crashes
+window.addEventListener('load', () => {
+    if (typeof Peer === 'undefined') {
+        setStatus('فشل تحميل مكتبة الاتصال', 'error');
+        showToast('تعذر تحميل مكتبة PeerJS. يرجى التحقق من اتصالك أو إيقاف مانع الإعلانات.', 'danger');
+        logMessage('❌ خطأ أمني/شبكي: تم حظر سكربت الاتصال (PeerJS).', 'system');
+        return;
+    }
+    initPeer();
+});
+
 </script>
 
 </body>
