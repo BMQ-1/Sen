@@ -2,234 +2,531 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSend - Local P2P File Transfer</title>
-    <!-- Tailwind CSS for styling -->
+    <!-- Strict viewport to prevent iOS zoom and handle notches -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#f8fafc">
+    <title>WebSend</title>
+
+    <link id="manifest-link" rel="manifest" href="">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- PeerJS for WebRTC P2P connections -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
     <style>
-        body { background-color: #f3f4f6; color: #1f2937; font-family: system-ui, -apple-system, sans-serif; }
-        .glass-panel { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); padding: 24px; }
-        .hidden { display: none !important; }
+        :root { 
+            --safe-top: env(safe-area-inset-top, 0px); 
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        body { 
+            background: #f8fafc; 
+            font-family: system-ui, -apple-system, sans-serif;
+            min-height: 100dvh;
+            padding-top: max(1rem, var(--safe-top)); 
+            padding-bottom: max(1rem, var(--safe-bottom));
+            -webkit-tap-highlight-color: transparent; 
+            overflow-x: hidden;
+        }
+        .glass-card { 
+            background: white; 
+            border-radius: 24px; 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0,0,0,0.02); 
+            border: 1px solid #f1f5f9;
+            overflow: hidden;
+        }
+        .drag-over { border-color: #3b82f6 !important; background-color: #eff6ff !important; }
+        
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        .tap-anim:active { transform: scale(0.96); transition: transform 0.1s; }
+        .msg-bubble { max-width: 85%; word-break: break-word; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
+<body class="text-slate-800 flex flex-col items-center px-4 md:px-8">
 
-    <div class="w-full max-w-md space-y-6">
-        <!-- Header -->
-        <div class="text-center">
-            <h1 class="text-3xl font-bold text-blue-600">WebSend</h1>
-            <p class="text-sm text-gray-500 mt-1">Secure, local P2P file transfer</p>
+    <!-- Header -->
+    <header class="w-full max-w-4xl flex justify-between items-center mb-6 shrink-0">
+        <div>
+            <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight">WebSend</h1>
+            <p class="text-xs font-semibold text-slate-400 flex items-center gap-1.5 mt-0.5">
+                <span id="statusDot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>
+                <span id="statusText">Connecting...</span>
+            </p>
         </div>
+    </header>
 
-        <!-- My Device Info -->
-        <div class="glass-panel text-center">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Your Device ID</h2>
-            <div class="text-4xl font-mono font-bold text-gray-800 tracking-widest bg-gray-100 py-3 rounded-lg" id="myId">
-                Loading...
-            </div>
-            <p class="text-xs text-gray-400 mt-2" id="statusText">Connecting to signaling server...</p>
-        </div>
-
-        <!-- Connection Area -->
-        <div class="glass-panel" id="connectArea">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Connect to Device</h2>
-            <div class="flex space-x-2">
-                <input type="text" id="targetId" placeholder="Enter 6-digit ID" maxlength="6" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-lg text-center shadow-sm">
-                <button id="connectBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition shadow-sm">Connect</button>
-            </div>
-        </div>
-
-        <!-- Transfer Area (Hidden until connected) -->
-        <div class="glass-panel hidden" id="transferArea">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-sm font-semibold text-green-600 uppercase tracking-wider">Connected to: <span id="connectedToId" class="font-mono text-gray-800"></span></h2>
-                <button id="disconnectBtn" class="text-xs text-red-500 hover:text-red-700 font-bold">Disconnect</button>
-            </div>
+    <!-- Main Content Grid -->
+    <main class="w-full max-w-4xl grid md:grid-cols-2 gap-4 sm:gap-6 flex-1 items-start pb-4">
+        
+        <!-- LEFT: Identity & QR -->
+        <div class="glass-card p-5 sm:p-6 flex flex-col items-center justify-center text-center w-full">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Your Device ID</h2>
             
-            <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition cursor-pointer relative" id="dropZone">
-                <input type="file" id="fileInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <p class="mt-2 text-sm text-gray-600 font-medium">Tap to select a file or drag & drop</p>
+            <button onclick="copyMyId()" class="tap-anim group relative bg-slate-50 hover:bg-slate-100 border border-slate-200 py-4 sm:py-5 px-4 w-full rounded-2xl transition-all">
+                <div class="text-4xl sm:text-5xl font-mono font-black text-slate-800 tracking-widest" id="myId">---</div>
+                <div class="text-[11px] sm:text-xs text-slate-400 mt-2 font-medium group-hover:text-blue-600 transition-colors">Tap to copy</div>
+            </button>
+
+            <div class="mt-5 w-full pt-5 border-t border-slate-100 flex flex-col items-center">
+                <div id="qrcode" class="p-2 bg-white rounded-xl shadow-sm border border-slate-100"></div>
+                <p class="text-[11px] text-slate-400 mt-3 font-medium">Scan to pair instantly</p>
+            </div>
+        </div>
+
+        <!-- RIGHT: Connection / Action Area -->
+        <div class="flex flex-col gap-4 sm:gap-6 h-full w-full">
+            
+            <!-- Connect Panel -->
+            <div class="glass-card p-5 sm:p-6 w-full" id="connectArea">
+                <h2 class="text-sm font-bold text-slate-800 mb-3">Connect to Device</h2>
+                <div class="flex gap-2">
+                    <input type="text" id="targetId" placeholder="6-Digit ID" maxlength="6" inputmode="numeric" class="flex-1 w-0 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base sm:text-xl text-center uppercase transition-all placeholder:text-slate-300">
+                    <button id="connectBtn" class="tap-anim bg-blue-600 hover:bg-blue-700 text-white px-5 sm:px-6 py-3 rounded-xl font-bold shadow-md shadow-blue-500/20 transition-all text-sm sm:text-base">Pair</button>
+                </div>
             </div>
 
-            <!-- Transfer Logs -->
-            <div class="mt-4 max-h-32 overflow-y-auto text-sm text-gray-600 space-y-1" id="logs"></div>
+            <!-- Active Transfer Panel -->
+            <div class="glass-card p-4 sm:p-6 hidden flex-col h-[60dvh] md:h-auto md:flex-1 border-blue-100 shadow-blue-500/5 relative w-full" id="transferArea">
+                
+                <!-- Connection Header -->
+                <div class="flex justify-between items-center mb-3 pb-3 border-b border-slate-100 shrink-0">
+                    <div class="flex items-center gap-2.5 overflow-hidden">
+                        <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path></svg>
+                        </div>
+                        <div class="truncate">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Connected to</p>
+                            <p class="text-sm font-bold text-slate-800 font-mono truncate" id="connectedToId">---</p>
+                        </div>
+                    </div>
+                    <button id="disconnectBtn" class="tap-anim text-xs bg-slate-50 text-slate-500 hover:bg-red-50 hover:text-red-600 border border-slate-200 hover:border-red-200 px-3 py-1.5 rounded-lg font-bold transition-colors shrink-0">Disconnect</button>
+                </div>
+                
+                <!-- Chat / Logs Area -->
+                <div class="flex-1 overflow-y-auto mb-3 pr-1 space-y-3 flex flex-col w-full" id="logs">
+                    <div class="m-auto text-center text-slate-400 text-[11px] font-medium bg-slate-50 px-3 py-1.5 rounded-full" id="logPlaceholder">End-to-End Encrypted</div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div id="progressContainer" class="hidden shrink-0 mb-3 bg-slate-50 p-3 rounded-xl border border-slate-200 w-full">
+                    <div class="flex justify-between text-[11px] sm:text-xs mb-1.5 font-bold text-slate-600">
+                        <span id="progressFilename" class="truncate max-w-[50%]">file.ext</span>
+                        <span id="progressStats" class="text-slate-400 font-medium ml-2 mr-auto hidden sm:inline"></span>
+                        <span id="progressPercent" class="text-blue-600 ml-2 shrink-0">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-200 rounded-full h-1.5 sm:h-2 overflow-hidden">
+                        <div id="progressBar" class="bg-blue-500 h-full rounded-full transition-all duration-150 ease-out" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Inputs Area -->
+                <div class="space-y-2 shrink-0 w-full">
+                    <div class="flex gap-2 w-full">
+                        <input type="text" id="textInput" placeholder="Message or link..." class="flex-1 w-0 px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm transition-all">
+                        
+                        <button onclick="document.getElementById('fileInput').click()" class="tap-anim bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-slate-600 hover:text-blue-600 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-all flex items-center justify-center shrink-0" title="Send File">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                        </button>
+                        <input type="file" id="fileInput" multiple class="hidden">
+                        
+                        <button id="sendTextBtn" class="tap-anim bg-slate-800 hover:bg-slate-900 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-bold text-sm transition-all shadow-md shrink-0">Send</button>
+                    </div>
+                </div>
+
+                <!-- Invisible Drop Zone Overlay -->
+                <div id="dropZone" class="absolute inset-0 bg-blue-50/95 backdrop-blur-sm border-4 border-dashed border-blue-400 rounded-24 z-50 hidden flex-col items-center justify-center transition-all m-2">
+                    <svg class="w-12 h-12 text-blue-500 mb-3 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    <p class="text-xl font-bold text-blue-700 text-center px-4">Drop files to send</p>
+                </div>
+
+            </div>
         </div>
-    </div>
+    </main>
 
     <script>
-        // Generate a random 6-digit ID for easy sharing
+        // --- PWA NATIVE SETUP ---
+        const manifest = {
+            name: "WebSend", short_name: "WebSend", display: "standalone",
+            background_color: "#f8fafc", theme_color: "#f8fafc",
+            icons: [{ src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzNiODJmNiIvPjwvc3ZnPg==", sizes: "192x192", type: "image/svg+xml" }]
+        };
+        document.getElementById('manifest-link').href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type: 'application/json'}));
+
+        // --- HARDWARE APIS & WAKELOCK ---
+        let wakeLock = null;
+        async function requestWakeLock() { 
+            if ('wakeLock' in navigator) { 
+                try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {} 
+            } 
+        }
+        function releaseWakeLock() { if (wakeLock) { wakeLock.release(); wakeLock = null; } }
+        function vibrate(pattern) { if ('vibrate' in navigator) navigator.vibrate(pattern); }
+
+        // Re-acquire wakelock if user switches apps and comes back
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                await requestWakeLock();
+            }
+        });
+
+        // --- APP LOGIC ---
         const myGeneratedId = Math.floor(100000 + Math.random() * 900000).toString();
-        let peer = null;
-        let currentConnection = null;
+        let peer = null, currentConnection = null, connectionTimeout = null;
+        let fileQueue = [], isSending = false;
+        let transferStartTime = 0;
 
-        // DOM Elements
-        const myIdEl = document.getElementById('myId');
-        const statusTextEl = document.getElementById('statusText');
-        const targetIdInput = document.getElementById('targetId');
-        const connectBtn = document.getElementById('connectBtn');
-        const connectArea = document.getElementById('connectArea');
-        const transferArea = document.getElementById('transferArea');
-        const connectedToIdEl = document.getElementById('connectedToId');
-        const disconnectBtn = document.getElementById('disconnectBtn');
-        const fileInput = document.getElementById('fileInput');
-        const logsEl = document.getElementById('logs');
+        const el = id => document.getElementById(id);
+        const UI = {
+            myId: el('myId'), statusTxt: el('statusText'), statusDot: el('statusDot'),
+            targetId: el('targetId'), connectBtn: el('connectBtn'),
+            connectArea: el('connectArea'), transferArea: el('transferArea'),
+            connectedToId: el('connectedToId'), fileInput: el('fileInput'),
+            textInput: el('textInput'), logs: el('logs'), qrcode: el('qrcode'),
+            progCont: el('progressContainer'), progFile: el('progressFilename'),
+            progStats: el('progressStats'), progBar: el('progressBar'), 
+            progPct: el('progressPercent'), logPlaceholder: el('logPlaceholder'), 
+            dropZone: el('dropZone')
+        };
 
-        function log(msg, isSuccess = false) {
-            const div = document.createElement('div');
-            div.textContent = `> ${msg}`;
-            if(isSuccess) div.classList.add('text-green-600', 'font-semibold');
-            logsEl.prepend(div);
+        let receiveBuffer = [], receivedBytes = 0, incomingFile = null;
+
+        // --- FORMATTING UTILITIES ---
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
 
-        // Initialize PeerJS
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
+        }
+        
+        function formatMessageText(text) {
+            const escaped = escapeHTML(text);
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            return escaped.replace(urlRegex, url => `<a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-800 underline underline-offset-2 break-all">${url}</a>`);
+        }
+
+        window.copyExactText = async function(btn, rawText) {
+            try {
+                await navigator.clipboard.writeText(decodeURIComponent(rawText));
+                vibrate(50);
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '✅';
+                btn.classList.add('text-green-600', 'bg-green-50', 'border-green-200');
+                btn.classList.remove('text-slate-500', 'bg-white', 'border-slate-200');
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.remove('text-green-600', 'bg-green-50', 'border-green-200');
+                    btn.classList.add('text-slate-500', 'bg-white', 'border-slate-200');
+                }, 2000);
+            } catch (err) { alert("Failed to copy"); }
+        };
+
+        function copyMyId() {
+            navigator.clipboard.writeText(myGeneratedId);
+            vibrate(50);
+            const original = UI.myId.innerText;
+            UI.myId.innerText = "COPIED!";
+            UI.myId.classList.add("text-green-500");
+            setTimeout(() => { UI.myId.innerText = original; UI.myId.classList.remove("text-green-500"); }, 1500);
+        }
+
+        // --- CHAT & LOGGING UI ---
+        function logMessage(msg, type = 'system', rawText = '') {
+            if (UI.logPlaceholder) UI.logPlaceholder.remove();
+            const div = document.createElement('div');
+            
+            if (type === 'system') {
+                div.className = 'text-[11px] sm:text-xs text-center text-slate-500 bg-slate-50 py-1.5 px-3 rounded-lg mx-auto w-fit border border-slate-100 max-w-full break-words';
+                div.innerHTML = msg;
+            } 
+            else if (type === 'sent') {
+                div.className = 'flex justify-end w-full pl-6 sm:pl-8';
+                div.innerHTML = `
+                    <div class="bg-blue-600 text-white p-2.5 sm:p-3 rounded-2xl rounded-tr-sm msg-bubble text-[13px] sm:text-sm shadow-sm">
+                        ${formatMessageText(msg)}
+                    </div>`;
+            } 
+            else if (type === 'received') {
+                const safeRaw = encodeURIComponent(rawText || msg);
+                div.className = 'flex justify-start w-full pr-6 sm:pr-8 group';
+                div.innerHTML = `
+                    <div class="flex flex-col items-start gap-1 max-w-full">
+                        <div class="bg-white border border-slate-200 text-slate-800 p-2.5 sm:p-3 rounded-2xl rounded-tl-sm msg-bubble text-[13px] sm:text-sm shadow-sm">
+                            ${formatMessageText(msg)}
+                        </div>
+                        <button onclick="copyExactText(this, '${safeRaw}')" class="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-[10px] font-bold text-slate-500 bg-white border border-slate-200 px-2 py-1 rounded-md ml-1 tap-anim">
+                            Copy
+                        </button>
+                    </div>`;
+            }
+
+            UI.logs.appendChild(div);
+            // Small delay to ensure DOM paints before scrolling
+            setTimeout(() => { UI.logs.scrollTop = UI.logs.scrollHeight; }, 50);
+        }
+
+        // --- PEERJS SETUP ---
         function initPeer() {
-            peer = new Peer(myGeneratedId, {
-                debug: 2
-            });
+            peer = new Peer(myGeneratedId);
 
             peer.on('open', (id) => {
-                myIdEl.textContent = id;
-                statusTextEl.textContent = "Ready to connect. (Same Wi-Fi recommended)";
-                statusTextEl.classList.add('text-green-600');
+                UI.myId.textContent = id;
+                UI.statusTxt.textContent = "Ready";
+                UI.statusDot.classList.replace('bg-yellow-400', 'bg-green-500');
+                UI.statusDot.classList.remove('animate-pulse');
+                
+                UI.qrcode.innerHTML = '';
+                new QRCode(UI.qrcode, { text: `${window.location.origin}${window.location.pathname}?connect=${id}`, width: 120, height: 120, colorDark: "#1e293b", colorLight: "#ffffff" });
+
+                if(new URLSearchParams(window.location.search).has('connect')) {
+                    UI.targetId.value = new URLSearchParams(window.location.search).get('connect');
+                    connectToPeer();
+                }
             });
 
-            // Handle incoming connections
-            peer.on('connection', (conn) => {
-                if (currentConnection) {
-                    conn.close(); // Only allow one connection at a time
-                    return;
+            // Auto-reconnect signaling if device sleeps
+            peer.on('disconnected', () => {
+                if (!peer.destroyed) {
+                    UI.statusTxt.textContent = "Reconnecting...";
+                    UI.statusDot.classList.replace('bg-green-500', 'bg-yellow-400');
+                    peer.reconnect();
                 }
+            });
+
+            peer.on('connection', (conn) => {
+                if (currentConnection) { conn.close(); return; }
                 setupConnection(conn);
             });
 
-            peer.on('error', (err) => {
-                alert("Error: " + err.type);
-                statusTextEl.textContent = "Connection error.";
+            peer.on('error', (err) => { 
+                logMessage(`Connection error. Check ID.`, 'system');
+                UI.connectBtn.textContent = "Pair"; UI.connectBtn.disabled = false;
             });
         }
 
-        // Setup Connection Handlers
         function setupConnection(conn) {
             currentConnection = conn;
+            clearTimeout(connectionTimeout);
             
             conn.on('open', () => {
-                connectArea.classList.add('hidden');
-                transferArea.classList.remove('hidden');
-                connectedToIdEl.textContent = conn.peer;
-                log(`Connected to ${conn.peer}`, true);
+                UI.connectArea.classList.add('hidden');
+                UI.transferArea.classList.remove('hidden');
+                UI.transferArea.classList.add('flex');
+                UI.connectedToId.textContent = conn.peer;
+                vibrate([50, 50, 50]);
+                logMessage(`✅ Paired with ${conn.peer}`, 'system');
             });
 
-            conn.on('data', (data) => {
-                if (data.type === 'file') {
-                    log(`Receiving file: ${data.filename} (${(data.filedata.byteLength / 1024 / 1024).toFixed(2)} MB)...`);
+            conn.on('data', async (data) => {
+                if (data.type === 'text') {
+                    vibrate(100);
+                    logMessage(data.content, 'received', data.content);
+                }
+                else if (data.type === 'file-ack') {
+                    vibrate([50, 100, 50]);
+                    logMessage(`✅ ${data.name} saved by receiver`, 'system');
+                }
+                else if (data.type === 'file-start') {
+                    requestWakeLock();
+                    incomingFile = data; receiveBuffer = []; receivedBytes = 0;
+                    transferStartTime = Date.now();
+                    showProgress(`Receiving: ${data.name}`, data.size);
+                }
+                else if (data.type === 'file-chunk') {
+                    receiveBuffer.push(data.data);
+                    receivedBytes += data.data.byteLength;
+                    updateProgress(receivedBytes, incomingFile.size);
+                }
+                else if (data.type === 'file-end') {
+                    hideProgress();
+                    logMessage(`⏳ Saving ${incomingFile.name}...`, 'system');
                     
-                    // Convert received ArrayBuffer back to a Blob
-                    const blob = new Blob([data.filedata], { type: data.filetype });
-                    const url = URL.createObjectURL(blob);
+                    // Create blob and immediately clear RAM to prevent mobile crashes
+                    const blob = new Blob(receiveBuffer, { type: incomingFile.filetype });
+                    receiveBuffer = null; 
                     
-                    // Create an invisible anchor tag to trigger download automatically
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = data.filename;
-                    a.style.display = 'none';
-                    document.body.appendChild(a);
-                    a.click();
+                    await saveFileToDisk(blob, incomingFile.name);
                     
-                    setTimeout(() => {
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                    }, 1000);
-
-                    log(`Successfully downloaded: ${data.filename}`, true);
+                    incomingFile = null; // Full garbage collection
+                    releaseWakeLock();
                 }
             });
 
-            conn.on('close', () => {
-                resetUI();
-                log("Connection closed.");
-            });
+            conn.on('close', resetUI);
         }
 
-        // Connect to target
-        connectBtn.addEventListener('click', () => {
-            const targetId = targetIdInput.value.trim();
-            if (targetId.length !== 6) {
-                alert("Please enter a valid 6-digit ID.");
-                return;
-            }
-            if (targetId === myGeneratedId) {
-                alert("You cannot connect to yourself.");
-                return;
-            }
-            
-            connectBtn.textContent = "Connecting...";
-            connectBtn.disabled = true;
-
-            const conn = peer.connect(targetId, { reliable: true });
-            setupConnection(conn);
-
-            // Reset button if connection takes too long
-            setTimeout(() => {
-                if(!currentConnection || !currentConnection.open) {
-                    connectBtn.textContent = "Connect";
-                    connectBtn.disabled = false;
+        async function saveFileToDisk(blob, filename) {
+            try {
+                if ('showSaveFilePicker' in window) {
+                    const handle = await window.showSaveFilePicker({ suggestedName: filename });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    logMessage(`💾 Saved to PC: ${filename}`, 'system');
+                } else {
+                    triggerStandardDownload(blob, filename);
+                    logMessage(`💾 Saved to Downloads: ${filename}`, 'system');
                 }
-            }, 5000);
-        });
-
-        // Disconnect
-        disconnectBtn.addEventListener('click', () => {
-            if (currentConnection) {
-                currentConnection.close();
+                currentConnection.send({ type: 'file-ack', name: filename });
+            } catch (err) {
+                // If user cancels the save prompt, don't fallback to standard download
+                if (err.name !== 'AbortError') triggerStandardDownload(blob, filename);
             }
-            resetUI();
-        });
+        }
+
+        function triggerStandardDownload(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); 
+            a.href = url; 
+            a.download = filename;
+            
+            // Required for iOS Safari to register the click properly
+            document.body.appendChild(a); 
+            a.click();
+            
+            // Increased timeout to 2000ms ensures Safari has time to start the download before the blob is destroyed
+            setTimeout(() => { 
+                document.body.removeChild(a); 
+                URL.revokeObjectURL(url); 
+            }, 2000);
+        }
+
+        function connectToPeer() {
+            const targetId = UI.targetId.value.trim();
+            if (targetId.length !== 6 || targetId === myGeneratedId) return alert("Invalid ID.");
+            
+            UI.connectBtn.textContent = "Pairing..."; UI.connectBtn.disabled = true;
+            setupConnection(peer.connect(targetId, { reliable: true }));
+
+            connectionTimeout = setTimeout(() => {
+                if(!currentConnection || !currentConnection.open) {
+                    logMessage(`Timeout finding ${targetId}.`, 'system');
+                    UI.connectBtn.textContent = "Pair"; UI.connectBtn.disabled = false;
+                }
+            }, 8000);
+        }
+
+        el('connectBtn').addEventListener('click', connectToPeer);
+        el('disconnectBtn').addEventListener('click', () => { if(currentConnection) currentConnection.close(); resetUI(); });
 
         function resetUI() {
-            currentConnection = null;
-            connectArea.classList.remove('hidden');
-            transferArea.classList.add('hidden');
-            targetIdInput.value = '';
-            connectBtn.textContent = "Connect";
-            connectBtn.disabled = false;
-            logsEl.innerHTML = '';
+            currentConnection = null; fileQueue = []; isSending = false;
+            UI.connectArea.classList.remove('hidden');
+            UI.transferArea.classList.add('hidden'); UI.transferArea.classList.remove('flex');
+            UI.targetId.value = ''; UI.connectBtn.textContent = "Pair"; UI.connectBtn.disabled = false;
+            window.history.replaceState({}, document.title, window.location.pathname);
+            releaseWakeLock();
         }
 
-        // Handle File Selection and Sending
-        fileInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file || !currentConnection) return;
+        // --- SEND TEXT ---
+        function sendText() {
+            const text = UI.textInput.value.trim();
+            if(!text || !currentConnection) return;
+            currentConnection.send({ type: 'text', content: text });
+            logMessage(text, 'sent');
+            UI.textInput.value = '';
+            UI.textInput.focus();
+        }
+        el('sendTextBtn').addEventListener('click', sendText);
+        UI.textInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendText(); });
 
-            log(`Preparing to send: ${file.name}...`);
-            
-            // Convert file to ArrayBuffer for safe WebRTC transmission
-            const arrayBuffer = await file.arrayBuffer();
-
-            try {
-                currentConnection.send({
-                    type: 'file',
-                    filename: file.name,
-                    filetype: file.type,
-                    filedata: arrayBuffer
-                });
-                log(`Sent successfully: ${file.name}`, true);
-            } catch (err) {
-                log(`Failed to send file. It might be too large.`);
-                console.error(err);
-            }
-
-            // Reset file input
-            fileInput.value = '';
+        // --- SEND FILES (QUEUE) ---
+        UI.fileInput.addEventListener('change', (e) => {
+            for(let file of e.target.files) fileQueue.push(file);
+            UI.fileInput.value = ''; // Reset input so same file can be selected again
+            if(!isSending) processFileQueue();
         });
 
-        // Start App
-        initPeer();
+        async function processFileQueue() {
+            if (fileQueue.length === 0 || !currentConnection) { isSending = false; releaseWakeLock(); return; }
+            
+            isSending = true; requestWakeLock();
+            const file = fileQueue.shift();
+            transferStartTime = Date.now();
+            showProgress(`Sending: ${file.name}`, file.size);
+            
+            currentConnection.send({ type: 'file-start', name: file.name, size: file.size, filetype: file.type });
+            
+            // Handle 0-byte files (prevent NaN progress errors)
+            if (file.size === 0) {
+                updateProgress(0, 1);
+            } else {
+                const chunkSize = 64 * 1024; let offset = 0;
+                while (offset < file.size) {
+                    const slice = file.slice(offset, offset + chunkSize);
+                    const buffer = await slice.arrayBuffer();
+                    
+                    // Backpressure: wait 10ms if buffer gets too full (prevents crashing sender)
+                    while (currentConnection.dataChannel.bufferedAmount > 2 * 1024 * 1024) { 
+                        await new Promise(r => setTimeout(r, 10)); 
+                    }
+                    
+                    currentConnection.send({ type: 'file-chunk', data: buffer });
+                    offset += buffer.byteLength;
+                    updateProgress(offset, file.size);
+                }
+            }
 
+            currentConnection.send({ type: 'file-end' });
+            logMessage(`🚀 Sent: ${file.name}`, 'system');
+            hideProgress();
+            
+            // Process next file in queue
+            setTimeout(processFileQueue, 500);
+        }
+
+        // --- DRAG & DROP ---
+        let dragCounter = 0;
+        document.addEventListener('dragenter', (e) => {
+            if (!currentConnection) return;
+            e.preventDefault(); dragCounter++;
+            UI.dropZone.classList.remove('hidden'); UI.dropZone.classList.add('flex');
+        });
+        document.addEventListener('dragleave', (e) => {
+            if (!currentConnection) return;
+            e.preventDefault(); dragCounter--;
+            if (dragCounter === 0) { UI.dropZone.classList.add('hidden'); UI.dropZone.classList.remove('flex'); }
+        });
+        document.addEventListener('dragover', (e) => e.preventDefault());
+        document.addEventListener('drop', (e) => {
+            e.preventDefault(); dragCounter = 0;
+            UI.dropZone.classList.add('hidden'); UI.dropZone.classList.remove('flex');
+            if (!currentConnection) return;
+            for(let file of e.dataTransfer.files) fileQueue.push(file);
+            if(!isSending) processFileQueue();
+        });
+
+        // --- PROGRESS UI & SPEED CALCULATION ---
+        function showProgress(text, totalBytes) { 
+            UI.progCont.classList.remove('hidden'); 
+            UI.progFile.textContent = text; 
+            UI.progStats.textContent = `0 / ${formatBytes(totalBytes)}`;
+            updateProgress(0, 1); 
+        }
+        function updateProgress(current, total) {
+            // Prevent division by zero for 0-byte files
+            const safeTotal = total === 0 ? 1 : total;
+            const pct = Math.round((current / safeTotal) * 100);
+            
+            UI.progBar.style.width = pct + '%'; 
+            UI.progPct.textContent = pct + '%';
+
+            const elapsedSeconds = (Date.now() - transferStartTime) / 1000;
+            if (elapsedSeconds > 0.5 && current > 0) {
+                const speedBps = current / elapsedSeconds;
+                UI.progStats.textContent = `${formatBytes(current)} / ${formatBytes(total)} (${formatBytes(speedBps)}/s)`;
+            }
+        }
+        function hideProgress() { UI.progCont.classList.add('hidden'); }
+
+        initPeer();
     </script>
 </body>
 </html>
