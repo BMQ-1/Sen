@@ -2,745 +2,234 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>LocalSend Replica · P2P File Transfer</title>
-    <!-- PeerJS for WebRTC signaling & connection -->
-    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.4.7/dist/peerjs.min.js"></script>
-    <!-- QRCode generator -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSend - Local P2P File Transfer</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PeerJS for WebRTC P2P connections -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
-            background: linear-gradient(145deg, #0b1120 0%, #111a28 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 16px;
-            margin: 0;
-            color: #eef2fb;
-        }
-        .app-container {
-            max-width: 1100px;
-            width: 100%;
-            background: rgba(18, 28, 46, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 36px;
-            padding: 28px 24px;
-            box-shadow: 0 25px 50px -8px rgba(0,0,0,0.6), 0 0 0 1px rgba(100, 150, 255, 0.1);
-            border: 1px solid rgba(255,255,255,0.06);
-        }
-        h1 {
-            font-weight: 600;
-            font-size: 2.1rem;
-            letter-spacing: -0.5px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 6px;
-            color: #ffffff;
-        }
-        h1 i {
-            color: #3b82f6;
-            font-size: 2rem;
-        }
-        .subhead {
-            color: #a0b3d9;
-            margin-bottom: 28px;
-            font-weight: 400;
-            border-left: 4px solid #3b82f6;
-            padding-left: 16px;
-        }
-        .status-bar {
-            background: #0f1a2b;
-            border-radius: 60px;
-            padding: 10px 20px;
-            margin-bottom: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 12px;
-            border: 1px solid #2a3a55;
-        }
-        .connection-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: #1e2e4a;
-            padding: 6px 18px;
-            border-radius: 40px;
-            font-size: 0.9rem;
-        }
-        .connection-badge i {
-            color: #10b981;
-        }
-        .device-name-input {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: #0a121f;
-            padding: 4px 8px 4px 18px;
-            border-radius: 40px;
-            border: 1px solid #2e405b;
-        }
-        .device-name-input input {
-            background: transparent;
-            border: none;
-            color: white;
-            font-size: 0.95rem;
-            padding: 8px 0;
-            outline: none;
-            width: 140px;
-        }
-        .device-name-input button {
-            background: #2563eb;
-            border: none;
-            color: white;
-            border-radius: 30px;
-            padding: 6px 14px;
-            font-weight: 500;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-        .grid-2col {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-        }
-        @media (max-width: 720px) {
-            .grid-2col { grid-template-columns: 1fr; }
-        }
-        .card {
-            background: #101c2e;
-            border-radius: 28px;
-            padding: 24px;
-            border: 1px solid #233853;
-            box-shadow: 0 12px 18px -8px rgba(0,0,0,0.4);
-        }
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            font-size: 1.4rem;
-            font-weight: 600;
-        }
-        .card-header i {
-            background: #1f3a5f;
-            padding: 10px;
-            border-radius: 16px;
-            color: #60a5fa;
-        }
-        .qr-container {
-            background: white;
-            padding: 16px;
-            border-radius: 24px;
-            display: inline-block;
-            margin: 12px 0;
-        }
-        #qrcode {
-            display: flex;
-            justify-content: center;
-        }
-        .peer-id-box {
-            background: #0b1622;
-            border-radius: 18px;
-            padding: 14px 18px;
-            font-family: 'SF Mono', 'Menlo', monospace;
-            font-size: 1rem;
-            word-break: break-all;
-            border: 1px solid #2e4b6e;
-            margin: 16px 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .btn {
-            background: #2563eb;
-            border: none;
-            color: white;
-            padding: 12px 22px;
-            border-radius: 40px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            border: 1px solid #3b82f6;
-            transition: 0.2s;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #3b82f6;
-            color: #bfd6ff;
-            box-shadow: none;
-        }
-        .btn:hover { background: #3b82f6; }
-        .btn-outline:hover { background: #1e3a6b; }
-        .file-input-wrapper {
-            margin: 20px 0;
-        }
-        .file-list {
-            max-height: 200px;
-            overflow-y: auto;
-            margin: 15px 0;
-            background: #0a1420;
-            border-radius: 20px;
-            padding: 8px;
-        }
-        .file-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 14px;
-            background: #12243b;
-            margin-bottom: 6px;
-            border-radius: 18px;
-            font-size: 0.9rem;
-        }
-        .progress-bar {
-            height: 8px;
-            background: #1e3857;
-            border-radius: 20px;
-            margin: 10px 0;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            width: 0%;
-            background: #3b82f6;
-            border-radius: 20px;
-            transition: width 0.1s;
-        }
-        .toast-msg {
-            background: #1e3a5f;
-            padding: 10px 20px;
-            border-radius: 40px;
-            margin-top: 18px;
-            text-align: center;
-            font-weight: 500;
-        }
-        .connection-section {
-            margin-top: 20px;
-        }
-        input, select {
-            background: #0e1a28;
-            border: 1px solid #2e4b6e;
-            padding: 14px 18px;
-            border-radius: 40px;
-            color: white;
-            font-size: 1rem;
-            width: 100%;
-            outline: none;
-        }
-        .flex-row {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-        .mt-4 { margin-top: 20px; }
-        .text-center { text-align: center; }
-        .text-small { font-size: 0.85rem; color: #9bb1d1; }
-        i { margin-right: 4px; }
-        .footer-note {
-            margin-top: 24px;
-            text-align: center;
-            color: #6a85a8;
-            font-size: 0.8rem;
-        }
+        body { background-color: #f3f4f6; color: #1f2937; font-family: system-ui, -apple-system, sans-serif; }
+        .glass-panel { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); padding: 24px; }
+        .hidden { display: none !important; }
     </style>
 </head>
-<body>
-<div class="app-container">
-    <h1>
-        <i class="fas fa-share-alt"></i> 
-        LocalSend Replica
-    </h1>
-    <div class="subhead">Secure · Peer-to-peer · No cloud · Works locally</div>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
 
-    <!-- Status & Device Name -->
-    <div class="status-bar">
-        <div class="connection-badge">
-            <i class="fas fa-circle"></i>
-            <span id="connectionStatus">Initializing...</span>
-        </div>
-        <div class="device-name-input">
-            <i class="fas fa-laptop"></i>
-            <input type="text" id="deviceNameInput" placeholder="Your device name" value="My Device" maxlength="30">
-            <button id="setNameBtn"><i class="fas fa-check"></i> Set</button>
-        </div>
-    </div>
-
-    <div class="grid-2col">
-        <!-- LEFT: SENDER / SHARE PANEL -->
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-upload"></i>
-                <span>📤 Send Files</span>
-            </div>
-            <p class="text-small"><i class="fas fa-id-card"></i> Your Peer ID (share this):</p>
-            <div class="peer-id-box">
-                <span id="myPeerIdDisplay">—</span>
-                <button class="btn-outline" id="copyIdBtn" style="padding:8px 14px;"><i class="far fa-copy"></i> Copy</button>
-            </div>
-            <div class="text-center">
-                <div id="qrcode"></div>
-                <p class="text-small"><i class="fas fa-qrcode"></i> Scan with receiving device</p>
-            </div>
-            <div class="file-input-wrapper">
-                <input type="file" id="fileInput" multiple style="display:none;">
-                <button class="btn" id="selectFilesBtn"><i class="fas fa-folder-open"></i> Choose Files</button>
-            </div>
-            <div id="selectedFilesList" class="file-list"></div>
-            <button class="btn" id="sendFilesBtn" disabled><i class="fas fa-paper-plane"></i> Send to Connected Peer</button>
-            <div id="sendStatus" class="toast-msg" style="display:none;"></div>
+    <div class="w-full max-w-md space-y-6">
+        <!-- Header -->
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-blue-600">WebSend</h1>
+            <p class="text-sm text-gray-500 mt-1">Secure, local P2P file transfer</p>
         </div>
 
-        <!-- RIGHT: RECEIVER / CONNECT PANEL -->
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-download"></i>
-                <span>📥 Receive Files</span>
+        <!-- My Device Info -->
+        <div class="glass-panel text-center">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Your Device ID</h2>
+            <div class="text-4xl font-mono font-bold text-gray-800 tracking-widest bg-gray-100 py-3 rounded-lg" id="myId">
+                Loading...
             </div>
-            <p>Connect to a sender using their Peer ID or scan QR code</p>
-            <div class="flex-row">
-                <input type="text" id="remotePeerIdInput" placeholder="Paste Peer ID here">
-                <button class="btn" id="connectBtn"><i class="fas fa-plug"></i> Connect</button>
+            <p class="text-xs text-gray-400 mt-2" id="statusText">Connecting to signaling server...</p>
+        </div>
+
+        <!-- Connection Area -->
+        <div class="glass-panel" id="connectArea">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Connect to Device</h2>
+            <div class="flex space-x-2">
+                <input type="text" id="targetId" placeholder="Enter 6-digit ID" maxlength="6" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-lg text-center shadow-sm">
+                <button id="connectBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition shadow-sm">Connect</button>
             </div>
-            <div class="connection-section">
-                <p><i class="fas fa-wifi"></i> <span id="remotePeerStatus">Not connected</span></p>
-                <button class="btn-outline" id="disconnectBtn" disabled><i class="fas fa-times"></i> Disconnect</button>
+        </div>
+
+        <!-- Transfer Area (Hidden until connected) -->
+        <div class="glass-panel hidden" id="transferArea">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-sm font-semibold text-green-600 uppercase tracking-wider">Connected to: <span id="connectedToId" class="font-mono text-gray-800"></span></h2>
+                <button id="disconnectBtn" class="text-xs text-red-500 hover:text-red-700 font-bold">Disconnect</button>
             </div>
-            <hr style="border-color:#1e3450; margin:24px 0;">
-            <p><i class="fas fa-inbox"></i> Incoming files:</p>
-            <div id="receivedFilesList" class="file-list"></div>
-            <div id="receiveProgress" style="margin-top:16px;"></div>
+            
+            <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition cursor-pointer relative" id="dropZone">
+                <input type="file" id="fileInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p class="mt-2 text-sm text-gray-600 font-medium">Tap to select a file or drag & drop</p>
+            </div>
+
+            <!-- Transfer Logs -->
+            <div class="mt-4 max-h-32 overflow-y-auto text-sm text-gray-600 space-y-1" id="logs"></div>
         </div>
     </div>
 
-    <!-- Global transfer progress / logs -->
-    <div class="footer-note">
-        <i class="fas fa-lock"></i> End-to-end encrypted · Direct peer connection · No server storage
-    </div>
-</div>
-
-<script>
-    (function(){
-        "use strict";
-
-        // ---------- CONFIG ----------
-        const PEERJS_CONFIG = {
-            host: '0.peerjs.com',   // public peerjs cloud signaling
-            port: 443,
-            secure: true,
-            debug: 1
-        };
-
-        // ---------- STATE ----------
+    <script>
+        // Generate a random 6-digit ID for easy sharing
+        const myGeneratedId = Math.floor(100000 + Math.random() * 900000).toString();
         let peer = null;
-        let myPeerId = '';
-        let currentConnection = null;      // active DataConnection
-        let dataChannel = null;
-        let deviceAlias = 'My Device';
-        
-        // File transfer queues
-        let selectedFiles = [];
-        let incomingFileChunks = new Map(); // fileId -> { metadata, chunks, receivedSize }
-        let currentReceiveFileId = null;
+        let currentConnection = null;
 
-        // DOM elements
-        const statusSpan = document.getElementById('connectionStatus');
-        const myPeerIdDisplay = document.getElementById('myPeerIdDisplay');
-        const qrcodeDiv = document.getElementById('qrcode');
-        const copyIdBtn = document.getElementById('copyIdBtn');
-        const deviceNameInput = document.getElementById('deviceNameInput');
-        const setNameBtn = document.getElementById('setNameBtn');
-        const selectFilesBtn = document.getElementById('selectFilesBtn');
-        const fileInput = document.getElementById('fileInput');
-        const selectedFilesDiv = document.getElementById('selectedFilesList');
-        const sendFilesBtn = document.getElementById('sendFilesBtn');
-        const remotePeerIdInput = document.getElementById('remotePeerIdInput');
+        // DOM Elements
+        const myIdEl = document.getElementById('myId');
+        const statusTextEl = document.getElementById('statusText');
+        const targetIdInput = document.getElementById('targetId');
         const connectBtn = document.getElementById('connectBtn');
+        const connectArea = document.getElementById('connectArea');
+        const transferArea = document.getElementById('transferArea');
+        const connectedToIdEl = document.getElementById('connectedToId');
         const disconnectBtn = document.getElementById('disconnectBtn');
-        const remotePeerStatus = document.getElementById('remotePeerStatus');
-        const receivedFilesDiv = document.getElementById('receivedFilesList');
-        const sendStatusDiv = document.getElementById('sendStatus');
-        const receiveProgressDiv = document.getElementById('receiveProgress');
+        const fileInput = document.getElementById('fileInput');
+        const logsEl = document.getElementById('logs');
 
-        // ---------- UTILS ----------
-        function updateStatus(text, isGood = true) {
-            statusSpan.innerHTML = text;
-            const icon = statusSpan.previousElementSibling;
-            if(icon) icon.style.color = isGood ? '#10b981' : '#f59e0b';
+        function log(msg, isSuccess = false) {
+            const div = document.createElement('div');
+            div.textContent = `> ${msg}`;
+            if(isSuccess) div.classList.add('text-green-600', 'font-semibold');
+            logsEl.prepend(div);
         }
 
-        function showToast(element, message, isError = false) {
-            element.style.display = 'block';
-            element.textContent = message;
-            element.style.background = isError ? '#7f1d1d' : '#1e3a5f';
-            setTimeout(() => { if(element) element.style.display = 'none'; }, 5000);
-        }
-
-        // Generate random file ID
-        function generateFileId() {
-            return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-        }
-
-        // Format bytes
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        // ---------- PEER INIT ----------
-        function initializePeer() {
-            if (peer) peer.destroy();
-            
-            peer = new Peer(undefined, PEERJS_CONFIG);
-            
-            peer.on('open', (id) => {
-                myPeerId = id;
-                myPeerIdDisplay.textContent = id;
-                updateStatus(`🟢 Online · ${deviceAlias}`, true);
-                generateQRCode(id);
-                console.log('PeerJS ready, ID:', id);
+        // Initialize PeerJS
+        function initPeer() {
+            peer = new Peer(myGeneratedId, {
+                debug: 2
             });
 
+            peer.on('open', (id) => {
+                myIdEl.textContent = id;
+                statusTextEl.textContent = "Ready to connect. (Same Wi-Fi recommended)";
+                statusTextEl.classList.add('text-green-600');
+            });
+
+            // Handle incoming connections
             peer.on('connection', (conn) => {
-                // Incoming connection from another peer
                 if (currentConnection) {
-                    conn.close();
-                    showToast(sendStatusDiv, 'Already connected. Rejecting new connection.', true);
+                    conn.close(); // Only allow one connection at a time
                     return;
                 }
                 setupConnection(conn);
-                remotePeerStatus.textContent = `Connected to: ${conn.peer.slice(0,8)}...`;
-                updateStatus(`🔗 Connected to ${conn.peer.slice(0,8)}`, true);
             });
 
             peer.on('error', (err) => {
-                console.error('Peer error:', err);
-                updateStatus('⚠️ Connection error', false);
-                showToast(sendStatusDiv, 'Peer error: ' + err.message, true);
-            });
-
-            peer.on('disconnected', () => {
-                updateStatus('⏳ Reconnecting...', false);
-                peer.reconnect();
+                alert("Error: " + err.type);
+                statusTextEl.textContent = "Connection error.";
             });
         }
 
-        // Generate QR code from peer ID
-        function generateQRCode(peerId) {
-            qrcodeDiv.innerHTML = '';
-            if (!peerId) return;
-            QRCode.toCanvas(peerId, { width: 200, margin: 1 }, (err, canvas) => {
-                if (err) {
-                    console.error('QR error', err);
-                    return;
-                }
-                qrcodeDiv.appendChild(canvas);
-            });
-        }
-
-        // Setup data connection handlers
+        // Setup Connection Handlers
         function setupConnection(conn) {
             currentConnection = conn;
             
             conn.on('open', () => {
-                dataChannel = conn;  // alias
-                remotePeerStatus.textContent = `✅ Connected to ${conn.peer.substring(0,12)}`;
-                disconnectBtn.disabled = false;
-                sendFilesBtn.disabled = (selectedFiles.length === 0);
-                updateStatus(`🔒 Secure connection with ${conn.peer.slice(0,8)}`, true);
+                connectArea.classList.add('hidden');
+                transferArea.classList.remove('hidden');
+                connectedToIdEl.textContent = conn.peer;
+                log(`Connected to ${conn.peer}`, true);
             });
 
             conn.on('data', (data) => {
-                handleIncomingData(data);
+                if (data.type === 'file') {
+                    log(`Receiving file: ${data.filename} (${(data.filedata.byteLength / 1024 / 1024).toFixed(2)} MB)...`);
+                    
+                    // Convert received ArrayBuffer back to a Blob
+                    const blob = new Blob([data.filedata], { type: data.filetype });
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Create an invisible anchor tag to trigger download automatically
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = data.filename;
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 1000);
+
+                    log(`Successfully downloaded: ${data.filename}`, true);
+                }
             });
 
             conn.on('close', () => {
-                resetConnectionUI();
-                showToast(sendStatusDiv, 'Peer disconnected');
-            });
-
-            conn.on('error', (err) => {
-                console.warn('Connection error', err);
-                showToast(sendStatusDiv, 'Connection error', true);
+                resetUI();
+                log("Connection closed.");
             });
         }
 
-        function resetConnectionUI() {
-            currentConnection = null;
-            dataChannel = null;
-            remotePeerStatus.textContent = 'Not connected';
-            disconnectBtn.disabled = true;
-            sendFilesBtn.disabled = true;
-            updateStatus(`🟢 Online · ${deviceAlias}`, true);
-        }
-
-        // ---------- FILE SENDING ----------
-        selectFilesBtn.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => {
-            selectedFiles = Array.from(e.target.files);
-            renderSelectedFiles();
-            sendFilesBtn.disabled = !(currentConnection && selectedFiles.length > 0);
-        });
-
-        function renderSelectedFiles() {
-            if (selectedFiles.length === 0) {
-                selectedFilesDiv.innerHTML = '<div class="text-small" style="padding:12px;text-align:center;">No files selected</div>';
-                return;
-            }
-            let html = '';
-            selectedFiles.forEach((file, idx) => {
-                html += `<div class="file-item"><i class="far fa-file"></i> ${file.name} (${formatBytes(file.size)})</div>`;
-            });
-            selectedFilesDiv.innerHTML = html;
-        }
-
-        // Send files over data channel with chunking
-        async function sendFilesToPeer() {
-            if (!currentConnection || !dataChannel) {
-                showToast(sendStatusDiv, 'Not connected to any peer', true);
-                return;
-            }
-            if (selectedFiles.length === 0) return;
-
-            sendStatusDiv.style.display = 'block';
-            sendStatusDiv.textContent = 'Preparing files...';
-
-            const CHUNK_SIZE = 16 * 1024; // 16KB per chunk
-            
-            for (const file of selectedFiles) {
-                const fileId = generateFileId();
-                const metadata = {
-                    type: 'file-meta',
-                    fileId: fileId,
-                    name: file.name,
-                    size: file.size,
-                    mime: file.type || 'application/octet-stream'
-                };
-                dataChannel.send(JSON.stringify(metadata));
-
-                const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-                let sentChunks = 0;
-                
-                const reader = new FileReader();
-                let offset = 0;
-                
-                const readNextChunk = () => {
-                    const slice = file.slice(offset, offset + CHUNK_SIZE);
-                    reader.readAsArrayBuffer(slice);
-                };
-
-                reader.onload = (e) => {
-                    const chunk = e.target.result;
-                    const chunkHeader = {
-                        type: 'file-chunk',
-                        fileId: fileId,
-                        offset: offset,
-                        size: chunk.byteLength
-                    };
-                    // Send header + binary in one go? For simplicity send JSON then binary as separate messages
-                    dataChannel.send(JSON.stringify(chunkHeader));
-                    dataChannel.send(chunk);
-                    
-                    offset += chunk.byteLength;
-                    sentChunks++;
-                    const percent = Math.round((offset / file.size) * 100);
-                    sendStatusDiv.textContent = `Sending ${file.name}: ${percent}%`;
-                    
-                    if (offset < file.size) {
-                        // Use setTimeout to avoid blocking UI
-                        setTimeout(readNextChunk, 5);
-                    } else {
-                        // Send completion marker
-                        dataChannel.send(JSON.stringify({ type: 'file-end', fileId: fileId }));
-                        sendStatusDiv.textContent = `✅ Sent ${file.name}`;
-                    }
-                };
-                
-                reader.onerror = (err) => {
-                    showToast(sendStatusDiv, 'Error reading file', true);
-                };
-                
-                readNextChunk();
-                // Wait for this file to finish before next? Better to send sequentially
-                await new Promise(resolve => {
-                    const check = setInterval(() => {
-                        if (offset >= file.size) { clearInterval(check); resolve(); }
-                    }, 100);
-                });
-            }
-            sendStatusDiv.textContent = 'All files sent!';
-            selectedFiles = [];
-            renderSelectedFiles();
-            sendFilesBtn.disabled = true;
-        }
-
-        sendFilesBtn.addEventListener('click', sendFilesToPeer);
-
-        // ---------- INCOMING DATA HANDLER ----------
-        function handleIncomingData(data) {
-            if (typeof data === 'string') {
-                try {
-                    const msg = JSON.parse(data);
-                    if (msg.type === 'file-meta') {
-                        // Initialize file receive
-                        const fileId = msg.fileId;
-                        incomingFileChunks.set(fileId, {
-                            metadata: msg,
-                            chunks: [],
-                            receivedSize: 0,
-                            name: msg.name,
-                            size: msg.size
-                        });
-                        addReceivedFileEntry(msg);
-                    } 
-                    else if (msg.type === 'file-chunk') {
-                        // Store chunk offset info, actual chunk arrives as binary next
-                        // We'll use a temporary buffer for the next binary message
-                        window.__pendingChunkMeta = msg;
-                    }
-                    else if (msg.type === 'file-end') {
-                        finalizeReceivedFile(msg.fileId);
-                    }
-                } catch(e) { /* not json, maybe text */ }
-            } else if (data instanceof ArrayBuffer || data instanceof Uint8Array) {
-                // Binary chunk
-                const meta = window.__pendingChunkMeta;
-                if (meta) {
-                    window.__pendingChunkMeta = null;
-                    const fileId = meta.fileId;
-                    const record = incomingFileChunks.get(fileId);
-                    if (record) {
-                        const chunkArray = new Uint8Array(data);
-                        record.chunks.push({ offset: meta.offset, data: chunkArray });
-                        record.receivedSize += chunkArray.byteLength;
-                        updateReceiveProgress(fileId, record);
-                    }
-                }
-            }
-        }
-
-        function addReceivedFileEntry(meta) {
-            const div = document.createElement('div');
-            div.className = 'file-item';
-            div.id = `recv-${meta.fileId}`;
-            div.innerHTML = `<i class="far fa-file"></i> ${meta.name} (${formatBytes(meta.size)}) 
-                            <span style="margin-left:auto;font-size:0.8rem;" id="prog-${meta.fileId}">0%</span>`;
-            receivedFilesDiv.appendChild(div);
-        }
-
-        function updateReceiveProgress(fileId, record) {
-            const percent = Math.round((record.receivedSize / record.size) * 100);
-            const progSpan = document.getElementById(`prog-${fileId}`);
-            if (progSpan) progSpan.textContent = `${percent}%`;
-            
-            // Show overall progress bar
-            receiveProgressDiv.innerHTML = `
-                <div>Receiving ${record.metadata.name}: ${percent}%</div>
-                <div class="progress-bar"><div class="progress-fill" style="width:${percent}%;"></div></div>
-            `;
-        }
-
-        function finalizeReceivedFile(fileId) {
-            const record = incomingFileChunks.get(fileId);
-            if (!record) return;
-            
-            // Sort chunks by offset and combine
-            record.chunks.sort((a,b) => a.offset - b.offset);
-            const totalLength = record.chunks.reduce((sum, c) => sum + c.data.byteLength, 0);
-            const combined = new Uint8Array(totalLength);
-            let pos = 0;
-            for (const c of record.chunks) {
-                combined.set(c.data, pos);
-                pos += c.data.byteLength;
-            }
-            
-            const blob = new Blob([combined], { type: record.metadata.mime });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = record.metadata.name;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            // Update UI
-            const fileDiv = document.getElementById(`recv-${fileId}`);
-            if (fileDiv) fileDiv.innerHTML += ' ✅';
-            receiveProgressDiv.innerHTML = `✅ Received ${record.metadata.name}`;
-            incomingFileChunks.delete(fileId);
-        }
-
-        // ---------- CONNECTION MANAGEMENT ----------
+        // Connect to target
         connectBtn.addEventListener('click', () => {
-            const remoteId = remotePeerIdInput.value.trim();
-            if (!remoteId) { showToast(sendStatusDiv, 'Enter Peer ID', true); return; }
-            if (!peer) initializePeer();
+            const targetId = targetIdInput.value.trim();
+            if (targetId.length !== 6) {
+                alert("Please enter a valid 6-digit ID.");
+                return;
+            }
+            if (targetId === myGeneratedId) {
+                alert("You cannot connect to yourself.");
+                return;
+            }
             
-            const conn = peer.connect(remoteId, { reliable: true, serialization: 'binary' });
+            connectBtn.textContent = "Connecting...";
+            connectBtn.disabled = true;
+
+            const conn = peer.connect(targetId, { reliable: true });
             setupConnection(conn);
-            remotePeerStatus.textContent = `Connecting to ${remoteId.slice(0,12)}...`;
+
+            // Reset button if connection takes too long
+            setTimeout(() => {
+                if(!currentConnection || !currentConnection.open) {
+                    connectBtn.textContent = "Connect";
+                    connectBtn.disabled = false;
+                }
+            }, 5000);
         });
 
+        // Disconnect
         disconnectBtn.addEventListener('click', () => {
             if (currentConnection) {
                 currentConnection.close();
-                resetConnectionUI();
             }
+            resetUI();
         });
 
-        copyIdBtn.addEventListener('click', () => {
-            navigator.clipboard?.writeText(myPeerId).then(() => {
-                showToast(sendStatusDiv, 'Peer ID copied!');
-            }).catch(() => alert('Copy manually: ' + myPeerId));
-        });
-
-        setNameBtn.addEventListener('click', () => {
-            const newName = deviceNameInput.value.trim();
-            if (newName) {
-                deviceAlias = newName;
-                updateStatus(`🟢 Online · ${deviceAlias}`, true);
-                showToast(sendStatusDiv, 'Device name updated');
-            }
-        });
-
-        // Auto-fill remote ID from URL hash (e.g., #peerId)
-        function checkUrlHash() {
-            if (window.location.hash) {
-                const hashId = window.location.hash.substring(1);
-                remotePeerIdInput.value = hashId;
-                // Optionally auto-connect? we'll let user press connect.
-            }
+        function resetUI() {
+            currentConnection = null;
+            connectArea.classList.remove('hidden');
+            transferArea.classList.add('hidden');
+            targetIdInput.value = '';
+            connectBtn.textContent = "Connect";
+            connectBtn.disabled = false;
+            logsEl.innerHTML = '';
         }
-        
-        // ---------- START ----------
-        initializePeer();
-        checkUrlHash();
-        renderSelectedFiles();
 
-        // Cleanup
-        window.addEventListener('beforeunload', () => {
-            if (currentConnection) currentConnection.close();
-            if (peer) peer.destroy();
+        // Handle File Selection and Sending
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file || !currentConnection) return;
+
+            log(`Preparing to send: ${file.name}...`);
+            
+            // Convert file to ArrayBuffer for safe WebRTC transmission
+            const arrayBuffer = await file.arrayBuffer();
+
+            try {
+                currentConnection.send({
+                    type: 'file',
+                    filename: file.name,
+                    filetype: file.type,
+                    filedata: arrayBuffer
+                });
+                log(`Sent successfully: ${file.name}`, true);
+            } catch (err) {
+                log(`Failed to send file. It might be too large.`);
+                console.error(err);
+            }
+
+            // Reset file input
+            fileInput.value = '';
         });
-    })();
-</script>
+
+        // Start App
+        initPeer();
+
+    </script>
 </body>
 </html>
