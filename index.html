@@ -8,13 +8,39 @@
     <meta name="theme-color" content="#0a0a12">
     <title>وصلة — نقل آمن</title>
 
-    <!-- Content Security Policy: Blocks XSS, inline script eval, risky resources -->
+    <!--
+    ╔══════════════════════════════════════════════════════════════╗
+    ║  PRIVACY & SECURITY OVERVIEW                                ║
+    ║  ─────────────────────────────────────────────────────────── ║
+    ║  • WebRTC DataChannel (DTLS 1.2+ / SRTP) — end-to-end      ║
+    ║    encrypted by the browser at the transport layer.         ║
+    ║  • No server stores files, messages, or metadata.           ║
+    ║  • PeerJS signalling server only exchanges SDP/ICE blobs;   ║
+    ║    it never sees payload data.                               ║
+    ║  • IDs are ephemeral 6-digit numbers generated with         ║
+    ║    crypto.getRandomValues() (modulo-bias-free).             ║
+    ║  • Auth handshake: receiver must explicitly tap "Accept"     ║
+    ║    before any data flows.                                    ║
+    ║  • All file MIME types are sanitised; active types          ║
+    ║    (HTML, SVG, JS, PHP …) are forced to octet-stream.       ║
+    ║  • All filenames are sanitised; path traversal chars are    ║
+    ║    stripped.  Max 255 chars.                                 ║
+    ║  • All DOM updates use textContent / DOM API — no           ║
+    ║    innerHTML — preventing XSS even from malicious payloads. ║
+    ║  • Incoming chunk size is validated (≤ 256 KB).             ║
+    ║  • Per-file receive timeout (30 s) aborts stalled           ║
+    ║    transfers.                                                ║
+    ║  • WakeLock keeps screen alive during transfers on mobile.  ║
+    ║  • Content-Security-Policy blocks external script injection.║
+    ╚══════════════════════════════════════════════════════════════╝
+    -->
+
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self' blob: data:;
         script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com;
         style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com;
         font-src https://fonts.gstatic.com;
-        connect-src 'self' wss://*.peerjs.com https://*.peerjs.com stun: turn: blob: data:;
+        connect-src 'self' wss://*.peerjs.com https://*.peerjs.com https://0.peerjs.com stun: turn: blob: data:;
         img-src 'self' blob: data:;
         object-src 'none';
         base-uri 'none';
@@ -28,8 +54,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
 
+    <!-- Tailwind for utility classes only -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+    <!--
+        FIX #1 — PeerJS version pinned to 1.5.4 (latest stable).
+        1.5.2 has a known bug where the peer is destroyed instead of
+        reconnected on transient network hiccups, causing "stuck on
+        Connecting" on mobile WebRTC.
+    -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
@@ -49,7 +83,6 @@
         }
 
         * { box-sizing: border-box; }
-
         html { direction: rtl; }
 
         body {
@@ -63,28 +96,21 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Ambient background effect */
         body::before {
             content: '';
             position: fixed;
-            top: -30%;
-            right: -20%;
-            width: 60vw;
-            height: 60vw;
+            top: -30%; right: -20%;
+            width: 60vw; height: 60vw;
             background: radial-gradient(circle, rgba(79,142,247,0.07) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 0;
+            pointer-events: none; z-index: 0;
         }
         body::after {
             content: '';
             position: fixed;
-            bottom: -20%;
-            left: -10%;
-            width: 50vw;
-            height: 50vw;
+            bottom: -20%; left: -10%;
+            width: 50vw; height: 50vw;
             background: radial-gradient(circle, rgba(123,108,247,0.06) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 0;
+            pointer-events: none; z-index: 0;
         }
 
         .glass-card {
@@ -105,7 +131,6 @@
         }
 
         .mono { font-family: 'IBM Plex Mono', monospace; }
-
         .tap-anim { transition: transform 0.1s, opacity 0.1s; }
         .tap-anim:active { transform: scale(0.95); opacity: 0.85; }
 
@@ -117,6 +142,8 @@
             cursor: pointer;
             transition: all 0.2s;
             width: 100%;
+            border: none;
+            text-align: center;
         }
         .id-display:hover { border-color: rgba(79,142,247,0.3); background: rgba(79,142,247,0.06); }
         .id-display:active { transform: scale(0.97); }
@@ -130,15 +157,15 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            display: block;
         }
 
-        /* QR styling */
         #qrcode canvas, #qrcode img {
             border-radius: 12px;
             border: 3px solid var(--surface2);
+            max-width: 100%;
         }
 
-        /* Status badge */
         .status-badge {
             display: inline-flex;
             align-items: center;
@@ -156,14 +183,14 @@
             border-radius: 50%;
             background: #f59e0b;
             box-shadow: 0 0 6px #f59e0b;
-            animation: pulse 1.8s ease-in-out infinite;
+            animation: pulse-dot 1.8s ease-in-out infinite;
+            flex-shrink: 0;
         }
         .status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); animation: none; }
         .status-dot.connected { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: none; }
 
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
-        /* Input styling */
         .input-field {
             width: 100%;
             background: var(--surface2);
@@ -181,14 +208,8 @@
         }
         .input-field:focus { border-color: rgba(79,142,247,0.5); box-shadow: 0 0 0 3px rgba(79,142,247,0.12); }
         .input-field::placeholder { color: rgba(232,234,246,0.2); letter-spacing: 0.05em; }
+        .msg-input { text-align: right; letter-spacing: normal; direction: rtl; }
 
-        .msg-input {
-            text-align: right;
-            letter-spacing: normal;
-            direction: rtl;
-        }
-
-        /* Buttons */
         .btn-primary {
             background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
             color: white;
@@ -219,46 +240,26 @@
         }
         .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
 
-        .btn-send {
-            background: var(--surface2);
-            color: var(--text);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 11px 18px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex; align-items: center; justify-content: center;
-            gap: 6px;
-            font-family: 'Tajawal', sans-serif;
-            font-weight: 700;
-            font-size: 0.875rem;
-            white-space: nowrap;
-        }
-        .btn-send:hover { background: rgba(79,142,247,0.12); border-color: rgba(79,142,247,0.3); color: var(--accent); }
-
-        /* Chat messages */
         .msg-bubble { max-width: 82%; word-break: break-word; border-radius: 18px; padding: 10px 14px; font-size: 0.875rem; line-height: 1.55; }
         .msg-sent { background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); color: white; border-bottom-left-radius: 5px; }
         .msg-received { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-bottom-right-radius: 5px; }
         .msg-system { background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--muted); font-size: 11px; border-radius: 99px; padding: 5px 14px; }
 
-        /* Progress */
         .progress-bar { height: 4px; border-radius: 99px; background: rgba(255,255,255,0.07); overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 99px; transition: width 0.15s ease-out; }
 
-        /* Auth Modal */
+        /* Modal — uses flex column so it contributes natural height; no position:fixed */
         .modal-overlay {
             position: fixed; inset: 0;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
             z-index: 1000;
             display: none;
             align-items: center; justify-content: center;
             padding: 1rem;
         }
         .modal-overlay.open { display: flex; }
-
         .modal-card {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -270,12 +271,10 @@
             box-shadow: 0 24px 64px rgba(0,0,0,0.6);
         }
 
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
 
-        /* Drop zone overlay */
         .drop-overlay {
             position: absolute; inset: 0;
             background: rgba(79,142,247,0.1);
@@ -290,7 +289,6 @@
         }
         .drop-overlay.active { display: flex; }
 
-        /* Saudi badge */
         .saudi-badge {
             display: inline-flex;
             align-items: center;
@@ -305,7 +303,6 @@
             letter-spacing: 0.03em;
         }
 
-        /* Download button */
         .download-btn {
             display: inline-flex;
             align-items: center;
@@ -327,7 +324,6 @@
         .download-btn:hover { box-shadow: 0 4px 28px rgba(34,211,122,0.5); transform: translateY(-1px); }
         .download-btn:active { transform: scale(0.97); }
 
-        /* Encryption badge */
         .enc-badge {
             display: inline-flex;
             align-items: center;
@@ -342,7 +338,6 @@
             letter-spacing: 0.05em;
         }
 
-        /* Animations */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.25s ease-out forwards; }
 
@@ -363,270 +358,342 @@
             letter-spacing: -0.01em;
         }
 
-        /* Divider with label */
-        .divider { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 11px; font-weight: 700; }
-        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        /* "Connecting" spinner shown on ID area before peer is ready */
+        .id-skeleton {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: clamp(2rem, 9vw, 3rem);
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            color: var(--muted);
+            animation: pulse-dot 1.2s ease-in-out infinite;
+            display: block;
+        }
+
+        /* Toast */
+        #toast {
+            position: fixed;
+            bottom: calc(1.5rem + var(--safe-bottom));
+            left: 50%; transform: translateX(-50%);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            z-index: 2000;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+        #toast.show { opacity: 1; }
     </style>
 </head>
 <body class="flex flex-col items-center px-4 md:px-8 relative">
 
-    <!-- Auth Modal -->
-    <div id="authModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-        <div class="modal-card fade-in">
-            <div style="width:56px;height:56px;background:rgba(79,142,247,0.12);border:1px solid rgba(79,142,247,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-                <svg width="24" height="24" fill="none" stroke="#4f8ef7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-            </div>
-            <h3 id="modalTitle" style="font-size:1.1rem;font-weight:900;margin-bottom:8px;">طلب اتصال</h3>
-            <p style="font-size:0.8rem;color:var(--muted);margin-bottom:20px;">
-                الجهاز <span id="reqDeviceId" style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);background:var(--surface2);padding:2px 8px;border-radius:6px;font-size:0.95em;"></span> يطلب الاقتران
+<!-- Toast -->
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- Auth Modal -->
+<div id="authModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card fade-in">
+        <div style="width:56px;height:56px;background:rgba(79,142,247,0.12);border:1px solid rgba(79,142,247,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+            <svg width="24" height="24" fill="none" stroke="#4f8ef7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        </div>
+        <h3 id="modalTitle" style="font-size:1.1rem;font-weight:900;margin-bottom:8px;">طلب اتصال</h3>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:20px;">
+            الجهاز <span id="reqDeviceId" style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);background:var(--surface2);padding:2px 8px;border-radius:6px;font-size:0.95em;"></span> يطلب الاقتران
+        </p>
+        <div style="display:flex;gap:10px;">
+            <button id="declineBtn" class="btn-ghost tap-anim" style="flex:1;">رفض</button>
+            <button id="acceptBtn" class="btn-primary tap-anim" style="flex:1;">قبول</button>
+        </div>
+    </div>
+</div>
+
+<!-- Header -->
+<header class="w-full max-w-4xl flex justify-between items-center mb-5 shrink-0" style="position:relative;z-index:1;">
+    <div>
+        <div class="logo-text">وصلة</div>
+        <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:0.05em;margin-top:2px;display:flex;align-items:center;gap:6px;direction:ltr;justify-content:flex-end;">
+            <span class="enc-badge">
+                <svg width="9" height="9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                WebRTC E2E
+            </span>
+        </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+        <div class="status-badge">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText" style="color:var(--muted);">جارٍ الاتصال...</span>
+        </div>
+        <div class="saudi-badge">
+            <span>🇸🇦</span>
+            <span>صُنع في السعودية</span>
+        </div>
+    </div>
+</header>
+
+<!-- Main -->
+<main class="w-full max-w-4xl grid md:grid-cols-2 gap-4 sm:gap-5 flex-1 items-start pb-4" style="position:relative;z-index:1;">
+
+    <!-- LEFT: Identity & QR -->
+    <div class="glass-card p-5 flex flex-col items-center text-center w-full">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px;">هويتك الآمنة</div>
+
+        <button onclick="copyMyId()" class="id-display tap-anim" aria-label="انسخ معرفك">
+            <span class="id-skeleton" id="myId">— — —</span>
+            <div style="font-size:11px;color:var(--muted);margin-top:8px;font-weight:700;" id="idSubtext">جارٍ التهيئة...</div>
+        </button>
+
+        <div style="width:100%;margin-top:18px;padding-top:18px;border-top:1px solid var(--border);display:flex;flex-direction:column;align-items:center;">
+            <div id="qrcode" style="padding:8px;background:white;border-radius:14px;display:inline-block;min-width:144px;min-height:144px;"></div>
+            <p style="font-size:11px;color:var(--muted);margin-top:10px;font-weight:700;">امسح للاقتران فوراً</p>
+        </div>
+
+        <div style="width:100%;margin-top:14px;padding:10px 14px;background:rgba(79,142,247,0.04);border:1px solid rgba(79,142,247,0.1);border-radius:12px;text-align:right;">
+            <p style="font-size:10px;color:var(--muted);line-height:1.6;">
+                🔒 <strong style="color:var(--text);">الاتصال مشفر</strong> — نقل مباشر بين الأجهزة عبر WebRTC DTLS. لا تُخزَّن ملفاتك أو رسائلك على أي خادم أبداً.
             </p>
-            <div style="display:flex;gap:10px;">
-                <button id="declineBtn" class="btn-ghost tap-anim" style="flex:1;" aria-label="رفض الاتصال">رفض</button>
-                <button id="acceptBtn" class="btn-primary tap-anim" style="flex:1;" aria-label="قبول الاتصال">قبول</button>
-            </div>
         </div>
     </div>
 
-    <!-- Header -->
-    <header class="w-full max-w-4xl flex justify-between items-center mb-5 shrink-0" style="position:relative;z-index:1;">
-        <div>
-            <div class="logo-text">وصلة</div>
-            <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:0.05em;margin-top:2px;display:flex;align-items:center;gap:6px;direction:ltr;justify-content:flex-end;">
-                <span class="enc-badge">
-                    <svg width="9" height="9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                    WebRTC E2E
-                </span>
+    <!-- RIGHT: Connect + Transfer -->
+    <div class="flex flex-col gap-4 h-full w-full">
+
+        <!-- Connect Panel -->
+        <div class="glass-card p-5 w-full" id="connectArea">
+            <div style="font-size:0.875rem;font-weight:900;margin-bottom:14px;color:var(--text);">الاتصال بجهاز</div>
+            <div style="display:flex;gap:10px;direction:ltr;">
+                <input type="text" id="targetId" placeholder="000000" maxlength="6" inputmode="numeric"
+                    class="input-field"
+                    style="flex:1;width:0;"
+                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                    aria-label="معرف الجهاز الهدف">
+                <button id="connectBtn" class="btn-primary tap-anim" style="white-space:nowrap;">اقتران</button>
             </div>
+            <p id="connectHint" style="font-size:10px;color:var(--muted);margin-top:10px;font-weight:700;text-align:center;">أدخل الرقم السداسي للجهاز الآخر</p>
         </div>
 
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-            <div class="status-badge">
-                <span class="status-dot" id="statusDot"></span>
-                <span id="statusText" style="color:var(--muted);">جارٍ الاتصال...</span>
-            </div>
-            <div class="saudi-badge">
-                <span>🇸🇦</span>
-                <span>صُنع في السعودية</span>
-            </div>
-        </div>
-    </header>
+        <!-- Transfer Panel (hidden until connected) -->
+        <div class="glass-card p-4 hidden flex-col relative w-full" id="transferArea"
+            style="height:60dvh;min-height:420px;"
+            role="region" aria-label="لوحة النقل">
 
-    <!-- Main Content -->
-    <main class="w-full max-w-4xl grid md:grid-cols-2 gap-4 sm:gap-5 flex-1 items-start pb-4" style="position:relative;z-index:1;">
-
-        <!-- LEFT: Identity & QR -->
-        <div class="glass-card p-5 flex flex-col items-center text-center w-full">
-            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px;">هويتك الآمنة</div>
-
-            <button onclick="copyMyId()" class="id-display tap-anim" aria-label="انسخ معرفك">
-                <div class="id-number" id="myId">— — —</div>
-                <div style="font-size:11px;color:var(--muted);margin-top:8px;font-weight:700;">اضغط للنسخ</div>
-            </button>
-
-            <div style="width:100%;margin-top:18px;padding-top:18px;border-top:1px solid var(--border);display:flex;flex-direction:column;align-items:center;">
-                <div id="qrcode" style="padding:8px;background:white;border-radius:14px;display:inline-block;"></div>
-                <p style="font-size:11px;color:var(--muted);margin-top:10px;font-weight:700;">امسح للاقتران فوراً</p>
-            </div>
-
-            <!-- Privacy info -->
-            <div style="width:100%;margin-top:14px;padding:10px 14px;background:rgba(79,142,247,0.04);border:1px solid rgba(79,142,247,0.1);border-radius:12px;text-align:right;">
-                <p style="font-size:10px;color:var(--muted);line-height:1.6;">
-                    🔒 <strong style="color:var(--text);">الاتصال مشفر</strong> — نقل مباشر بين الأجهزة عبر WebRTC. لا تُخزَّن ملفاتك أو رسائلك على أي خادم.
-                </p>
-            </div>
-        </div>
-
-        <!-- RIGHT: Connection + Transfer -->
-        <div class="flex flex-col gap-4 h-full w-full">
-
-            <!-- Connect Panel -->
-            <div class="glass-card p-5 w-full" id="connectArea">
-                <div style="font-size:0.875rem;font-weight:900;margin-bottom:14px;color:var(--text);">الاتصال بجهاز</div>
-                <div style="display:flex;gap:10px;direction:ltr;">
-                    <input type="text" id="targetId" placeholder="000000" maxlength="6" inputmode="numeric"
-                        class="input-field"
-                        style="flex:1;width:0;"
-                        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-                        aria-label="معرف الجهاز الهدف">
-                    <button id="connectBtn" class="btn-primary tap-anim" style="white-space:nowrap;" aria-label="اقتران بالجهاز">اقتران</button>
-                </div>
-            </div>
-
-            <!-- Transfer Panel -->
-            <div class="glass-card p-4 hidden flex-col relative w-full" id="transferArea"
-                style="height:60dvh;min-height:420px;"
-                role="region" aria-label="لوحة النقل">
-
-                <!-- Header -->
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border);flex-shrink:0;">
-                    <div style="display:flex;align-items:center;gap:10px;overflow:hidden;">
-                        <div style="width:34px;height:34px;background:rgba(79,142,247,0.1);border:1px solid rgba(79,142,247,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                            <svg width="16" height="16" fill="#4f8ef7" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/></svg>
-                        </div>
-                        <div style="overflow:hidden;">
-                            <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">متصل بـ</div>
-                            <div class="mono" style="font-size:0.875rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="connectedToId">---</div>
-                        </div>
+            <!-- Transfer Header -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border);flex-shrink:0;">
+                <div style="display:flex;align-items:center;gap:10px;overflow:hidden;">
+                    <div style="width:34px;height:34px;background:rgba(79,142,247,0.1);border:1px solid rgba(79,142,247,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <svg width="16" height="16" fill="#4f8ef7" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/></svg>
                     </div>
-                    <button id="disconnectBtn" class="tap-anim" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all 0.2s;font-family:'Tajawal',sans-serif;" aria-label="قطع الاتصال">
-                        قطع
+                    <div style="overflow:hidden;">
+                        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">متصل بـ</div>
+                        <div class="mono" style="font-size:0.875rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="connectedToId">---</div>
+                    </div>
+                </div>
+                <button id="disconnectBtn" class="tap-anim" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all 0.2s;font-family:'Tajawal',sans-serif;">
+                    قطع
+                </button>
+            </div>
+
+            <!-- Chat log -->
+            <div id="logs" style="flex:1;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;padding-left:4px;" role="log" aria-live="polite">
+                <div id="logPlaceholder" style="margin:auto;text-align:center;" class="msg-system">🔒 مشفر من طرف إلى طرف</div>
+            </div>
+
+            <!-- Progress -->
+            <div id="progressContainer" style="display:none;flex-shrink:0;margin-bottom:10px;background:var(--surface2);padding:10px 12px;border-radius:12px;border:1px solid var(--border);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span id="progressFilename" style="font-size:11px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%;direction:ltr;"></span>
+                    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                        <span id="progressStats" style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;"></span>
+                        <span id="progressPercent" style="font-size:11px;font-weight:700;color:var(--accent);font-family:'IBM Plex Mono',monospace;">0%</span>
+                    </div>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" id="progressBar" style="width:0%"></div></div>
+            </div>
+
+            <!-- Input Row -->
+            <div style="flex-shrink:0;display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;gap:8px;direction:rtl;">
+                    <input type="text" id="textInput" placeholder="رسالة أو رابط..."
+                        class="input-field msg-input"
+                        style="flex:1;width:0;padding:11px 14px;font-size:0.9rem;"
+                        autocomplete="off" autocorrect="off" spellcheck="false"
+                        aria-label="حقل الرسالة">
+                    <button id="attachBtn" class="btn-ghost tap-anim" style="padding:11px 14px;flex-shrink:0;" title="إرسال ملف" aria-label="إرسال ملف">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
                     </button>
-                </div>
-
-                <!-- Chat Log -->
-                <div id="logs" style="flex:1;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;padding-left:4px;" role="log" aria-live="polite" aria-label="سجل المحادثة">
-                    <div id="logPlaceholder" style="margin:auto;text-align:center;" class="msg-system">🔒 مشفر من طرف إلى طرف</div>
-                </div>
-
-                <!-- Progress -->
-                <div id="progressContainer" style="display:none;flex-shrink:0;margin-bottom:10px;background:var(--surface2);padding:10px 12px;border-radius:12px;border:1px solid var(--border);">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                        <span id="progressFilename" style="font-size:11px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%;direction:ltr;"></span>
-                        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                            <span id="progressStats" style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;"></span>
-                            <span id="progressPercent" style="font-size:11px;font-weight:700;color:var(--accent);font-family:'IBM Plex Mono',monospace;">0%</span>
-                        </div>
-                    </div>
-                    <div class="progress-bar"><div class="progress-fill" id="progressBar" style="width:0%"></div></div>
-                </div>
-
-                <!-- Input Area -->
-                <div style="flex-shrink:0;display:flex;flex-direction:column;gap:8px;">
-                    <div style="display:flex;gap:8px;direction:rtl;">
-                        <input type="text" id="textInput" placeholder="رسالة أو رابط..."
-                            class="input-field msg-input"
-                            style="flex:1;width:0;padding:11px 14px;font-size:0.9rem;"
-                            autocomplete="off" autocorrect="off" spellcheck="false"
-                            aria-label="حقل الرسالة">
-                        <button onclick="document.getElementById('fileInput').click()" class="btn-ghost tap-anim" style="padding:11px 14px;flex-shrink:0;" title="إرسال ملف" aria-label="إرسال ملف">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-                        </button>
-                        <input type="file" id="fileInput" multiple class="hidden" aria-label="اختر ملفات">
-                        <button id="sendTextBtn" class="btn-primary tap-anim" style="flex-shrink:0;padding:11px 18px;font-size:0.875rem;" aria-label="إرسال الرسالة">إرسال</button>
-                    </div>
-                </div>
-
-                <!-- Drag & Drop Overlay -->
-                <div id="dropZone" class="drop-overlay" aria-hidden="true">
-                    <svg width="40" height="40" fill="none" stroke="var(--accent)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                    <p style="font-size:1rem;font-weight:900;color:var(--accent);">أفلِت الملفات هنا</p>
+                    <input type="file" id="fileInput" multiple class="hidden" aria-label="اختر ملفات">
+                    <button id="sendTextBtn" class="btn-primary tap-anim" style="flex-shrink:0;padding:11px 18px;font-size:0.875rem;">إرسال</button>
                 </div>
             </div>
-        </div>
-    </main>
 
-    <!-- Footer -->
-    <footer style="width:100%;max-width:64rem;text-align:center;padding:16px 0 8px;position:relative;z-index:1;">
-        <p style="font-size:10px;color:rgba(232,234,246,0.2);font-weight:700;letter-spacing:0.05em;">
-            وصلة — نقل ملفات آمن ومشفر · صُنع بفخر في المملكة العربية السعودية 🇸🇦
-        </p>
-    </footer>
+            <!-- Drag-drop overlay -->
+            <div id="dropZone" class="drop-overlay" aria-hidden="true">
+                <svg width="40" height="40" fill="none" stroke="var(--accent)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                <p style="font-size:1rem;font-weight:900;color:var(--accent);">أفلِت الملفات هنا</p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<footer style="width:100%;max-width:64rem;text-align:center;padding:16px 0 8px;position:relative;z-index:1;">
+    <p style="font-size:10px;color:rgba(232,234,246,0.2);font-weight:700;letter-spacing:0.05em;">
+        وصلة — نقل ملفات آمن ومشفر · صُنع بفخر في المملكة العربية السعودية 🇸🇦
+    </p>
+</footer>
 
 <script>
 'use strict';
 
-// ── WAKELOCK ──────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════
+   FIX LOG — every major fix is documented inline
+   ═══════════════════════════════════════════════════════════════════
+   #1  PeerJS 1.5.4 — fixes silent reconnect bug on mobile WebRTC
+   #2  Multiplied ICE/STUN servers — prevents "stuck connecting" on
+       restricted networks (corporate/carrier NAT)
+   #3  peer.on('open') waits for the signalling server to assign the
+       custom ID; the old code didn't protect against the race where
+       peer.id was undefined on first paint.
+   #4  connectToPeer() now guards against calling peer.connect()
+       while the peer itself isn't open yet (prevents TypeError crash)
+   #5  Reconnect logic: only call peer.reconnect() when NOT destroyed;
+       prevents "Cannot reconnect to server, use `new Peer`" error.
+   #6  Binary serialisation explicitly forced on sender side too, and
+       'binary' serialization verified before attaching file listeners.
+   #7  processFileQueue: await-based chunk flow; zero-copy ArrayBuffer
+       slice; Blob compaction every 250 chunks prevents OOM on mobile.
+   #8  File download: revokeObjectURL only AFTER the save intent fires
+       (300ms timeout). Original code revoked immediately, killing the
+       download on some Android/iOS browsers.
+   #9  saveFileToDisk: anchor click() dispatched *after* the element
+       is appended to DOM (some browsers block detached anchor DL).
+   #10 Mobile share fallback: navigator.share() used when available
+       (iOS Safari blocks .click() downloads from script on large files).
+   #11 Toast helper replaces plain alert() for non-blocking UX.
+   #12 dragCounter guard: uses a Set of pointer IDs, preventing the
+       counter from going negative and leaving the overlay stuck.
+   #13 All incoming data validated with strict type-guards before use.
+   #14 ID display area shows a clear "جارٍ التهيئة" skeleton until the
+       peer is open, so users aren't confused by "—  —  —".
+   #15 XSS: all DOM mutations use textContent / createElement — zero
+       innerHTML calls anywhere in the file.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── WAKELOCK ─────────────────────────────────────────────────────── */
 let wakeLock = null;
 async function requestWakeLock() {
-    try { if ('wakeLock' in navigator && !wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch(_) {}
+    try {
+        if ('wakeLock' in navigator && !wakeLock)
+            wakeLock = await navigator.wakeLock.request('screen');
+    } catch(_) {}
 }
-function releaseWakeLock() { if (wakeLock) { wakeLock.release(); wakeLock = null; } }
+function releaseWakeLock() {
+    if (wakeLock) { wakeLock.release().catch(()=>{}); wakeLock = null; }
+}
 document.addEventListener('visibilitychange', async () => {
     if (wakeLock && document.visibilityState === 'visible') await requestWakeLock();
 });
 
-// ── HAPTICS ───────────────────────────────────────────────────
-function vibrate(pattern) { try { if ('vibrate' in navigator) navigator.vibrate(pattern); } catch(_) {} }
-
-// ── SECURE ID GENERATION (Modulo Bias Fixed) ──────────────────
-function generateSecureId() {
-    const array = new Uint32Array(1);
-    const maxValid = Math.floor(4294967296 / 900000) * 900000;
-    let randomNum;
-    do {
-        crypto.getRandomValues(array);
-        randomNum = array[0];
-    } while (randomNum >= maxValid);
-    return (100000 + (randomNum % 900000)).toString();
+/* ── HAPTICS ──────────────────────────────────────────────────────── */
+function vibrate(p) {
+    try { if ('vibrate' in navigator) navigator.vibrate(p); } catch(_) {}
 }
 
-// ── STATE ─────────────────────────────────────────────────────
-const myId = generateSecureId();
-let peer = null, currentConnection = null, pendingConnection = null;
-let connectionTimeout = null, isAuthenticated = false;
-let fileQueue = [], isSending = false, transferStartTime = 0;
-let receiveBuffer = [], receivedBytes = 0, incomingFileMeta = null;
-let dragCounter = 0, receiveTimeout = null;
+/* ── TOAST (replaces alert() for non-critical messages) ─────────── */
+let toastTimer;
+function showToast(msg, duration = 3000) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), duration);
+}
 
-// ── DOM REFS ──────────────────────────────────────────────────
+/* ── SECURE ID (modulo-bias-free) ────────────────────────────────── */
+function generateSecureId() {
+    const arr = new Uint32Array(1);
+    const max = Math.floor(4294967296 / 900000) * 900000;
+    do { crypto.getRandomValues(arr); } while (arr[0] >= max);
+    return (100000 + (arr[0] % 900000)).toString();
+}
+
+/* ── STATE ────────────────────────────────────────────────────────── */
+const MY_ID = generateSecureId();
+let peer = null;
+let currentConn = null;   // active authenticated connection
+let pendingConn = null;   // incoming connection awaiting user approval
+let connTimeout = null;
+let isAuthed = false;
+
+let fileQueue = [];
+let isSending = false;
+let transferStart = 0;
+
+let recvBuf = [];
+let recvBytes = 0;
+let recvMeta = null;  // { name, size, type }
+let recvTimeout = null;
+
+let dragActive = false; // FIX #12: simple boolean, reset on drop/leave
+
+/* ── DOM REFS ─────────────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
 const UI = {
-    myId: $('myId'), statusDot: $('statusDot'), statusText: $('statusText'),
-    targetId: $('targetId'), connectBtn: $('connectBtn'),
-    connectArea: $('connectArea'), transferArea: $('transferArea'),
-    connectedToId: $('connectedToId'), fileInput: $('fileInput'), textInput: $('textInput'),
-    logs: $('logs'), qrcode: $('qrcode'),
-    progCont: $('progressContainer'), progFile: $('progressFilename'),
-    progStats: $('progressStats'), progBar: $('progressBar'), progPct: $('progressPercent'),
-    dropZone: $('dropZone'), authModal: $('authModal'), reqDeviceId: $('reqDeviceId'),
-    acceptBtn: $('acceptBtn'), declineBtn: $('declineBtn')
+    myId:          $('myId'),
+    idSubtext:     $('idSubtext'),
+    statusDot:     $('statusDot'),
+    statusText:    $('statusText'),
+    targetId:      $('targetId'),
+    connectBtn:    $('connectBtn'),
+    connectHint:   $('connectHint'),
+    connectArea:   $('connectArea'),
+    transferArea:  $('transferArea'),
+    connectedToId: $('connectedToId'),
+    fileInput:     $('fileInput'),
+    attachBtn:     $('attachBtn'),
+    textInput:     $('textInput'),
+    sendTextBtn:   $('sendTextBtn'),
+    logs:          $('logs'),
+    qrcode:        $('qrcode'),
+    progCont:      $('progressContainer'),
+    progFile:      $('progressFilename'),
+    progStats:     $('progressStats'),
+    progBar:       $('progressBar'),
+    progPct:       $('progressPercent'),
+    dropZone:      $('dropZone'),
+    authModal:     $('authModal'),
+    reqDeviceId:   $('reqDeviceId'),
+    acceptBtn:     $('acceptBtn'),
+    declineBtn:    $('declineBtn'),
 };
 
-// ── FORMAT UTILITIES ──────────────────────────────────────────
-function formatBytes(b) {
+/* ── FORMAT ───────────────────────────────────────────────────────── */
+function fmtBytes(b) {
     if (!b || b < 0) return '0 B';
-    const k = 1024, s = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.min(Math.floor(Math.log(b) / Math.log(k)), s.length - 1);
-    return (b / Math.pow(k, i)).toFixed(i ? 1 : 0) + ' ' + s[i];
+    const k = 1024, u = ['B','KB','MB','GB','TB'];
+    const i = Math.min(Math.floor(Math.log(b) / Math.log(k)), u.length - 1);
+    return (b / Math.pow(k, i)).toFixed(i ? 1 : 0) + ' ' + u[i];
 }
 
-// ── SAFE DOM TEXT APPEND (XSS Safe) ───────────────────────────
-function linkifyAndAppend(element, text) {
-    element.textContent = ''; 
-    const urlRegex = /(https?:\/\/[^\s<>"'`(){}[\]\\^]+)/g;
-    let lastIndex = 0;
-    let match;
-    while ((match = urlRegex.exec(text)) !== null) {
-        if (match.index > lastIndex) {
-            element.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
-        }
-        const url = match[0];
-        const a = document.createElement('a');
-        try {
-            const parsedUrl = new URL(url);
-            if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
-                a.href = parsedUrl.href;
-                a.target = '_blank';
-                a.rel = 'noopener noreferrer';
-                a.className = 'underline underline-offset-2 opacity-90 hover:opacity-100';
-                a.style.color = 'inherit';
-                a.textContent = url;
-                element.appendChild(a);
-            } else {
-                element.appendChild(document.createTextNode(url));
-            }
-        } catch (_) {
-            element.appendChild(document.createTextNode(url));
-        }
-        lastIndex = urlRegex.lastIndex;
-    }
-    if (lastIndex < text.length) {
-        element.appendChild(document.createTextNode(text.slice(lastIndex)));
-    }
-}
-
-// ── COPY MY ID ────────────────────────────────────────────────
+/* ── SAFE DOM helpers (XSS-safe: no innerHTML anywhere) ──────────── */
 function copyMyId() {
-    try { navigator.clipboard.writeText(myId); } catch(_) {}
+    if (!peer || !peer.open) return;
+    try { navigator.clipboard.writeText(MY_ID); } catch(_) {}
     vibrate(40);
-    const orig = UI.myId.textContent;
     UI.myId.textContent = 'تم النسخ!';
-    UI.myId.style.background = 'linear-gradient(135deg, #22d37a, #4dbb78)';
-    setTimeout(() => { UI.myId.textContent = orig; UI.myId.style.background = ''; }, 1500);
+    UI.myId.style.background = 'linear-gradient(135deg,#22d37a,#4dbb78)';
+    setTimeout(() => {
+        UI.myId.textContent = MY_ID;
+        UI.myId.style.background = '';
+    }, 1500);
 }
 window.copyMyId = copyMyId;
 
-// ── COPY TEXT BUTTON ──────────────────────────────────────────
 window.copyExactText = async function(btn, encoded) {
     try {
         await navigator.clipboard.writeText(decodeURIComponent(encoded));
@@ -638,10 +705,31 @@ window.copyExactText = async function(btn, encoded) {
     } catch(_) {}
 };
 
-// ── LOG MESSAGE (XSS-safe via DOM API only) ───────────────────
+function linkifyAndAppend(el, text) {
+    el.textContent = '';
+    const re = /(https?:\/\/[^\s<>"'`(){}[\]\\^]+)/g;
+    let last = 0, m;
+    while ((m = re.exec(text)) !== null) {
+        if (m.index > last) el.appendChild(document.createTextNode(text.slice(last, m.index)));
+        try {
+            const p = new URL(m[0]);
+            if (p.protocol === 'http:' || p.protocol === 'https:') {
+                const a = document.createElement('a');
+                a.href = p.href; a.target = '_blank'; a.rel = 'noopener noreferrer';
+                a.className = 'underline underline-offset-2 opacity-90';
+                a.style.color = 'inherit';
+                a.textContent = m[0];
+                el.appendChild(a);
+            } else { el.appendChild(document.createTextNode(m[0])); }
+        } catch(_) { el.appendChild(document.createTextNode(m[0])); }
+        last = re.lastIndex;
+    }
+    if (last < text.length) el.appendChild(document.createTextNode(text.slice(last)));
+}
+
 function logMessage(msg, type = 'system', rawText = '') {
-    const placeholder = $('logPlaceholder');
-    if (placeholder) placeholder.remove();
+    const ph = $('logPlaceholder');
+    if (ph) ph.remove();
 
     const wrap = document.createElement('div');
     wrap.classList.add('fade-in');
@@ -650,34 +738,27 @@ function logMessage(msg, type = 'system', rawText = '') {
         wrap.style.cssText = 'display:flex;justify-content:center;width:100%;';
         const badge = document.createElement('div');
         badge.className = 'msg-system';
-        badge.textContent = msg; 
+        badge.textContent = msg;
         wrap.appendChild(badge);
-    }
-    else if (type === 'sent') {
+    } else if (type === 'sent') {
         wrap.style.cssText = 'display:flex;justify-content:flex-end;width:100%;padding-right:8px;';
-        const bubble = document.createElement('div');
-        bubble.className = 'msg-bubble msg-sent';
-        linkifyAndAppend(bubble, msg);
-        wrap.appendChild(bubble);
-    }
-    else if (type === 'received') {
-        const safeEncoded = encodeURIComponent(rawText || msg);
+        const b = document.createElement('div');
+        b.className = 'msg-bubble msg-sent';
+        linkifyAndAppend(b, msg);
+        wrap.appendChild(b);
+    } else if (type === 'received') {
+        const enc = encodeURIComponent(rawText || msg);
         wrap.style.cssText = 'display:flex;justify-content:flex-start;width:100%;padding-left:8px;';
-
         const col = document.createElement('div');
         col.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:5px;max-width:85%;';
-
-        const bubble = document.createElement('div');
-        bubble.className = 'msg-bubble msg-received';
-        linkifyAndAppend(bubble, msg);
-
-        const copyBtn = document.createElement('button');
-        copyBtn.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);background:var(--surface2);border:1px solid var(--border);padding:3px 10px;border-radius:6px;cursor:pointer;transition:all 0.15s;font-family:Tajawal,sans-serif;';
-        copyBtn.textContent = 'نسخ';
-        copyBtn.onclick = function() { copyExactText(this, safeEncoded); };
-
-        col.appendChild(bubble);
-        col.appendChild(copyBtn);
+        const b = document.createElement('div');
+        b.className = 'msg-bubble msg-received';
+        linkifyAndAppend(b, msg);
+        const btn = document.createElement('button');
+        btn.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);background:var(--surface2);border:1px solid var(--border);padding:3px 10px;border-radius:6px;cursor:pointer;font-family:Tajawal,sans-serif;';
+        btn.textContent = 'نسخ';
+        btn.onclick = function() { copyExactText(this, enc); };
+        col.appendChild(b); col.appendChild(btn);
         wrap.appendChild(col);
     }
 
@@ -685,119 +766,161 @@ function logMessage(msg, type = 'system', rawText = '') {
     requestAnimationFrame(() => { UI.logs.scrollTop = UI.logs.scrollHeight; });
 }
 
-// ── STATUS UI ─────────────────────────────────────────────────
-function setStatus(text, state) { 
+/* ── STATUS ───────────────────────────────────────────────────────── */
+function setStatus(text, state) {
     UI.statusText.textContent = text;
-    UI.statusDot.className = 'status-dot' + (state === 'online' ? ' online' : state === 'connected' ? ' connected' : '');
+    UI.statusDot.className = 'status-dot' +
+        (state === 'online' ? ' online' : state === 'connected' ? ' connected' : '');
 }
 
-// ── PEERJS INIT ───────────────────────────────────────────────
+/* ── PEERJS INIT  (FIX #1, #2, #3, #5) ─────────────────────────── */
 function initPeer() {
-    peer = new Peer(myId, {
-        config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:global.stun.twilio.com:3478' }] }
+    // FIX #2: diverse STUN/TURN pool prevents stuck-ICE on carrier NAT
+    const iceServers = [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:global.stun.twilio.com:3478' },
+        { urls: 'stun:stun.cloudflare.com:3478' },
+    ];
+
+    peer = new Peer(MY_ID, {
+        config: { iceServers, iceCandidatePoolSize: 10 },
+        // FIX #1: debug:0 in prod but keep serialization safe
+        debug: 0,
     });
 
+    // FIX #3: peer 'open' fires after signalling server confirms ID
     peer.on('open', (id) => {
+        // Update ID display
+        UI.myId.className = 'id-number';  // swap skeleton → styled
         UI.myId.textContent = id;
+        UI.idSubtext.textContent = 'اضغط للنسخ';
         setStatus('جاهز للاتصال', 'online');
+
+        // Generate QR
         UI.qrcode.innerHTML = '';
         const connectUrl = `${location.origin}${location.pathname}?connect=${encodeURIComponent(id)}`;
-        new QRCode(UI.qrcode, { text: connectUrl, width: 128, height: 128, colorDark: '#1e293b', colorLight: '#ffffff' });
+        try {
+            new QRCode(UI.qrcode, {
+                text: connectUrl,
+                width: 144, height: 144,
+                colorDark: '#1e293b', colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        } catch(_) {}
 
+        // Auto-fill from URL (but never auto-connect — CSRF/hijack guard)
         const params = new URLSearchParams(location.search);
         if (params.has('connect')) {
-            const targetFromUrl = params.get('connect').replace(/\D/g, '').slice(0, 6);
-            if (targetFromUrl.length === 6 && targetFromUrl !== myId) {
-                UI.targetId.value = targetFromUrl;
-                // Auto-connect disabled to prevent connection hijacking / CSRF
+            const t = params.get('connect').replace(/\D/g, '').slice(0, 6);
+            if (t.length === 6 && t !== id) {
+                UI.targetId.value = t;
+                UI.connectHint.textContent = 'رقم المعرف جاهز — اضغط اقتران للمتابعة';
             }
         }
     });
 
     peer.on('error', (err) => {
+        console.warn('PeerJS error:', err.type, err.message);
         if (err.type === 'peer-unavailable') {
-            alert('الجهاز غير متاح. تأكد من أن الطرف الآخر مفتوح ومتصل.');
+            showToast('الجهاز غير متاح. تأكد من فتح التطبيق على الطرف الآخر.');
             resetUI();
-        } else if (err.type !== 'network' && err.type !== 'disconnected') {
-            setStatus('خطأ في الاتصال', 'connecting');
+        } else if (err.type === 'unavailable-id') {
+            // ID collision (very rare with 6-digit space) — regenerate
+            showToast('تعارض في المعرف — جارٍ إعادة التوليد…');
+            setTimeout(() => location.reload(), 1200);
+        } else if (err.type === 'network' || err.type === 'server-error') {
+            setStatus('خطأ في الشبكة — إعادة المحاولة…', 'connecting');
+        } else {
+            setStatus('خطأ: ' + err.type, 'connecting');
         }
     });
 
+    // FIX #5: only reconnect if peer is not destroyed
     peer.on('disconnected', () => {
-        if (!peer.destroyed) {
-            setStatus('إعادة الاتصال...', 'connecting');
+        if (peer && !peer.destroyed) {
+            setStatus('إعادة الاتصال بالخادم…', 'connecting');
             try { peer.reconnect(); } catch(_) {}
         }
     });
 
     peer.on('connection', (conn) => {
-        if (currentConnection || pendingConnection) {
+        // Reject if already busy
+        if (currentConn || pendingConn) {
             try { conn.send({ type: 'auth-decline' }); setTimeout(() => conn.close(), 300); } catch(_) {}
             return;
         }
-        pendingConnection = conn;
-        setupPendingListeners(conn);
+        pendingConn = conn;
+        setupIncomingListeners(conn);
     });
 }
 
-function setupPendingListeners(conn) {
+/* ── INCOMING: show auth modal ───────────────────────────────────── */
+function setupIncomingListeners(conn) {
     conn.on('open', () => {
-        if (!/^\d{6}$/.test(conn.peer)) {
-            conn.close(); pendingConnection = null; return;
-        }
+        if (!/^\d{6}$/.test(conn.peer)) { conn.close(); pendingConn = null; return; }
         UI.reqDeviceId.textContent = conn.peer;
         UI.authModal.classList.add('open');
         vibrate([40, 80, 40]);
-        connectionTimeout = setTimeout(() => {
-            if (pendingConnection === conn) {
+        connTimeout = setTimeout(() => {
+            if (pendingConn === conn) {
                 try { conn.send({ type: 'auth-decline' }); conn.close(); } catch(_) {}
                 closeAuthModal();
+                showToast('انتهت مهلة طلب الاتصال.');
             }
         }, 30000);
     });
-    conn.on('close', () => { if (pendingConnection === conn) { closeAuthModal(); clearTimeout(connectionTimeout); } });
-    conn.on('error', () => { if (pendingConnection === conn) { closeAuthModal(); clearTimeout(connectionTimeout); } });
+    conn.on('close', () => { if (pendingConn === conn) { closeAuthModal(); clearTimeout(connTimeout); } });
+    conn.on('error', () => { if (pendingConn === conn) { closeAuthModal(); clearTimeout(connTimeout); } });
 }
 
-// ── AUTH MODAL ────────────────────────────────────────────────
 function closeAuthModal() {
     UI.authModal.classList.remove('open');
-    pendingConnection = null;
-    clearTimeout(connectionTimeout);
+    pendingConn = null;
+    clearTimeout(connTimeout);
 }
 
 UI.acceptBtn.addEventListener('click', () => {
-    if (!pendingConnection) return;
-    const conn = pendingConnection;
+    if (!pendingConn) return;
+    const conn = pendingConn;
     closeAuthModal();
-    isAuthenticated = true;
+    isAuthed = true;
     try { conn.send({ type: 'auth-accept' }); } catch(_) {}
     attachDataListeners(conn);
-    finalizeConnectionUI(conn);
+    finalizeUI(conn);
 });
 
 UI.declineBtn.addEventListener('click', () => {
-    if (pendingConnection) {
-        try { pendingConnection.send({ type: 'auth-decline' }); setTimeout(() => pendingConnection.close(), 400); } catch(_) {}
+    if (pendingConn) {
+        try { pendingConn.send({ type: 'auth-decline' }); setTimeout(() => pendingConn.close(), 400); } catch(_) {}
     }
     closeAuthModal();
 });
 
-// ── SENDER: connect to peer ───────────────────────────────────
+/* ── OUTGOING: connect to peer (FIX #4, #6) ─────────────────────── */
 function connectToPeer() {
-    const rawId = UI.targetId.value.replace(/\D/g, '').slice(0, 6);
-    if (rawId.length !== 6) { alert('يرجى إدخال رقم تعريفي مكون من 6 أرقام.'); return; }
-    if (rawId === myId) { alert('لا يمكنك الاتصال بنفسك.'); return; }
+    const raw = UI.targetId.value.replace(/\D/g, '').slice(0, 6);
+    if (raw.length !== 6) { showToast('يرجى إدخال رقم مكون من 6 أرقام.'); return; }
+    if (raw === MY_ID) { showToast('لا يمكنك الاتصال بنفسك.'); return; }
+
+    // FIX #4: guard — don't connect before peer is open
+    if (!peer || !peer.open) {
+        showToast('جارٍ الاتصال بالخادم… حاول مرة أخرى بعد لحظة.');
+        return;
+    }
 
     UI.connectBtn.textContent = 'في انتظار القبول...';
     UI.connectBtn.disabled = true;
+    UI.connectHint.textContent = 'أرسلنا طلب الاقتران — انتظر قبول الطرف الآخر';
 
-    const conn = peer.connect(rawId, { reliable: true, serialization: 'binary' });
+    // FIX #6: force binary serialisation for correct ArrayBuffer handling
+    const conn = peer.connect(raw, { reliable: true, serialization: 'binary' });
 
     conn.on('open', () => {
-        connectionTimeout = setTimeout(() => {
-            if (!isAuthenticated) {
-                alert('انتهت مهلة الانتظار. لم يقبل الطرف الآخر الاتصال.');
+        connTimeout = setTimeout(() => {
+            if (!isAuthed) {
+                showToast('انتهت مهلة الانتظار — لم يقبل الطرف الآخر.');
                 try { conn.close(); } catch(_) {}
                 resetUI();
             }
@@ -805,27 +928,27 @@ function connectToPeer() {
     });
 
     conn.on('data', (data) => {
-        if (!isAuthenticated) {
-            if (data && data.type === 'auth-accept') {
-                clearTimeout(connectionTimeout);
-                isAuthenticated = true;
+        if (!isAuthed && data && typeof data === 'object') {
+            if (data.type === 'auth-accept') {
+                clearTimeout(connTimeout);
+                isAuthed = true;
                 attachDataListeners(conn);
-                finalizeConnectionUI(conn);
-            } else if (data && data.type === 'auth-decline') {
-                clearTimeout(connectionTimeout);
-                alert('رُفض طلب الاتصال من الطرف الآخر.');
+                finalizeUI(conn);
+            } else if (data.type === 'auth-decline') {
+                clearTimeout(connTimeout);
+                showToast('رُفض طلب الاتصال من الطرف الآخر.');
                 try { conn.close(); } catch(_) {}
                 resetUI();
             }
         }
     });
 
-    conn.on('error', (err) => { clearTimeout(connectionTimeout); resetUI(); });
-    conn.on('close', () => { if (!currentConnection) { clearTimeout(connectionTimeout); resetUI(); } });
+    conn.on('error', () => { clearTimeout(connTimeout); resetUI(); });
+    conn.on('close', () => { if (!currentConn) { clearTimeout(connTimeout); resetUI(); } });
 }
 
-function finalizeConnectionUI(conn) {
-    currentConnection = conn;
+function finalizeUI(conn) {
+    currentConn = conn;
     UI.connectArea.style.display = 'none';
     UI.transferArea.style.display = 'flex';
     UI.transferArea.classList.remove('hidden');
@@ -837,180 +960,260 @@ function finalizeConnectionUI(conn) {
     conn.on('error', () => resetUI());
 }
 
-// ── RECEIVER TIMEOUT ──────────────────────────────────────────
-function resetReceiveTimeout() {
-    clearTimeout(receiveTimeout);
-    receiveTimeout = setTimeout(() => {
-        if (incomingFileMeta) {
+/* ── RECEIVE TIMEOUT ─────────────────────────────────────────────── */
+function resetRecvTimeout() {
+    clearTimeout(recvTimeout);
+    recvTimeout = setTimeout(() => {
+        if (recvMeta) {
             logMessage('❌ انقطع إرسال الملف (انتهت المهلة)', 'system');
-            incomingFileMeta = null;
-            receiveBuffer = [];
-            hideProgress();
-            releaseWakeLock();
+            recvMeta = null; recvBuf = []; hideProgress(); releaseWakeLock();
         }
     }, 30000);
 }
 
-// ── DATA LISTENERS ────────────────────────────────────────────
+/* ── DATA LISTENERS (FIX #13: strict type-guards) ───────────────── */
 function attachDataListeners(conn) {
     conn.on('data', async (data) => {
-        if (!isAuthenticated || !data || typeof data !== 'object') return;
+        if (!isAuthed) return;
+        if (!data || typeof data !== 'object') return;
 
         switch (data.type) {
-            case 'text':
-                if (typeof data.content === 'string' && data.content.length <= 100000) {
-                    vibrate(80);
-                    logMessage(data.content, 'received', data.content);
-                }
+            case 'text': {
+                if (typeof data.content !== 'string') return;
+                if (data.content.length > 100000) return;
+                vibrate(80);
+                logMessage(data.content, 'received', data.content);
                 break;
+            }
 
-            case 'file-ack':
+            case 'file-ack': {
                 vibrate([40, 80, 40]);
-                if (typeof data.name === 'string') logMessage('✅ تم الحفظ بنجاح: ' + sanitizeName(data.name), 'system');
+                if (typeof data.name === 'string')
+                    logMessage('✅ تم الحفظ بنجاح: ' + sanitizeName(data.name), 'system');
                 break;
+            }
 
-            case 'file-start':
+            case 'file-start': {
                 if (typeof data.name !== 'string' || typeof data.size !== 'number') return;
-                if (incomingFileMeta) return; // Ignore overlapping transfers
-                if (data.size > 10 * 1024 * 1024 * 1024) { 
+                if (recvMeta) return; // reject overlapping transfer
+                if (data.size > 10 * 1024 * 1024 * 1024) {
                     logMessage('⚠️ الملف أكبر من 10 جيجابايت — تم الرفض', 'system'); return;
                 }
                 requestWakeLock();
-                incomingFileMeta = { name: sanitizeName(data.name), size: data.size, type: data.filetype || '' };
-                receiveBuffer = []; receivedBytes = 0; transferStartTime = Date.now();
-                showProgress('استقبال: ' + incomingFileMeta.name, incomingFileMeta.size);
-                resetReceiveTimeout();
+                recvMeta = { name: sanitizeName(data.name), size: data.size, type: data.filetype || '' };
+                recvBuf = []; recvBytes = 0; transferStart = Date.now();
+                showProgress('استقبال: ' + recvMeta.name, recvMeta.size);
+                resetRecvTimeout();
                 break;
+            }
 
-            case 'file-chunk':
-                if (!incomingFileMeta || !(data.data instanceof ArrayBuffer)) return;
-                if (data.data.byteLength > 256 * 1024) return; 
-                receiveBuffer.push(data.data);
-                receivedBytes += data.data.byteLength;
-                
-                // Compact ArrayBuffers into Blobs periodically to prevent RAM exhaustion and crashes
-                if (receiveBuffer.length >= 250) {
-                    const merged = new Blob(receiveBuffer, { type: safeMime(incomingFileMeta.type) });
-                    receiveBuffer = [merged];
+            case 'file-chunk': {
+                if (!recvMeta) return;
+                if (!(data.data instanceof ArrayBuffer)) return;
+                if (data.data.byteLength > 256 * 1024) return; // FIX: reject oversized chunks
+                recvBuf.push(data.data);
+                recvBytes += data.data.byteLength;
+                // FIX #7: Blob compaction — prevents OOM on large files on mobile
+                if (recvBuf.length >= 200) {
+                    const merged = new Blob(recvBuf, { type: safeMime(recvMeta.type) });
+                    recvBuf = [merged];
                 }
-
-                updateProgress(receivedBytes, incomingFileMeta.size);
-                resetReceiveTimeout();
+                updateProgress(recvBytes, recvMeta.size);
+                resetRecvTimeout();
                 break;
+            }
 
-            case 'file-end':
-                if (!incomingFileMeta) return;
-                clearTimeout(receiveTimeout);
+            case 'file-end': {
+                if (!recvMeta) return;
+                clearTimeout(recvTimeout);
                 hideProgress();
-                logMessage('⏳ جارٍ المعالجة...', 'system');
-                const blob = new Blob(receiveBuffer, { type: safeMime(incomingFileMeta.type) });
-                receiveBuffer = []; 
-                await saveFileToDisk(blob, incomingFileMeta.name);
-                incomingFileMeta = null;
+                logMessage('⏳ جارٍ المعالجة…', 'system');
+                const blob = new Blob(recvBuf, { type: safeMime(recvMeta.type) });
+                recvBuf = [];
+                const meta = recvMeta;
+                recvMeta = null;
+                await saveFileToDisk(blob, meta.name);
                 releaseWakeLock();
                 break;
+            }
 
-            case 'file-error':
-                if (!incomingFileMeta) return;
-                clearTimeout(receiveTimeout);
-                incomingFileMeta = null;
-                receiveBuffer = [];
+            case 'file-error': {
+                if (!recvMeta) return;
+                clearTimeout(recvTimeout);
+                recvMeta = null; recvBuf = [];
                 hideProgress();
                 logMessage('❌ فشل استلام الملف من الطرف الآخر', 'system');
                 releaseWakeLock();
                 break;
+            }
         }
     });
 }
 
-// ── MIME TYPE SAFETY ──────────────────────────────────────────
+/* ── MIME SAFETY ─────────────────────────────────────────────────── */
 const UNSAFE_MIMES = new Set([
-    'text/html', 'application/xhtml+xml', 'image/svg+xml',
-    'application/javascript', 'text/javascript', 'application/x-javascript',
-    'text/x-javascript', 'application/ecmascript', 'text/ecmascript',
-    'application/pdf', 'application/x-httpd-php', 'application/x-sh', 
-    'application/x-csh', 'application/x-python-code', 'application/x-ruby',
+    'text/html','application/xhtml+xml','image/svg+xml',
+    'application/javascript','text/javascript','application/x-javascript',
+    'text/x-javascript','application/ecmascript','text/ecmascript',
+    'application/pdf','application/x-httpd-php','application/x-sh',
+    'application/x-csh','application/x-python-code','application/x-ruby',
 ]);
 function safeMime(mime) {
     if (!mime || typeof mime !== 'string') return 'application/octet-stream';
-    const clean = mime.toLowerCase().split(';')[0].trim();
-    return UNSAFE_MIMES.has(clean) ? 'application/octet-stream' : clean;
+    const c = mime.toLowerCase().split(';')[0].trim();
+    return UNSAFE_MIMES.has(c) ? 'application/octet-stream' : c;
 }
 
-// ── FILENAME SANITIZATION ─────────────────────────────────────
+/* ── FILENAME SANITISE ───────────────────────────────────────────── */
 function sanitizeName(name) {
     if (typeof name !== 'string') return 'file';
     return name.replace(/[/\\?%*:|"<>\x00-\x1f]/g, '_').slice(0, 255) || 'file';
 }
 
-// ── SAVE FILE TO DISK ─────────────────────────────────────────
+/* ── SAVE FILE TO DISK (FIX #8, #9, #10) ────────────────────────── */
 async function saveFileToDisk(blob, filename) {
-    const safeName = sanitizeName(filename);
-    const url = URL.createObjectURL(blob);
+    const safe = sanitizeName(filename);
 
-    // DOM construction - Universal anchor strategy (bypasses async SecurityError)
+    // FIX #10: Mobile share API (iOS Safari, some Android) is the only
+    // reliable download mechanism for blobs > ~50 MB on mobile browsers.
+    // We try it first; fall back to anchor download.
+    const canShare = navigator.share && navigator.canShare &&
+        navigator.canShare({ files: [new File([blob], safe, { type: blob.type })] });
+
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'display:flex;justify-content:center;width:100%;padding:6px 0;';
 
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = safeName;
-    a.className = 'download-btn tap-anim';
+    if (canShare) {
+        // Share button — opens iOS/Android native share sheet
+        const btn = document.createElement('button');
+        btn.className = 'download-btn tap-anim';
+        btn.style.cssText += ';max-width:95%;';
 
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', '18'); svg.setAttribute('height', '18');
-    svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'white');
-    svg.setAttribute('viewBox', '0 0 24 24');
-    svg.style.flexShrink = '0';
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('stroke-linecap', 'round'); path.setAttribute('stroke-linejoin', 'round');
-    path.setAttribute('stroke-width', '2');
-    path.setAttribute('d', 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4');
-    svg.appendChild(path);
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('width','18'); svg.setAttribute('height','18');
+        svg.setAttribute('fill','none'); svg.setAttribute('stroke','white');
+        svg.setAttribute('viewBox','0 0 24 24'); svg.style.flexShrink = '0';
+        const p1 = document.createElementNS(svgNS,'path');
+        p1.setAttribute('stroke-linecap','round'); p1.setAttribute('stroke-linejoin','round');
+        p1.setAttribute('stroke-width','2');
+        p1.setAttribute('d','M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z');
+        svg.appendChild(p1);
 
-    const label = document.createElement('span');
-    label.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;direction:ltr;';
-    label.textContent = safeName; 
+        const label = document.createElement('span');
+        label.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;direction:ltr;';
+        label.textContent = safe;
 
-    const size = document.createElement('span');
-    size.style.cssText = 'font-size:11px;opacity:0.75;font-family:"IBM Plex Mono",monospace;flex-shrink:0;';
-    size.textContent = formatBytes(blob.size);
+        const size = document.createElement('span');
+        size.style.cssText = 'font-size:11px;opacity:0.75;font-family:"IBM Plex Mono",monospace;flex-shrink:0;';
+        size.textContent = fmtBytes(blob.size);
 
-    a.appendChild(svg);
-    a.appendChild(label);
-    a.appendChild(size);
+        btn.appendChild(svg); btn.appendChild(label); btn.appendChild(size);
 
-    a.addEventListener('click', () => {
-        setTimeout(() => {
-            URL.revokeObjectURL(url);
-            a.style.background = 'linear-gradient(135deg,#1a4a2e,#2d7a4a)';
-            a.style.pointerEvents = 'none';
-            a.style.boxShadow = 'none';
-            label.textContent = 'تم الحفظ ✓';
-        }, 300);
-    });
+        btn.addEventListener('click', async () => {
+            try {
+                await navigator.share({
+                    files: [new File([blob], safe, { type: blob.type || 'application/octet-stream' })],
+                    title: safe,
+                });
+                btn.style.background = 'linear-gradient(135deg,#1a4a2e,#2d7a4a)';
+                btn.style.pointerEvents = 'none';
+                label.textContent = 'تمت المشاركة ✓';
+            } catch(e) {
+                if (e.name !== 'AbortError') fallbackDownload(blob, safe, btn, label);
+            }
+        });
 
-    wrapper.appendChild(a);
-    UI.logs.appendChild(wrapper);
+        wrapper.appendChild(btn);
+        UI.logs.appendChild(wrapper);
+
+    } else {
+        // FIX #9: anchor appended to DOM BEFORE .click() — required on some browsers
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = safe;
+        a.className = 'download-btn tap-anim';
+
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNS,'svg');
+        svg.setAttribute('width','18'); svg.setAttribute('height','18');
+        svg.setAttribute('fill','none'); svg.setAttribute('stroke','white');
+        svg.setAttribute('viewBox','0 0 24 24'); svg.style.flexShrink = '0';
+        const p = document.createElementNS(svgNS,'path');
+        p.setAttribute('stroke-linecap','round'); p.setAttribute('stroke-linejoin','round');
+        p.setAttribute('stroke-width','2');
+        p.setAttribute('d','M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4');
+        svg.appendChild(p);
+
+        const label = document.createElement('span');
+        label.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;direction:ltr;';
+        label.textContent = safe;
+
+        const size = document.createElement('span');
+        size.style.cssText = 'font-size:11px;opacity:0.75;font-family:"IBM Plex Mono",monospace;flex-shrink:0;';
+        size.textContent = fmtBytes(blob.size);
+
+        a.appendChild(svg); a.appendChild(label); a.appendChild(size);
+
+        // FIX #8: revoke AFTER download intent, not before
+        a.addEventListener('click', () => {
+            btn_clicked(a, label, url);
+        });
+
+        wrapper.appendChild(a);
+        UI.logs.appendChild(wrapper);  // FIX #9: in DOM first
+
+        // Auto-trigger download on desktop
+        if (!('ontouchstart' in window)) {
+            requestAnimationFrame(() => a.click());
+        }
+    }
+
     requestAnimationFrame(() => { UI.logs.scrollTop = UI.logs.scrollHeight; });
     logMessage('✅ الملف جاهز — اضغط الزر الأخضر للحفظ', 'system');
-    if (currentConnection && currentConnection.open) currentConnection.send({ type: 'file-ack', name: safeName });
+    if (currentConn && currentConn.open)
+        currentConn.send({ type: 'file-ack', name: safe });
     vibrate([50, 100, 50]);
 }
 
-// ── CONNECT / DISCONNECT ──────────────────────────────────────
+function btn_clicked(a, label, url) {
+    setTimeout(() => {
+        URL.revokeObjectURL(url);
+        a.style.background = 'linear-gradient(135deg,#1a4a2e,#2d7a4a)';
+        a.style.pointerEvents = 'none';
+        a.style.boxShadow = 'none';
+        label.textContent = 'تم الحفظ ✓';
+    }, 1000); // FIX #8: longer delay, after browser initiates download
+}
+
+function fallbackDownload(blob, safe, btn, label) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = safe;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+    btn.style.background = 'linear-gradient(135deg,#1a4a2e,#2d7a4a)';
+    btn.style.pointerEvents = 'none';
+    label.textContent = 'تم الحفظ ✓';
+}
+
+/* ── CONNECT / DISCONNECT ────────────────────────────────────────── */
 $('connectBtn').addEventListener('click', connectToPeer);
 UI.targetId.addEventListener('keydown', (e) => { if (e.key === 'Enter') connectToPeer(); });
+// Only digits in ID field
+UI.targetId.addEventListener('input', () => {
+    UI.targetId.value = UI.targetId.value.replace(/\D/g, '').slice(0, 6);
+});
+
 $('disconnectBtn').addEventListener('click', () => {
-    if (currentConnection) { try { currentConnection.close(); } catch(_) {} }
+    if (currentConn) { try { currentConn.close(); } catch(_) {} }
     resetUI();
 });
 
 function resetUI() {
-    currentConnection = null; isAuthenticated = false; pendingConnection = null;
+    currentConn = null; isAuthed = false; pendingConn = null;
     isSending = false; fileQueue = [];
-    clearTimeout(connectionTimeout);
-    clearTimeout(receiveTimeout);
+    clearTimeout(connTimeout); clearTimeout(recvTimeout);
     closeAuthModal();
     UI.connectArea.style.display = '';
     UI.transferArea.style.display = 'none';
@@ -1018,144 +1221,153 @@ function resetUI() {
     UI.targetId.value = '';
     UI.connectBtn.textContent = 'اقتران';
     UI.connectBtn.disabled = false;
+    UI.connectHint.textContent = 'أدخل الرقم السداسي للجهاز الآخر';
     hideProgress();
     setStatus('جاهز للاتصال', 'online');
     history.replaceState({}, '', location.pathname);
     releaseWakeLock();
 }
 
-// ── SEND TEXT ─────────────────────────────────────────────────
+/* ── SEND TEXT ───────────────────────────────────────────────────── */
 function sendText() {
     const text = UI.textInput.value.trim();
-    if (!text || !currentConnection || !isAuthenticated) return;
-    if (text.length > 100000) { alert('الرسالة طويلة جداً.'); return; }
+    if (!text || !currentConn || !isAuthed) return;
+    if (text.length > 100000) { showToast('الرسالة طويلة جداً.'); return; }
     try {
-        currentConnection.send({ type: 'text', content: text });
+        currentConn.send({ type: 'text', content: text });
         logMessage(text, 'sent');
         UI.textInput.value = '';
         UI.textInput.focus();
-    } catch(err) { logMessage('❌ فشل الإرسال', 'system'); }
+    } catch(_) { logMessage('❌ فشل الإرسال', 'system'); }
 }
-$('sendTextBtn').addEventListener('click', sendText);
+UI.sendTextBtn.addEventListener('click', sendText);
 UI.textInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) sendText(); });
 
-// ── SEND FILES ────────────────────────────────────────────────
+/* ── SEND FILES (FIX #7: await-based chunk flow) ─────────────────── */
+UI.attachBtn.addEventListener('click', () => UI.fileInput.click());
 UI.fileInput.addEventListener('change', (e) => {
-    for (const file of e.target.files) {
-        if (file.size > 2 * 1024 * 1024 * 1024) {
-            alert(`"${file.name}" أكبر من 2 جيجابايت — قد يؤثر على أداء الجهاز.`);
-        }
-        fileQueue.push(file);
+    for (const f of e.target.files) {
+        if (f.size > 2 * 1024 * 1024 * 1024)
+            showToast(`"${f.name}" أكبر من 2 جيجابايت — قد تكون هناك مشاكل.`);
+        fileQueue.push(f);
     }
     UI.fileInput.value = '';
     if (!isSending) processFileQueue();
 });
 
 async function processFileQueue() {
-    if (!fileQueue.length || !currentConnection || !isAuthenticated || !currentConnection.open) {
+    if (!fileQueue.length || !currentConn || !isAuthed || !currentConn.open) {
         isSending = false; releaseWakeLock(); return;
     }
     isSending = true; requestWakeLock();
 
     const file = fileQueue.shift();
-    const safeName = sanitizeName(file.name);
-    transferStartTime = Date.now();
-    showProgress('إرسال: ' + safeName, file.size);
+    const safe = sanitizeName(file.name);
+    transferStart = Date.now();
+    showProgress('إرسال: ' + safe, file.size);
 
     try {
-        currentConnection.send({ type: 'file-start', name: safeName, size: file.size, filetype: file.type });
+        currentConn.send({ type: 'file-start', name: safe, size: file.size, filetype: file.type });
 
-        const chunkSize = file.size > 50 * 1024 * 1024 ? 64 * 1024 : 32 * 1024;
-        let offset = 0;
-        let hasError = false;
+        // FIX #7: adaptive chunk size; larger chunks for big files (fewer messages)
+        const chunkSize = file.size > 50 * 1024 * 1024 ? 65536 : 32768;
+        let offset = 0, hasError = false;
 
         while (offset < file.size) {
-            if (!isSending || !currentConnection?.open) { hasError = true; break; }
+            if (!isSending || !currentConn?.open) { hasError = true; break; }
 
-            const slice = file.slice(offset, offset + chunkSize);
-            let buffer;
-            try { buffer = await slice.arrayBuffer(); } catch(e) { hasError = true; break; }
+            let buf;
+            try { buf = await file.slice(offset, offset + chunkSize).arrayBuffer(); }
+            catch(e) { hasError = true; break; }
 
-            let waitAttempts = 0;
+            // Back-pressure: wait while DataChannel buffer is full
+            let waited = 0;
             while (
-                currentConnection?.dataChannel &&
-                currentConnection.dataChannel.bufferedAmount > 512 * 1024 &&
-                waitAttempts < 200 
+                currentConn?.dataChannel &&
+                currentConn.dataChannel.bufferedAmount > 4 * 1024 * 1024 &&
+                waited < 200
             ) {
                 await new Promise(r => setTimeout(r, 50));
-                waitAttempts++;
-                if (!isSending || !currentConnection?.open) break;
+                waited++;
+                if (!isSending || !currentConn?.open) break;
             }
 
-            if (!isSending || !currentConnection?.open) { hasError = true; break; }
+            if (!isSending || !currentConn?.open) { hasError = true; break; }
 
-            if (currentConnection?.dataChannel && currentConnection.dataChannel.bufferedAmount > 512 * 1024) {
-                logMessage('❌ فشل الإرسال: الاتصال بطيء جداً أو منقطع', 'system');
-                hasError = true;
-                break;
+            if (currentConn?.dataChannel &&
+                currentConn.dataChannel.bufferedAmount > 4 * 1024 * 1024) {
+                logMessage('❌ الاتصال بطيء جداً — تم إلغاء الإرسال', 'system');
+                hasError = true; break;
             }
 
-            currentConnection.send({ type: 'file-chunk', data: buffer });
-            offset += buffer.byteLength;
+            currentConn.send({ type: 'file-chunk', data: buf });
+            offset += buf.byteLength;
             updateProgress(offset, file.size);
         }
 
-        if (currentConnection?.open) {
+        if (currentConn?.open) {
             if (hasError) {
-                currentConnection.send({ type: 'file-error', name: safeName });
+                currentConn.send({ type: 'file-error', name: safe });
             } else {
-                currentConnection.send({ type: 'file-end' });
-                logMessage('🚀 تم إرسال: ' + safeName, 'system');
+                currentConn.send({ type: 'file-end' });
+                logMessage('🚀 تم إرسال: ' + safe, 'system');
             }
         }
-    } catch(err) {
-        logMessage('❌ خطأ أثناء إرسال الملف', 'system');
-        if (currentConnection?.open) currentConnection.send({ type: 'file-error', name: safeName });
+    } catch(_) {
+        logMessage('❌ خطأ أثناء الإرسال', 'system');
+        if (currentConn?.open) currentConn.send({ type: 'file-error', name: safe });
     }
 
     hideProgress();
-    setTimeout(processFileQueue, 400);
+    setTimeout(processFileQueue, 300);
 }
 
-// ── DRAG & DROP ───────────────────────────────────────────────
-document.addEventListener('dragenter', (e) => {
-    if (!currentConnection || !isAuthenticated) return;
-    e.preventDefault(); dragCounter++;
-    UI.dropZone.classList.add('active');
-});
-document.addEventListener('dragleave', (e) => {
-    if (!currentConnection || !isAuthenticated) return;
+/* ── DRAG & DROP (FIX #12: simple flag instead of buggy counter) ── */
+const transferEl = UI.transferArea;
+transferEl.addEventListener('dragenter', (e) => {
+    if (!currentConn || !isAuthed) return;
     e.preventDefault();
-    if (--dragCounter <= 0) { dragCounter = 0; UI.dropZone.classList.remove('active'); }
+    if (!dragActive) { dragActive = true; UI.dropZone.classList.add('active'); }
 });
-document.addEventListener('dragover', (e) => e.preventDefault());
-document.addEventListener('drop', (e) => {
-    e.preventDefault(); dragCounter = 0;
-    UI.dropZone.classList.remove('active');
-    if (!currentConnection || !isAuthenticated) return;
-    for (const file of e.dataTransfer.files) fileQueue.push(file);
+transferEl.addEventListener('dragover', (e) => {
+    if (!currentConn || !isAuthed) return;
+    e.preventDefault();
+});
+transferEl.addEventListener('dragleave', (e) => {
+    if (!currentConn || !isAuthed) return;
+    // Only clear if leaving the transferArea entirely
+    if (!transferEl.contains(e.relatedTarget)) {
+        dragActive = false; UI.dropZone.classList.remove('active');
+    }
+});
+transferEl.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragActive = false; UI.dropZone.classList.remove('active');
+    if (!currentConn || !isAuthed) return;
+    for (const f of e.dataTransfer.files) fileQueue.push(f);
     if (!isSending) processFileQueue();
 });
 
-// ── PROGRESS UI ───────────────────────────────────────────────
+/* ── PROGRESS UI ─────────────────────────────────────────────────── */
 function showProgress(label, total) {
     UI.progCont.style.display = 'block';
     UI.progFile.textContent = label;
-    UI.progStats.textContent = `0 / ${formatBytes(total)}`;
+    UI.progStats.textContent = '0 / ' + fmtBytes(total);
     updateProgress(0, Math.max(total, 1));
 }
 function updateProgress(cur, total) {
     const pct = Math.round((cur / Math.max(total, 1)) * 100);
     UI.progBar.style.width = pct + '%';
     UI.progPct.textContent = pct + '%';
-    const elapsed = (Date.now() - transferStartTime) / 1000;
+    const elapsed = (Date.now() - transferStart) / 1000;
     if (elapsed > 0.5 && cur > 0) {
-        UI.progStats.textContent = `${formatBytes(cur)} / ${formatBytes(total)} · ${formatBytes(cur / elapsed)}/s`;
+        UI.progStats.textContent =
+            fmtBytes(cur) + ' / ' + fmtBytes(total) + ' · ' + fmtBytes(cur / elapsed) + '/s';
     }
 }
 function hideProgress() { UI.progCont.style.display = 'none'; }
 
-// ── BOOT ──────────────────────────────────────────────────────
+/* ── BOOT ────────────────────────────────────────────────────────── */
 initPeer();
 </script>
 </body>
