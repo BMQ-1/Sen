@@ -6,18 +6,22 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0a0f">
+<meta name="description" content="مِرسال - نقل ملفات آمن ومباشر بين الأجهزة بتشفير كامل (E2EE) دون خوادم وسيطة.">
+
 <!-- 
   Strict Content Security Policy (CSP):
-  Blocks all external scripts except trusted CDNs. Prevents object/plugin injection.
+  يمنع تنفيذ أي نصوص برمجية خارجية غير مصرح بها، ويحمي من ثغرات XSS.
 -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' wss://0.peerjs.com https://0.peerjs.com stun.l.google.com:19302 stun1.l.google.com:19302; img-src 'self' data: blob:; worker-src 'self' blob:; media-src 'self' blob:; object-src 'none'; base-uri 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' wss://0.peerjs.com https://0.peerjs.com stun:stun.l.google.com:19302 stun:stun1.l.google.com:19302; img-src 'self' data: blob:; worker-src 'self' blob:; media-src 'self' blob:; object-src 'none'; base-uri 'self';">
+
 <title>مِرسال — نقل آمن ومباشر</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+
 <style>
-/* Reset & Base */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
+/* Reset & Native App Feel */
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+:root {
   --bg0:#08080e; --bg1:#0f0f18; --bg2:#15151f; --bg3:#1d1d2a; --bg4:#252537;
   --b0:rgba(255,255,255,0.06); --b1:rgba(255,255,255,0.12); --b2:rgba(255,255,255,0.2);
   --accent:#6c63ff; --accent2:#9490ff; --adim:rgba(108,99,255,0.15); --aglow:rgba(108,99,255,0.25);
@@ -25,20 +29,19 @@
   --green:#22c55e; --gdim:rgba(34,197,94,0.15);
   --red:#ef4444; --rdim:rgba(239,68,68,0.15);
   --amber:#f59e0b;
-  --st:env(safe-area-inset-top, 0px); --sb:env(safe-area-inset-bottom, 0px);
+  --st:max(1.5rem, env(safe-area-inset-top)); 
+  --sb:max(1.5rem, env(safe-area-inset-bottom));
 }
-html{height:100%}
-body{
+html { height:100%; overscroll-behavior-y: none; }
+body {
   min-height:100dvh; background:var(--bg0); color:var(--t0);
   font-family:'IBM Plex Sans Arabic', system-ui, sans-serif; font-size:15px; line-height:1.6;
-  overflow-x:hidden; -webkit-tap-highlight-color:transparent;
-  padding-top:max(1.5rem, var(--st)); padding-bottom:max(1.5rem, var(--sb));
+  overflow-x:hidden; padding-top:var(--st); padding-bottom:var(--sb);
   padding-inline:1rem; display:flex; flex-direction:column; align-items:center; gap:1.5rem;
 }
-body::before{
+body::before {
   content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
-  background-image:radial-gradient(circle, rgba(108,99,255,0.04) 1px, transparent 1px);
-  background-size:32px 32px;
+  background-image:radial-gradient(circle, rgba(108,99,255,0.04) 1px, transparent 1px); background-size:32px 32px;
 }
 
 /* Layout */
@@ -47,57 +50,58 @@ body::before{
 .rcol { display:flex; flex-direction:column; gap:1.2rem; min-height:65dvh; width:100%; min-width:0; }
 
 /* Cards & UI Elements */
-.card { position:relative; z-index:1; background:var(--bg2); border:1px solid var(--b0); border-radius:20px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,0.2); }
+.card { position:relative; z-index:1; background:var(--bg2); border:1px solid var(--b0); border-radius:24px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,0.2); }
 .card::before { content:''; position:absolute; inset:0; pointer-events:none; border-radius:inherit; background:linear-gradient(130deg, rgba(108,99,255,0.05) 0%, transparent 60%); }
 
-.btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family:inherit; font-size:14px; font-weight:700; border:none; border-radius:14px; cursor:pointer; transition:all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space:nowrap; min-height:46px; user-select:none; }
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family:inherit; font-size:14px; font-weight:700; border:none; border-radius:16px; cursor:pointer; transition:all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space:nowrap; min-height:48px; user-select:none; }
 .btn:active { transform:scale(0.96); }
+.btn:disabled { opacity:0.6; pointer-events:none; }
 .btn-p { background:var(--accent); color:#fff; padding:10px 24px; box-shadow:0 4px 15px rgba(108,99,255,0.2); }
 .btn-p:hover { background:var(--accent2); box-shadow:0 6px 20px var(--aglow); }
 .btn-g { background:var(--bg3); color:var(--t0); border:1px solid var(--b1); padding:10px 20px; }
 .btn-g:hover { background:var(--bg4); border-color:var(--b2); }
-.btn-d { background:var(--rdim); color:var(--red); border:1px solid rgba(239,68,68,0.2); padding:8px 16px; font-size:13px; border-radius:12px; min-height:40px; }
+.btn-d { background:var(--rdim); color:var(--red); border:1px solid rgba(239,68,68,0.2); padding:8px 16px; font-size:13px; border-radius:14px; min-height:40px; }
 .btn-d:hover { background:var(--red); color:#fff; }
 
-input[type=text] { background:var(--bg1); border:1px solid var(--b1); border-radius:14px; color:var(--t0); font-family:inherit; font-size:16px; padding:14px 18px; outline:none; transition:all 0.2s; width:100%; appearance:none; }
+input[type=text] { background:var(--bg1); border:1px solid var(--b1); border-radius:16px; color:var(--t0); font-family:inherit; font-size:16px; padding:14px 18px; outline:none; transition:all 0.2s; width:100%; appearance:none; }
 input[type=text]:focus { border-color:var(--accent); box-shadow:0 0 0 4px var(--adim); background:var(--bg2); }
 input::placeholder { color:var(--t2); font-size:14px; }
 
-.pill { display:inline-flex; align-items:center; gap:8px; padding:6px 16px; background:var(--bg2); border:1px solid var(--b0); border-radius:100px; font-size:12px; font-weight:700; letter-spacing:0.05em; color:var(--t1); }
+.pill { display:inline-flex; align-items:center; gap:8px; padding:6px 16px; background:var(--bg2); border:1px solid var(--b0); border-radius:100px; font-size:12px; font-weight:700; letter-spacing:0.05em; color:var(--t1); user-select:none;}
 .dot { width:8px; height:8px; border-radius:50%; background:var(--amber); animation:blink 1.5s ease-in-out infinite; }
 .dot.ok { background:var(--green); box-shadow:0 0 10px rgba(34,197,94,0.4); animation:none; }
 .dot.err { background:var(--red); box-shadow:0 0 10px rgba(239,68,68,0.4); animation:none; }
 @keyframes blink { 0%, 100% {opacity:1} 50% {opacity:0.3} }
 
 /* QR Constraints */
-.qr-wrapper { background:#ffffff; padding:14px; border-radius:16px; display:flex; align-items:center; justify-content:center; width:160px; height:160px; margin:0 auto; box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+.qr-wrapper { background:#ffffff; padding:14px; border-radius:20px; display:flex; align-items:center; justify-content:center; width:170px; height:170px; margin:0 auto; box-shadow:0 4px 20px rgba(0,0,0,0.3); }
 #qrcode { width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
-#qrcode img, #qrcode canvas { width:100% !important; height:100% !important; object-fit:contain; border-radius:4px; display:block; }
+#qrcode img, #qrcode canvas { width:100% !important; height:100% !important; object-fit:contain; border-radius:6px; display:block; }
 
 /* Modals */
 .modal { display:none; position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:1rem; opacity:0; transition:opacity 0.25s ease; }
 .modal.open { display:flex; } .modal.vis { opacity:1; }
-.mbox { background:var(--bg2); border:1px solid var(--b1); border-radius:24px; padding:2rem; width:100%; max-width:420px; transform:scale(0.95) translateY(15px); transition:transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); position:relative; box-shadow:0 20px 40px rgba(0,0,0,0.5); }
+.mbox { background:var(--bg2); border:1px solid var(--b1); border-radius:28px; padding:2rem; width:100%; max-width:420px; transform:scale(0.95) translateY(15px); transition:transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); position:relative; box-shadow:0 20px 40px rgba(0,0,0,0.5); }
 .modal.vis .mbox { transform:scale(1) translateY(0); }
 
 /* Chat Bubbles */
-.mwrap { display:flex; width:100%; margin-bottom:8px; }
+.mwrap { display:flex; width:100%; margin-bottom:10px; }
 .mwrap.out { justify-content:flex-start; }
 .mwrap.in { justify-content:flex-end; flex-direction:column; align-items:flex-end; gap:6px; }
-.bubble { max-width:85%; padding:12px 16px; font-size:15px; line-height:1.6; word-break:break-word; border-radius:20px; }
+.bubble { max-width:85%; padding:14px 18px; font-size:15px; line-height:1.6; word-break:break-word; border-radius:20px; }
 .bubble.out { background:var(--accent); color:#fff; border-bottom-right-radius:4px; }
 .bubble.in { background:var(--bg3); border:1px solid var(--b0); color:var(--t0); border-bottom-left-radius:4px; }
-.sys { margin:4px auto; background:var(--bg3); border:1px solid var(--b0); color:var(--t1); font-size:12px; font-weight:600; padding:6px 18px; border-radius:100px; text-align:center; }
+.sys { margin:6px auto; background:var(--bg3); border:1px solid var(--b0); color:var(--t1); font-size:12px; font-weight:600; padding:6px 18px; border-radius:100px; text-align:center; }
 
 /* Progress */
-.ptrack { background:var(--bg1); border-radius:100px; height:6px; overflow:hidden; margin-top:6px; box-shadow:inset 0 1px 3px rgba(0,0,0,0.2); }
+.ptrack { background:var(--bg1); border-radius:100px; height:8px; overflow:hidden; margin-top:8px; box-shadow:inset 0 1px 3px rgba(0,0,0,0.2); }
 .pfill { height:100%; background:linear-gradient(90deg, var(--accent), var(--accent2)); border-radius:100px; transition:width 0.2s linear; }
 
 /* Toast */
-#toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(20px); z-index:300; display:flex; align-items:center; gap:12px; padding:14px 24px; background:var(--bg3); border:1px solid var(--b1); border-radius:100px; font-size:14px; font-weight:600; color:var(--t0); pointer-events:none; opacity:0; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); white-space:nowrap; max-width:90vw; box-shadow:0 10px 30px rgba(0,0,0,0.4); }
-#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+#toast { position:fixed; bottom:var(--sb); left:50%; transform:translateX(-50%) translateY(20px); z-index:300; display:flex; align-items:center; gap:12px; padding:14px 24px; background:var(--bg3); border:1px solid var(--b1); border-radius:100px; font-size:14px; font-weight:600; color:var(--t0); pointer-events:none; opacity:0; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); white-space:nowrap; max-width:90vw; box-shadow:0 10px 30px rgba(0,0,0,0.4); }
+#toast.show { opacity:1; transform:translateX(-50%) translateY(-20px); }
 
-#dropZone { display:none; position:absolute; inset:0; z-index:50; background:rgba(108,99,255,0.95); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border-radius:20px; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
+#dropZone { display:none; position:absolute; inset:0; z-index:50; background:rgba(108,99,255,0.95); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border-radius:24px; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
 
 ::-webkit-scrollbar { width:6px; }
 ::-webkit-scrollbar-track { background:transparent; }
@@ -119,23 +123,23 @@ header, footer { width:100%; max-width:960px; z-index:1; }
 <!-- Privacy Modal -->
 <div id="privacyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="pmT">
   <div class="mbox">
-    <button onclick="closeModal('privacyModal')" aria-label="إغلاق" style="position:absolute; top:1.2rem; left:1.2rem; background:var(--bg3); border:1px solid var(--b1); color:var(--t1); border-radius:12px; width:36px; height:36px; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s;">×</button>
+    <button onclick="closeModal('privacyModal')" aria-label="إغلاق" style="position:absolute; top:1.2rem; left:1.2rem; background:var(--bg3); border:1px solid var(--b1); color:var(--t1); border-radius:14px; width:40px; height:40px; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s;">×</button>
     <div style="width:54px; height:54px; background:var(--gdim); border:1px solid rgba(34,197,94,0.3); border-radius:16px; display:flex; align-items:center; justify-content:center; margin-bottom:1.2rem">
       <svg width="26" height="26" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
     </div>
-    <h2 id="pmT" style="font-size:22px; font-weight:800; color:var(--t0); margin-bottom:0.5rem">الخصوصية والأمان</h2>
-    <p style="font-size:14px; color:var(--t1); margin-bottom:1.5rem; line-height:1.7">مِرسال مصمم ليكون أداة نقل من نظير إلى نظير (P2P). لا توجد خوادم وسيطة تخزن ملفاتك. إليك كيف نحمي بياناتك:</p>
+    <h2 id="pmT" style="font-size:22px; font-weight:800; color:var(--t0); margin-bottom:0.5rem">الشفافية والأمان</h2>
+    <p style="font-size:14px; color:var(--t1); margin-bottom:1.5rem; line-height:1.7">مِرسال مصمم ليكون أداة نقل <strong style="color:var(--t0)">من جهاز إلى جهاز (P2P)</strong>. الخادم يُستخدم <u>فقط</u> لتبادل إشارات الاتصال الأولية، ولا يلمس ملفاتك أبداً.</p>
     <ul style="list-style:none; display:flex; flex-direction:column; gap:14px; margin-bottom:2rem">
       <li style="display:flex; gap:12px; align-items:flex-start">
         <div style="background:var(--adim); border-radius:10px; padding:8px; flex-shrink:0; margin-top:2px"><svg width="14" height="14" fill="var(--accent)" viewBox="0 0 24 24"><path d="M4.5 3.75a3 3 0 00-3 3v.75h21v-.75a3 3 0 00-3-3h-15zM1.5 10.5v6a3 3 0 003 3h15a3 3 0 003-3v-6h-21z"/></svg></div>
-        <p style="font-size:13px; color:var(--t1); line-height:1.6"><strong style="color:var(--t0); display:block; font-size:14px; margin-bottom:2px">لا تخزين سحابي</strong>الملفات تُنقل مباشرة بين الأجهزة. بمجرد إغلاق الصفحة، يختفي كل شيء ولا يترك أثراً.</p>
+        <p style="font-size:13px; color:var(--t1); line-height:1.6"><strong style="color:var(--t0); display:block; font-size:14px; margin-bottom:2px">لا تخزين سحابي</strong>بمجرد إغلاق الصفحة، يختفي الاتصال ولا يترك أي أثر رقمي.</p>
       </li>
       <li style="display:flex; gap:12px; align-items:flex-start">
         <div style="background:var(--adim); border-radius:10px; padding:8px; flex-shrink:0; margin-top:2px"><svg width="14" height="14" fill="var(--accent)" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg></div>
-        <p style="font-size:13px; color:var(--t1); line-height:1.6"><strong style="color:var(--t0); display:block; font-size:14px; margin-bottom:2px">تشفير كامل (E2EE)</strong>البيانات مشفرة بروتوكولياً (WebRTC DTLS/SRTP). لا يمكن لأحد قراءة محتواها.</p>
+        <p style="font-size:13px; color:var(--t1); line-height:1.6"><strong style="color:var(--t0); display:block; font-size:14px; margin-bottom:2px">تشفير عسكري (E2EE)</strong>البيانات مشفرة بروتوكولياً عبر WebRTC (DTLS/SRTP). لا يمكن لأي طرف ثالث قراءة المحتوى.</p>
       </li>
     </ul>
-    <button onclick="closeModal('privacyModal')" class="btn btn-p" style="width:100%; padding:14px; font-size:15px">فهمت ذلك</button>
+    <button onclick="closeModal('privacyModal')" class="btn btn-p" style="width:100%; padding:14px; font-size:15px">فهمت ذلك، شكراً</button>
   </div>
 </div>
 
@@ -150,7 +154,7 @@ header, footer { width:100%; max-width:960px; z-index:1; }
     <p style="font-size:14px; color:var(--t1); margin-bottom:1.8rem; line-height:1.6">الجهاز ذو الرمز <span id="reqId" style="font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--accent); background:var(--bg1); border:1px solid var(--b1); padding:4px 10px; border-radius:8px; margin:0 4px"></span> يطلب الاتصال بك.</p>
     <div style="display:flex; gap:12px">
       <button id="declineBtn" class="btn btn-g" style="flex:1; padding:14px">رفض</button>
-      <button id="acceptBtn" class="btn btn-p" style="flex:1; padding:14px">قبول وتشفير</button>
+      <button id="acceptBtn" class="btn btn-p" style="flex:1; padding:14px">قبول وتشفير النفق</button>
     </div>
   </div>
 </div>
@@ -166,7 +170,7 @@ header, footer { width:100%; max-width:960px; z-index:1; }
       <span id="sTxt">تهيئة الاتصال...</span>
     </div>
   </div>
-  <button onclick="openModal('privacyModal')" class="btn btn-g" style="font-size:13px; padding:10px 16px; border-radius:12px; gap:8px">
+  <button onclick="openModal('privacyModal')" class="btn btn-g" style="font-size:13px; padding:10px 16px; border-radius:14px; gap:8px">
     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
     الأمان
   </button>
@@ -176,17 +180,17 @@ header, footer { width:100%; max-width:960px; z-index:1; }
   <!-- Left Column -->
   <div class="card" style="padding:1.6rem; display:flex; flex-direction:column; align-items:center; text-align:center; gap:1.4rem;">
     <div style="width:100%">
-      <p style="font-size:12px; font-weight:700; color:var(--t2); letter-spacing:0.1em; margin-bottom:10px; text-transform:uppercase">رمز جهازك</p>
-      <div style="background:var(--bg1); border:1px solid var(--b1); border-radius:16px; padding:1.5rem 1rem; box-shadow:inset 0 2px 10px rgba(0,0,0,0.2)">
-        <div id="myId" style="font-family:'JetBrains Mono',monospace; font-size:36px; font-weight:800; letter-spacing:0.25em; color:var(--t0); text-shadow:0 2px 10px rgba(255,255,255,0.1)">------</div>
+      <p style="font-size:12px; font-weight:700; color:var(--t2); letter-spacing:0.1em; margin-bottom:10px; text-transform:uppercase">رمز جهازك المؤقت</p>
+      <div style="background:var(--bg1); border:1px solid var(--b1); border-radius:20px; padding:1.5rem 1rem; box-shadow:inset 0 2px 10px rgba(0,0,0,0.2)">
+        <div id="myId" style="font-family:'JetBrains Mono',monospace; font-size:38px; font-weight:800; letter-spacing:0.25em; color:var(--t0); text-shadow:0 2px 10px rgba(255,255,255,0.1)">------</div>
       </div>
     </div>
     <div style="display:flex; gap:10px; width:100%;">
-      <button id="copyBtn" onclick="handleCopyId()" class="btn btn-g" style="flex:1; font-size:13px; padding:12px; gap:8px">
+      <button id="copyBtn" onclick="handleCopyId()" class="btn btn-g" style="flex:1; font-size:13px; padding:14px; gap:8px">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
         <span>نسخ الرمز</span>
       </button>
-      <button onclick="handleShareId()" id="shareBtn" class="btn btn-p" style="flex:1; font-size:13px; padding:12px; gap:8px; display:none">
+      <button onclick="handleShareId()" id="shareBtn" class="btn btn-p" style="flex:1; font-size:13px; padding:14px; gap:8px; display:none">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
         مشاركة
       </button>
@@ -210,35 +214,35 @@ header, footer { width:100%; max-width:960px; z-index:1; }
   <!-- Right Column -->
   <div class="rcol">
     <!-- Connect Area -->
-    <div class="card" id="connectArea" style="padding:1.8rem">
+    <div class="card" id="connectArea" style="padding:2rem">
       <h2 style="font-size:20px; font-weight:800; color:var(--t0); margin-bottom:1.2rem; display:flex; align-items:center; gap:10px">
         الاتصال بجهاز آخر
         <svg width="20" height="20" fill="none" stroke="var(--t2)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
       </h2>
       <div style="display:flex; gap:12px; flex-wrap:wrap">
         <input type="text" id="targetId" placeholder="أدخل رمز الجهاز (6 أرقام)" maxlength="6" inputmode="numeric" pattern="[0-9]*" style="flex:1; min-width:180px; font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; letter-spacing:0.2em; text-align:center">
-        <button id="connectBtn" class="btn btn-p" onclick="handleConnect()" style="flex-shrink:0; padding:14px 32px; font-size:16px">اقتران</button>
+        <button id="connectBtn" class="btn btn-p" onclick="handleConnect()" style="flex-shrink:0; padding:14px 32px; font-size:16px">اقتران آمن</button>
       </div>
       <p style="font-size:13px; color:var(--t2); margin-top:14px; line-height:1.6">أدخل الرمز المكون من 6 أرقام الخاص بالطرف الآخر. بمجرد القبول، سيتم إنشاء نفق مشفر بينكما.</p>
-      <div id="cErr" style="display:none; margin-top:14px; padding:12px 16px; background:var(--rdim); border:1px solid rgba(239,68,68,0.3); border-radius:12px; font-size:13px; font-weight:600; color:var(--red)"></div>
+      <div id="cErr" style="display:none; margin-top:14px; padding:12px 16px; background:var(--rdim); border:1px solid rgba(239,68,68,0.3); border-radius:14px; font-size:13px; font-weight:600; color:var(--red)"></div>
     </div>
 
     <!-- Transfer Area -->
     <div class="card" id="transferArea" style="border-top:3px solid var(--accent);">
       <div style="display:flex; justify-content:space-between; align-items:center; padding:1.2rem 1.6rem; border-bottom:1px solid var(--b0); background:var(--bg1)">
         <div style="display:flex; align-items:center; gap:12px; min-width:0">
-          <div style="width:40px; height:40px; border-radius:12px; background:var(--gdim); border:1px solid rgba(34,197,94,0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0; position:relative">
-            <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-            <div style="position:absolute; top:-2px; right:-2px; background:var(--bg1); border-radius:50%; padding:2px"><svg width="10" height="10" fill="var(--green)" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
+          <div style="width:44px; height:44px; border-radius:14px; background:var(--gdim); border:1px solid rgba(34,197,94,0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0; position:relative">
+            <svg width="22" height="22" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            <div style="position:absolute; top:-2px; right:-2px; background:var(--bg1); border-radius:50%; padding:2px"><svg width="12" height="12" fill="var(--green)" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
           </div>
           <div style="min-width:0">
             <p style="font-size:11px; color:var(--t1); font-weight:700; letter-spacing:0.05em; display:flex; align-items:center; gap:4px">
-              <span style="display:inline-block; width:6px; height:6px; background:var(--green); border-radius:50%"></span> متصل ومشفر
+              <span style="display:inline-block; width:6px; height:6px; background:var(--green); border-radius:50%"></span> نفق مشفر
             </p>
             <p id="connTo" class="text-ellipsis" style="font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:800; color:var(--t0);">---</p>
           </div>
         </div>
-        <button id="discBtn" class="btn btn-d">إنهاء</button>
+        <button id="discBtn" class="btn btn-d">إنهاء الاتصال</button>
       </div>
 
       <div id="logs" style="flex:1; overflow-y:auto; padding:1.5rem; display:flex; flex-direction:column; gap:14px; scroll-behavior:smooth;">
@@ -255,7 +259,10 @@ header, footer { width:100%; max-width:960px; z-index:1; }
               <p style="font-size:11px; color:var(--accent2); font-weight:700; letter-spacing:0.05em; margin-bottom:4px">جارٍ النقل...</p>
               <p id="progFile" class="text-ellipsis" style="font-size:14px; font-weight:700; color:var(--t0);">ملف</p>
             </div>
-            <span id="progPct" style="font-size:24px; font-weight:800; color:var(--accent); font-family:'JetBrains Mono',monospace">0%</span>
+            <div style="display:flex; align-items:center; gap:12px">
+              <button id="cancelTxBtn" class="btn btn-d" style="min-height:30px; padding:4px 10px; border-radius:8px; font-size:11px">إلغاء</button>
+              <span id="progPct" style="font-size:24px; font-weight:800; color:var(--accent); font-family:'JetBrains Mono',monospace">0%</span>
+            </div>
           </div>
           <div class="ptrack"><div id="progBar" class="pfill" style="width:0%"></div></div>
           <p id="progStats" style="font-size:12px; color:var(--t1); margin-top:8px; font-weight:600; text-align:left; direction:ltr; font-family:'JetBrains Mono',monospace">0 B / 0 B</p>
@@ -265,13 +272,13 @@ header, footer { width:100%; max-width:960px; z-index:1; }
       <div style="padding:1.2rem 1.6rem; border-top:1px solid var(--b0); background:var(--bg2); display:flex; flex-direction:column; gap:12px">
         <div style="display:flex; gap:10px; align-items:center">
           <input type="text" id="textInput" placeholder="اكتب رسالة أو الصق رابطاً..." style="flex:1; border-radius:16px; padding:16px">
-          <button onclick="document.getElementById('fileInput').click()" title="إرسال ملف" style="background:var(--bg3); border:1px solid var(--b1); color:var(--t0); width:54px; height:54px; border-radius:16px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:all 0.2s" onmouseenter="this.style.background='var(--bg4)';this.style.borderColor='var(--accent)'" onmouseleave="this.style.background='var(--bg3)';this.style.borderColor='var(--b1)'" onmousedown="this.style.transform='scale(0.92)'" onmouseup="this.style.transform='scale(1)'">
-            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          <button onclick="document.getElementById('fileInput').click()" title="إرسال ملف" style="background:var(--bg3); border:1px solid var(--b1); color:var(--t0); width:56px; height:56px; border-radius:16px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:all 0.2s" onmouseenter="this.style.background='var(--bg4)';this.style.borderColor='var(--accent)'" onmouseleave="this.style.background='var(--bg3)';this.style.borderColor='var(--b1)'" onmousedown="this.style.transform='scale(0.92)'" onmouseup="this.style.transform='scale(1)'">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
           </button>
           <input type="file" id="fileInput" multiple style="display:none">
         </div>
         <button id="sendBtn" class="btn btn-p" style="width:100%; padding:16px; font-size:16px; border-radius:16px">
-          إرسال
+          إرسال مشفر
           <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="transform:rotate(180deg)"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
         </button>
       </div>
@@ -294,7 +301,25 @@ header, footer { width:100%; max-width:960px; z-index:1; }
   </div>
 </footer>
 
+<!-- المكتبات الأساسية (محملة بأمان من CDN موثوق) -->
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
 <script>
+/* ── Dynamic PWA Manifest Injection ──────────────────────────────────── */
+(function setupPWA(){
+  const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" fill="#08080e"/><path fill="#6c63ff" d="M256 80c-97.2 0-176 78.8-176 176s78.8 176 176 176 176-78.8 176-176S353.2 80 256 80zm0 316.8c-77.6 0-140.8-63.2-140.8-140.8S178.4 115.2 256 115.2 396.8 178.4 396.8 256 333.6 396.8 256 396.8z"/><path fill="#22c55e" d="M256 176L160 272h64v80h64v-80h64z"/></svg>`;
+  const manifest = {
+    name: "مِرسال", short_name: "مِرسال", start_url: ".", display: "standalone",
+    background_color: "#08080e", theme_color: "#0a0a0f",
+    icons:[{ src: "data:image/svg+xml;base64," + btoa(iconSvg), sizes: "512x512", type: "image/svg+xml" }]
+  };
+  const link = document.createElement('link');
+  link.rel = 'manifest';
+  link.href = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifest));
+  document.head.appendChild(link);
+})();
+
 /* ── UI Helpers ──────────────────────────────────────────────────────── */
 let _toastTimer;
 function showToast(msg, isErr = false) {
@@ -307,6 +332,7 @@ function showToast(msg, isErr = false) {
   ti.style.color = isErr ? 'var(--red)' : 'var(--green)';
   t.style.borderColor = isErr ? 'rgba(239,68,68,0.4)' : 'var(--b1)';
   t.classList.add('show');
+  if(navigator.vibrate) navigator.vibrate(isErr ? [50, 50, 50] : 50);
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
 }
@@ -329,21 +355,17 @@ function setStatus(txt, state) {
   if (d) d.className = 'dot' + (state === 'ok' ? ' ok' : state === 'err' ? ' err' : '');
 }
 
-/* ── 100% Solid Copy Function ────────────────────────────────────────── */
+/* ── Copy Function ───────────────────────────────────────────────────── */
 async function copyToClipboard(text, btnElement) {
   let success = false;
   try {
     if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
-      success = true;
+      await navigator.clipboard.writeText(text); success = true;
     } else {
       const textArea = document.createElement("textarea");
-      textArea.value = text;
-      textArea.style.position = "fixed"; textArea.style.left = "-999999px";
-      document.body.appendChild(textArea);
-      textArea.focus(); textArea.select();
-      success = document.execCommand('copy');
-      textArea.remove();
+      textArea.value = text; textArea.style.position = "fixed"; textArea.style.left = "-999999px";
+      document.body.appendChild(textArea); textArea.focus(); textArea.select();
+      success = document.execCommand('copy'); textArea.remove();
     }
   } catch (err) { success = false; }
 
@@ -351,62 +373,32 @@ async function copyToClipboard(text, btnElement) {
     if (btnElement) {
       const originalHTML = btnElement.innerHTML;
       btnElement.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>تم النسخ</span>`;
-      btnElement.style.color = 'var(--green)';
-      btnElement.style.borderColor = 'rgba(34,197,94,0.4)';
+      btnElement.style.color = 'var(--green)'; btnElement.style.borderColor = 'rgba(34,197,94,0.4)';
       if(navigator.vibrate) navigator.vibrate(50);
-      setTimeout(() => {
-        btnElement.innerHTML = originalHTML;
-        btnElement.style.color = '';
-        btnElement.style.borderColor = '';
-      }, 2000);
-    } else {
-      showToast('تم النسخ بنجاح');
-    }
-  } else {
-    showToast('فشل النسخ تلقائياً، يرجى التحديد يدوياً', true);
-  }
+      setTimeout(() => { btnElement.innerHTML = originalHTML; btnElement.style.color = ''; btnElement.style.borderColor = ''; }, 2000);
+    } else { showToast('تم النسخ بنجاح'); }
+  } else { showToast('فشل النسخ تلقائياً، يرجى التحديد يدوياً', true); }
 }
-
-/* ── Script Loader ───────────────────────────────────────────────────── */
-function loadScript(src, onOk, onFail) {
-  const s = document.createElement('script');
-  s.src = src; s.crossOrigin = 'anonymous';
-  s.onload = onOk; s.onerror = onFail;
-  document.head.appendChild(s);
-}
-
-setStatus('جاري تهيئة بيئة النقل...', '');
-
-loadScript(
-  'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js',
-  () => {
-    if (typeof Peer === 'undefined') {
-      setStatus('خطأ في تحميل المكتبة الأساسية', 'err'); return;
-    }
-    loadScript(
-      'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
-      () => bootApp(true),
-      () => bootApp(false)
-    );
-  },
-  () => setStatus('تعذر الاتصال بالخادم الرئيسي', 'err')
-);
 
 /* ═══════════════════════════════════════════════════════════════════════
    Main Application Logic
    ═══════════════════════════════════════════════════════════════════════ */
-function bootApp(hasQR) {
-  // Prevent Double Booting
-  if (window.__appBooted) return;
-  window.__appBooted = true;
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof Peer === 'undefined') {
+    setStatus('خطأ في تحميل المكتبة الأساسية', 'err'); return;
+  }
+  bootApp();
+});
 
+function bootApp() {
   const buf = new Uint32Array(1);
   window.crypto.getRandomValues(buf);
   const MY_ID = String(Math.floor(100000 + (buf[0] % 900000)));
 
   let peer = null, conn = null, pending = null, authed = false;
-  let fileQueue = [], sending = false, txStart = 0, idleTimer = null, wakeLock = null;
-  let dragCnt = 0, rxBuf = [], rxBytes = 0, rxMeta = null;
+  let fileQueue =[], sending = false, txStart = 0, idleTimer = null, wakeLock = null;
+  let dragCnt = 0, rxBuf =[], rxBytes = 0, rxMeta = null;
+  let cancelTx = false;
   
   const CHUNK = 65536; 
   const BUF_HI = 262144; 
@@ -420,7 +412,7 @@ function bootApp(hasQR) {
     txInp: $id('textInput'), logs: $id('logs'), pCont: $id('progCont'),
     pFile: $id('progFile'), pStats: $id('progStats'), pBar: $id('progBar'),
     pPct: $id('progPct'), drop: $id('dropZone'), shareB: $id('shareBtn'),
-    copyB: $id('copyBtn')
+    copyB: $id('copyBtn'), cancelTxBtn: $id('cancelTxBtn')
   };
 
   UI.myId.textContent = MY_ID;
@@ -431,24 +423,16 @@ function bootApp(hasQR) {
     const url = `${location.origin}${location.pathname}?pair=${MY_ID}`;
     if (navigator.share) {
       navigator.share({ title:'مِرسال', text:`نقل آمن. رمز جهازي: ${MY_ID}`, url:url }).catch(()=>{});
-    } else {
-      copyToClipboard(url, UI.shareB);
-    }
+    } else { copyToClipboard(url, UI.shareB); }
   };
 
-  // Safe QR Generation
-  if (hasQR && typeof QRCode !== 'undefined' && UI.qr) {
-    UI.qr.innerHTML = ''; 
+  if (typeof QRCode !== 'undefined' && UI.qr) {
     try {
       new QRCode(UI.qr, {
         text: `${location.origin}${location.pathname}?pair=${MY_ID}`,
-        width: 160, height: 160,
-        colorDark: '#000000', colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.L
+        width: 170, height: 170, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.L
       });
     } catch(e) { UI.qr.parentElement.style.display = 'none'; }
-  } else if (UI.qr) {
-    UI.qr.parentElement.style.display = 'none';
   }
 
   UI.tid.addEventListener('input', function() { this.value = this.value.replace(/[^0-9]/g, ''); });
@@ -468,7 +452,7 @@ function bootApp(hasQR) {
     clearTimeout(idleTimer);
     if (conn && authed) {
       idleTimer = setTimeout(() => {
-        log('انتهت مهلة الخمول (15 دقيقة). تم إنهاء النفق الآمن.', 'sys');
+        log('انتهت مهلة الخمول (15 دقيقة). تم إنهاء النفق الآمن لحمايتك.', 'sys');
         doDisconnect();
       }, 15 * 60 * 1000);
     }
@@ -484,26 +468,28 @@ function bootApp(hasQR) {
   // 100% XSS-Safe Linkifier (DOM Nodes Only)
   function appendSafeText(container, text) {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
-    let lastIdx = 0;
-    let match;
+    let lastIdx = 0, match;
     while ((match = urlRegex.exec(text)) !== null) {
       if (match.index > lastIdx) {
         container.appendChild(document.createTextNode(text.substring(lastIdx, match.index)));
       }
       const a = document.createElement('a');
-      a.href = match[0];
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.style.color = 'var(--accent2)';
-      a.style.textDecoration = 'underline';
-      a.style.textUnderlineOffset = '3px';
+      a.href = match[0]; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.style.color = 'var(--accent2)'; a.style.textDecoration = 'underline'; a.style.textUnderlineOffset = '3px';
       a.textContent = match[0];
       container.appendChild(a);
       lastIdx = urlRegex.lastIndex;
     }
-    if (lastIdx < text.length) {
-      container.appendChild(document.createTextNode(text.substring(lastIdx)));
-    }
+    if (lastIdx < text.length) container.appendChild(document.createTextNode(text.substring(lastIdx)));
+  }
+
+  // Strict sanitization for filenames
+  function sanitizeFilename(name) {
+    let safeName = name.replace(/[^a-zA-Z0-9.\-_ \u0600-\u06FF]/g, '_');
+    const ext = safeName.split('.').pop().toLowerCase();
+    const unsafe =['exe','bat','cmd','sh','js','vbs','html','htm','php','py','ps1','jar','msi','scr','apk'];
+    if (unsafe.includes(ext)) { safeName += '.txt'; }
+    return safeName || 'secure_file.bin';
   }
 
   /* ── Logs & Progress ───────────────────────────────────────────────── */
@@ -547,10 +533,10 @@ function bootApp(hasQR) {
   function resetUI() {
     clearTimeout(idleTimer);
     conn = null; pending = null; authed = false;
-    fileQueue = []; sending = false; rxBuf = []; rxBytes = 0; rxMeta = null;
+    fileQueue = []; sending = false; cancelTx = false; rxBuf =[]; rxBytes = 0; rxMeta = null;
     closeModal('authModal');
     UI.cArea.style.display = ''; UI.tArea.classList.remove('on');
-    UI.tid.value = ''; UI.cBtn.textContent = 'اقتران'; UI.cBtn.disabled = false;
+    UI.tid.value = ''; UI.cBtn.textContent = 'اقتران آمن'; UI.cBtn.disabled = false;
     UI.cErr.style.display = 'none'; UI.pCont.style.display = 'none'; relWL();
     history.replaceState({}, '', location.pathname);
   }
@@ -567,9 +553,14 @@ function bootApp(hasQR) {
         case 'file-ack':
           log('✅ تم استلام الملف وحفظه لدى الطرف الآخر بنجاح.', 'sys'); 
           break;
+        case 'file-cancel':
+          log('⚠️ تم إلغاء نقل الملف من قبل الطرف الآخر.', 'sys');
+          UI.pCont.style.display = 'none'; rxMeta = null; rxBuf =[]; relWL();
+          break;
         case 'file-start':
-          reqWL(); rxMeta = d; rxBuf = []; rxBytes = 0; txStart = Date.now();
-          UI.pCont.style.display = 'block'; UI.pFile.textContent = 'استلام: ' + d.name;
+          reqWL(); rxMeta = d; rxBuf =[]; rxBytes = 0; txStart = Date.now();
+          UI.pCont.style.display = 'block'; UI.pFile.textContent = 'استلام: ' + sanitizeFilename(d.name);
+          UI.cancelTxBtn.style.display = 'none'; // Receiver can't cancel mid-chunk easily in this simple flow, hide button.
           updProg(0, d.size);
           break;
         case 'file-chunk':
@@ -581,16 +572,14 @@ function bootApp(hasQR) {
           if (!rxMeta) break;
           UI.pCont.style.display = 'none';
           const meta = rxMeta; const buf = rxBuf;
-          rxMeta = null; rxBuf = []; rxBytes = 0;
+          rxMeta = null; rxBuf =[]; rxBytes = 0;
           
           log('⏳ جاري فك التشفير وتجهيز الملف...', 'sys');
           setTimeout(() => {
-            let name = meta.name.replace(/[/\\?%*:|"<>]/g,'_');
+            const safeName = sanitizeFilename(meta.name);
             let mime = meta.filetype || 'application/octet-stream';
-            if (/\.(html?|js|mjs|ts|svg|php|sh|py|rb|exe|bat|ps1)$/i.test(name)) {
-              name += '.txt'; mime = 'text/plain';
-            }
-            saveToDisk(new Blob(buf, {type: mime}), name);
+            if (safeName.endsWith('.txt') && !meta.name.endsWith('.txt')) mime = 'text/plain'; // Adjusted mime if sanitized
+            saveToDisk(new Blob(buf, {type: mime}), safeName);
             relWL();
           }, 50);
           break;
@@ -622,32 +611,44 @@ function bootApp(hasQR) {
     }
 
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex; justify-content:flex-end; width:100%; margin-bottom:8px';
+    wrap.style.cssText = 'display:flex; justify-content:flex-end; width:100%; margin-bottom:10px';
     const a = document.createElement('a');
     a.href = url; a.download = name;
     a.style.cssText = 'background:var(--accent); color:#fff; padding:12px 20px; border-radius:16px; font-weight:700; font-size:14px; display:flex; align-items:center; gap:12px; text-decoration:none; box-shadow:0 6px 20px rgba(108,99,255,0.2); max-width:85%';
-    a.innerHTML = `
-      <div style="background:rgba(255,255,255,0.2); padding:8px; border-radius:10px; flex-shrink:0">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-      </div>
-      <div style="display:flex; flex-direction:column; overflow:hidden">
-        <span class="text-ellipsis" style="max-width:180px; direction:ltr; text-align:right">Save ${name.replace(/</g, "&lt;")}</span>
-        <span style="font-size:11px; opacity:0.8; font-family:'JetBrains Mono',monospace">${fmtB(blob.size)}</span>
-      </div>`;
+    
+    // XSS Safe DOM creation
+    const iconDiv = document.createElement('div');
+    iconDiv.style.cssText = 'background:rgba(255,255,255,0.2); padding:8px; border-radius:10px; flex-shrink:0';
+    iconDiv.innerHTML = `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>`;
+    
+    const textDiv = document.createElement('div');
+    textDiv.style.cssText = 'display:flex; flex-direction:column; overflow:hidden';
+    
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'text-ellipsis';
+    nameSpan.style.cssText = 'max-width:180px; direction:ltr; text-align:right';
+    nameSpan.textContent = `Save ${name}`;
+    
+    const sizeSpan = document.createElement('span');
+    sizeSpan.style.cssText = 'font-size:11px; opacity:0.8; font-family:"JetBrains Mono",monospace';
+    sizeSpan.textContent = fmtB(blob.size);
+    
+    textDiv.appendChild(nameSpan); textDiv.appendChild(sizeSpan);
+    a.appendChild(iconDiv); a.appendChild(textDiv);
     
     a.onclick = () => {
       setTimeout(() => {
         URL.revokeObjectURL(url);
         a.style.background = 'var(--green)';
         a.style.boxShadow = '0 6px 20px rgba(34,197,94,0.2)';
-        a.querySelector('span').textContent = 'تم الحفظ ✓';
+        nameSpan.textContent = 'تم الحفظ ✓';
         a.style.pointerEvents = 'none';
       }, 2000);
     };
 
     wrap.appendChild(a); UI.logs.appendChild(wrap);
     setTimeout(() => UI.logs.scrollTop = UI.logs.scrollHeight, 50);
-    log('✅ اكتمل النقل. اضغط على الزر أعلاه للحفظ.', 'sys');
+    log('✅ اكتمل النقل وفك التشفير. اضغط على الزر أعلاه للحفظ.', 'sys');
     if (conn && conn.open) conn.send({ type:'file-ack', name:name });
   }
 
@@ -667,20 +668,23 @@ function bootApp(hasQR) {
     if (!sending) processQ();
   };
 
+  UI.cancelTxBtn.onclick = () => { cancelTx = true; };
+
   async function processQ() {
     if (!fileQueue.length || !conn || !conn.open || !authed) { sending=false; relWL(); return; }
-    sending = true; reqWL(); resetIdle();
+    sending = true; cancelTx = false; reqWL(); resetIdle();
     const file = fileQueue.shift();
     
     if (file.size > MAX_MEM_FILE) {
-      if (!confirm(`الملف كبير جداً (${fmtB(file.size)}) وقد يستهلك ذاكرة المتصفح. هل تريد الاستمرار؟`)) {
+      if (!confirm(`الملف كبير جداً (${fmtB(file.size)}) وقد يستهلك ذاكرة المتصفح في الهواتف. هل تريد الاستمرار؟`)) {
         sending = false; relWL(); processQ(); return;
       }
     }
 
-    const name = file.name.replace(/[/\\?%*:|"<>]/g,'_');
+    const name = sanitizeFilename(file.name);
     txStart = Date.now();
-    UI.pCont.style.display = 'block'; UI.pFile.textContent = 'إرسال: ' + name;
+    UI.pCont.style.display = 'block'; UI.pFile.textContent = 'إرسال مشفر: ' + name;
+    UI.cancelTxBtn.style.display = 'inline-flex';
     updProg(0, file.size);
     
     conn.send({ type:'file-start', name:name, size:file.size, filetype:file.type||'application/octet-stream' });
@@ -688,15 +692,14 @@ function bootApp(hasQR) {
     if (file.size > 0) {
       let off = 0;
       while (off < file.size) {
-        if (!sending || !conn || !conn.open || !conn.dataChannel || conn.dataChannel.readyState !== 'open') break;
+        if (!sending || !conn || !conn.open || !conn.dataChannel || conn.dataChannel.readyState !== 'open' || cancelTx) break;
         resetIdle(); 
         
-        // Backpressure memory management
         while (conn.dataChannel && conn.dataChannel.bufferedAmount > BUF_HI) {
-          await new Promise(r => setTimeout(r, 10)); 
-          if (!sending || !conn || !conn.open || conn.dataChannel.readyState !== 'open') break;
+          await new Promise(r => setTimeout(r, 20)); 
+          if (!sending || !conn || !conn.open || conn.dataChannel.readyState !== 'open' || cancelTx) break;
         }
-        if (!sending || !conn || !conn.open || conn.dataChannel.readyState !== 'open') break;
+        if (!sending || !conn || !conn.open || conn.dataChannel.readyState !== 'open' || cancelTx) break;
         
         const slice = file.slice(off, off + CHUNK);
         const ab = await slice.arrayBuffer();
@@ -705,15 +708,18 @@ function bootApp(hasQR) {
       }
     }
 
-    if (conn && conn.open && conn.dataChannel && conn.dataChannel.readyState === 'open') {
+    if (cancelTx) {
+      if (conn && conn.open) conn.send({ type:'file-cancel' });
+      log(`⚠️ تم إلغاء إرسال (${name}).`, 'sys');
+    } else if (conn && conn.open && conn.dataChannel && conn.dataChannel.readyState === 'open') {
       conn.send({ type:'file-end' });
-      log(`🚀 تم إرسال (${name}) بنجاح. بانتظار حفظ الطرف الآخر.`, 'sys');
+      log(`🚀 تم التشفير والإرسال (${name}) بنجاح. بانتظار حفظ الطرف الآخر.`, 'sys');
     } else {
       log('❌ فشل الإرسال بسبب انقطاع الاتصال.', 'sys');
     }
     
     UI.pCont.style.display = 'none';
-    setTimeout(processQ, 200);
+    setTimeout(processQ, 300);
   }
 
   /* ── Drag & Drop ───────────────────────────────────────────────────── */
@@ -792,7 +798,7 @@ function bootApp(hasQR) {
   try {
     peer = new Peer(MY_ID, {
       host: '0.peerjs.com', port: 443, path: '/', secure: true, debug: 0,
-      config: { iceServers: [ {urls:'stun:stun.l.google.com:19302'}, {urls:'stun:stun1.l.google.com:19302'} ] }
+      config: { iceServers:[ {urls:'stun:stun.l.google.com:19302'}, {urls:'stun:stun1.l.google.com:19302'} ] }
     });
   } catch(e) { setStatus('فشل الإعداد', 'err'); return; }
 
@@ -822,7 +828,7 @@ function bootApp(hasQR) {
     } else if (err.type === 'unavailable-id') {
       location.reload();
     } else {
-      setStatus('خطأ في الشبكة', 'err');
+      setStatus('تأكد من اتصالك بالإنترنت', 'err');
     }
   });
 }
