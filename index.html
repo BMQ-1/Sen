@@ -1,677 +1,1059 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="theme-color" content="#f8fafc">
-    <title>مِرسال | Mirsal Secure</title>
-
-    <link id="manifest-link" rel="manifest" href="">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
-    <style>
-        :root { 
-            --safe-top: env(safe-area-inset-top, 0px); 
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
-        }
-        body { 
-            background: #f8fafc; 
-            font-family: system-ui, -apple-system, sans-serif;
-            min-height: 100dvh;
-            padding-top: max(1rem, var(--safe-top)); 
-            padding-bottom: max(1rem, var(--safe-bottom));
-            -webkit-tap-highlight-color: transparent; 
-            overflow-x: hidden;
-        }
-        .glass-card { 
-            background: white; 
-            border-radius: 24px; 
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0,0,0,0.02); 
-            border: 1px solid #f1f5f9;
-            overflow: hidden;
-        }
-        .drag-over { border-color: #3b82f6 !important; background-color: #eff6ff !important; }
-        
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        
-        .tap-anim:active { transform: scale(0.96); transition: transform 0.1s; }
-        .msg-bubble { max-width: 85%; word-break: break-word; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0f">
+<!--
+  سياسة أمان المحتوى (CSP):
+  - unpkg.com: لتحميل مكتبة PeerJS
+  - cdnjs.cloudflare.com: لتحميل مكتبة QRCode
+  - 0.peerjs.com (wss + https): خادم الإشارة لـ PeerJS (تبادل العناوين فقط)
+  - خوادم Google STUN: معفاة تلقائياً من connect-src (WebRTC)
+  - fonts.googleapis.com / fonts.gstatic.com: الخط العربي
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' wss://0.peerjs.com https://0.peerjs.com; img-src 'self' data: blob:; worker-src 'self' blob:; media-src 'self' blob:;">
+<title>مِرسال — نقل آمن</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#08080e;--bg1:#0f0f18;--bg2:#15151f;--bg3:#1d1d2a;--bg4:#252537;
+  --b0:rgba(255,255,255,0.055);--b1:rgba(255,255,255,0.10);--b2:rgba(255,255,255,0.17);
+  --accent:#6c63ff;--accent2:#9490ff;--adim:rgba(108,99,255,0.13);--aglow:rgba(108,99,255,0.22);
+  --t0:#eeeef8;--t1:#8e8eae;--t2:#4e4e68;
+  --green:#22c55e;--gdim:rgba(34,197,94,0.10);
+  --red:#ef4444;--rdim:rgba(239,68,68,0.10);
+  --amber:#f59e0b;
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
+}
+html{height:100%}
+body{
+  min-height:100dvh;background:var(--bg0);color:var(--t0);
+  font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;font-size:15px;line-height:1.6;
+  overflow-x:hidden;-webkit-tap-highlight-color:transparent;
+  padding-top:max(1.25rem,var(--st));padding-bottom:max(1rem,var(--sb));
+  padding-inline:1rem;display:flex;flex-direction:column;align-items:center;gap:1.2rem;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:radial-gradient(circle,rgba(108,99,255,0.055) 1px,transparent 1px);
+  background-size:30px 30px;
+}
+/* Cards */
+.card{position:relative;z-index:1;background:var(--bg2);border:1px solid var(--b0);border-radius:18px;overflow:hidden}
+.card::before{content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(130deg,rgba(108,99,255,0.045) 0%,transparent 55%)}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  font-family:inherit;font-size:14px;font-weight:700;border:none;border-radius:12px;
+  cursor:pointer;transition:opacity .15s,transform .12s,box-shadow .15s;white-space:nowrap}
+.btn:active{transform:scale(0.95)}
+.btn-p{background:var(--accent);color:#fff;padding:13px 22px}
+.btn-p:hover{opacity:.88;box-shadow:0 0 22px var(--aglow)}
+.btn-g{background:var(--bg3);color:var(--t1);border:1px solid var(--b1);padding:11px 18px}
+.btn-g:hover{color:var(--t0);border-color:var(--b2)}
+.btn-d{background:var(--rdim);color:var(--red);border:1px solid rgba(239,68,68,0.22);
+  padding:8px 15px;font-size:12px;border-radius:10px}
+.btn-d:hover{background:var(--red);color:#fff}
+/* Inputs */
+input[type=text]{
+  background:var(--bg1);border:1px solid var(--b1);border-radius:12px;
+  color:var(--t0);font-family:inherit;font-size:14px;padding:13px 16px;
+  outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--adim)}
+input::placeholder{color:var(--t2);font-size:13px}
+/* Status */
+.pill{display:inline-flex;align-items:center;gap:8px;padding:5px 14px;
+  background:var(--bg2);border:1px solid var(--b0);border-radius:100px;
+  font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--t1)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--amber);
+  animation:blink 1.8s ease-in-out infinite}
+.dot.ok{background:var(--green);box-shadow:0 0 8px rgba(34,197,94,0.55);animation:none}
+.dot.err{background:var(--red);animation:none}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+/* Modals */
+.modal{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.78);
+  backdrop-filter:blur(16px);align-items:center;justify-content:center;padding:1rem;
+  opacity:0;transition:opacity .22s ease}
+.modal.open{display:flex}.modal.vis{opacity:1}
+.mbox{background:var(--bg2);border:1px solid var(--b1);border-radius:22px;padding:2rem;
+  width:100%;max-width:400px;transform:scale(.92) translateY(12px);
+  transition:transform .22s ease}
+.modal.vis .mbox{transform:scale(1) translateY(0)}
+/* Messages */
+.mwrap{display:flex;width:100%}
+.mwrap.out{justify-content:flex-start}
+.mwrap.in{justify-content:flex-end;flex-direction:column;align-items:flex-end;gap:5px}
+.bubble{max-width:78%;padding:10px 14px;font-size:14px;line-height:1.55;word-break:break-word;border-radius:18px}
+.bubble.out{background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+.bubble.in{background:var(--bg3);border:1px solid var(--b0);color:var(--t0);border-bottom-left-radius:4px}
+.sys{margin:0 auto;background:var(--bg3);border:1px solid var(--b0);color:var(--t2);
+  font-size:11px;font-weight:600;padding:4px 14px;border-radius:100px;
+  text-align:center;letter-spacing:.04em;width:fit-content}
+/* Progress */
+.ptrack{background:var(--bg1);border-radius:100px;height:5px;overflow:hidden}
+.pfill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));
+  border-radius:100px;transition:width .25s ease}
+/* QR */
+#qrcode canvas,#qrcode img{display:block!important;border-radius:8px;filter:invert(1)}
+/* Toast */
+#toast{position:fixed;bottom:1.5rem;left:50%;
+  transform:translateX(-50%) translateY(14px);z-index:300;
+  display:flex;align-items:center;gap:9px;padding:11px 20px;
+  background:var(--bg3);border:1px solid var(--b1);border-radius:14px;
+  font-size:13px;font-weight:600;color:var(--t0);pointer-events:none;
+  opacity:0;transition:opacity .2s,transform .2s;white-space:nowrap;max-width:92vw}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* Drop zone */
+#dropZone{display:none;position:absolute;inset:0;z-index:50;
+  background:rgba(108,99,255,0.93);backdrop-filter:blur(18px);border-radius:18px;
+  flex-direction:column;align-items:center;justify-content:center;gap:12px}
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--b1);border-radius:8px}
+/* Layout */
+.grid{width:100%;max-width:880px;display:grid;grid-template-columns:258px 1fr;gap:13px;z-index:1;flex:1}
+@media(max-width:660px){.grid{grid-template-columns:1fr}}
+.rcol{display:flex;flex-direction:column;gap:13px}
+#transferArea{display:none;flex-direction:column}
+#transferArea.on{display:flex}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin 1s linear infinite;display:inline-block}
+header,footer,main{width:100%;max-width:880px;z-index:1}
+</style>
 </head>
-<body class="text-slate-800 flex flex-col items-center px-4 md:px-8 relative">
+<body>
 
-    <!-- Auth Modal (Security against unauthorized connections) -->
-    <div id="authModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center transform transition-all">
-            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-blue-100">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-            </div>
-            <h3 class="text-xl font-extrabold text-slate-800 mb-2">Connection Request</h3>
-            <p class="text-sm text-slate-500 mb-6 font-medium">Device <span id="reqDeviceId" class="font-mono font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded"></span> wants to pair.</p>
-            <div class="flex gap-3">
-                <button id="declineBtn" class="tap-anim flex-1 py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">Decline</button>
-                <button id="acceptBtn" class="tap-anim flex-1 py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors shadow-md shadow-blue-500/20">Accept</button>
-            </div>
+<!-- Toast -->
+<div id="toast"><span id="tIcon">ℹ</span><span id="tMsg"></span></div>
+
+<!-- Privacy Modal -->
+<div id="privacyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="pmT">
+  <div class="mbox">
+    <button onclick="closeModal('privacyModal')" aria-label="إغلاق"
+      style="position:absolute;top:1rem;left:1rem;background:var(--bg3);border:1px solid var(--b1);
+      color:var(--t1);border-radius:9px;width:32px;height:32px;font-size:18px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;line-height:1">×</button>
+    <div style="width:46px;height:46px;background:var(--gdim);border:1px solid rgba(34,197,94,0.25);
+      border-radius:13px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem">
+      <svg width="21" height="21" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+      </svg>
+    </div>
+    <h2 id="pmT" style="font-size:19px;font-weight:700;color:var(--t0);margin-bottom:.45rem">أمان بلا وسيط</h2>
+    <p style="font-size:13px;color:var(--t1);margin-bottom:1.3rem;line-height:1.7">
+      مِرسال يعمل كلياً في متصفحك. لا خوادم تخزن بياناتك، لا تتبع، لا تسجيل. إليك التفاصيل الكاملة:
+    </p>
+    <ul style="list-style:none;display:flex;flex-direction:column;gap:13px;margin-bottom:1.5rem">
+      <li style="display:flex;gap:11px;align-items:flex-start">
+        <div style="background:var(--adim);border-radius:9px;padding:7px;flex-shrink:0;margin-top:1px">
+          <svg width="13" height="13" fill="var(--accent)" viewBox="0 0 24 24"><path d="M4.5 3.75a3 3 0 00-3 3v.75h21v-.75a3 3 0 00-3-3h-15zM1.5 10.5v6a3 3 0 003 3h15a3 3 0 003-3v-6h-21z"/></svg>
         </div>
+        <p style="font-size:13px;color:var(--t1);line-height:1.65">
+          <strong style="color:var(--t0)">لا تخزين سحابي:</strong> الملفات والرسائل تُنقل مباشرة من جهاز إلى آخر عبر WebRTC دون المرور بأي خادم وسيط.
+        </p>
+      </li>
+      <li style="display:flex;gap:11px;align-items:flex-start">
+        <div style="background:var(--adim);border-radius:9px;padding:7px;flex-shrink:0;margin-top:1px">
+          <svg width="13" height="13" fill="var(--accent)" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+        </div>
+        <p style="font-size:13px;color:var(--t1);line-height:1.65">
+          <strong style="color:var(--t0)">تشفير DTLS/SRTP:</strong> كل البيانات مشفرة تشفيراً تاماً من الطرف إلى الطرف بواسطة بروتوكول WebRTC المدمج في المتصفح — لا يمكن فك تشفيرها من أي طرف ثالث.
+        </p>
+      </li>
+      <li style="display:flex;gap:11px;align-items:flex-start">
+        <div style="background:var(--adim);border-radius:9px;padding:7px;flex-shrink:0;margin-top:1px">
+          <svg width="13" height="13" fill="var(--accent)" viewBox="0 0 24 24"><path d="M12 2l9 4v6c0 5.55-3.84 10.74-9 12C6.84 21.74 3 16.55 3 11V6l9-4z"/></svg>
+        </div>
+        <p style="font-size:13px;color:var(--t1);line-height:1.65">
+          <strong style="color:var(--t0)">خادم الإشارة (Signalling):</strong> خادم PeerJS العام يُستخدم فقط لاكتشاف عناوين IP الأولية لبدء الاتصال، مثل دليل الهاتف. لا يرى أياً من محتوى رسائلك أو ملفاتك.
+        </p>
+      </li>
+      <li style="display:flex;gap:11px;align-items:flex-start">
+        <div style="background:var(--adim);border-radius:9px;padding:7px;flex-shrink:0;margin-top:1px">
+          <svg width="13" height="13" fill="var(--accent)" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="var(--accent)" stroke-width="2" fill="none"/><path d="M12 6v6l4 2" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <p style="font-size:13px;color:var(--t1);line-height:1.65">
+          <strong style="color:var(--t0)">قطع تلقائي:</strong> الاتصال يُقطع تلقائياً بعد 15 دقيقة من الخمول، وتُحذف جميع البيانات من الذاكرة المؤقتة للمتصفح.
+        </p>
+      </li>
+    </ul>
+    <button onclick="closeModal('privacyModal')" class="btn btn-p" style="width:100%;padding:14px;font-size:14px">حسناً، فهمت</button>
+  </div>
+</div>
+
+<!-- Auth Modal -->
+<div id="authModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="amT">
+  <div class="mbox" style="text-align:center">
+    <div style="width:58px;height:58px;background:var(--adim);border:1px solid rgba(108,99,255,0.3);
+      border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem">
+      <svg width="25" height="25" fill="none" stroke="var(--accent)" stroke-width="1.7" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+      </svg>
+    </div>
+    <h2 id="amT" style="font-size:18px;font-weight:700;margin-bottom:.5rem">طلب اتصال وارد</h2>
+    <p style="font-size:13px;color:var(--t1);margin-bottom:1.5rem;line-height:1.65">
+      الجهاز
+      <span id="reqId" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--accent);
+        background:var(--adim);padding:2px 9px;border-radius:7px"></span>
+      يطلب الاقتران بجهازك
+    </p>
+    <div style="display:flex;gap:10px">
+      <button id="declineBtn" class="btn btn-g" style="flex:1;padding:13px">رفض</button>
+      <button id="acceptBtn" class="btn btn-p" style="flex:1;padding:13px">قبول الاقتران</button>
+    </div>
+  </div>
+</div>
+
+<!-- Header -->
+<header style="display:flex;justify-content:space-between;align-items:center;padding-top:.2rem">
+  <div>
+    <h1 style="font-size:23px;font-weight:800;color:var(--t0);display:flex;align-items:center;gap:8px;margin-bottom:7px">
+      مِرسال
+      <span style="font-size:10px;font-weight:700;background:var(--adim);color:var(--accent);
+        border:1px solid rgba(108,99,255,0.25);padding:3px 9px;border-radius:6px;letter-spacing:.08em">آمن</span>
+    </h1>
+    <div class="pill">
+      <span id="sDot" class="dot"></span>
+      <span id="sTxt">جارٍ التهيئة...</span>
+    </div>
+  </div>
+  <button onclick="openModal('privacyModal')" class="btn btn-g" style="font-size:12px;gap:6px;padding:9px 15px;border-radius:12px">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+    </svg>
+    الخصوصية
+  </button>
+</header>
+
+<!-- Main -->
+<main class="grid">
+
+  <!-- Left: Identity -->
+  <div class="card" style="padding:1.4rem;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1rem;align-self:start">
+    <p style="font-size:10px;font-weight:700;color:var(--t2);letter-spacing:.18em">هويّتك الآمنة</p>
+
+    <button onclick="copyMyId()"
+      style="width:100%;background:var(--bg1);border:1px solid var(--b1);border-radius:13px;
+      padding:1.3rem 1rem;cursor:pointer;transition:border-color .15s"
+      onmouseenter="this.style.borderColor='var(--accent)'"
+      onmouseleave="this.style.borderColor='var(--b1)'">
+      <div id="myId" style="font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:700;
+        letter-spacing:.25em;color:var(--t0)">------</div>
+      <div style="font-size:10px;color:var(--t2);margin-top:8px;font-weight:600;letter-spacing:.1em;
+        display:flex;align-items:center;justify-content:center;gap:5px">
+        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+        </svg>
+        اضغط للنسخ
+      </div>
+    </button>
+
+    <div style="width:100%;padding-top:.9rem;border-top:1px solid var(--b0);
+      display:flex;flex-direction:column;align-items:center;gap:8px">
+      <div id="qrcode" style="padding:8px;background:var(--bg1);border-radius:11px;border:1px solid var(--b0)"></div>
+      <p style="font-size:10px;color:var(--t2);font-weight:700;letter-spacing:.1em">امسح للاقتران الفوري</p>
     </div>
 
-    <!-- Header -->
-    <header class="w-full max-w-4xl flex justify-between items-center mb-6 shrink-0">
-        <div>
-            <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-                مِرسال
-            </h1>
-            <p class="text-xs font-semibold text-slate-400 flex items-center gap-1.5 mt-0.5">
-                <span id="statusDot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>
-                <span id="statusText">Connecting E2EE...</span>
-            </p>
+    <!-- Security badges -->
+    <div style="width:100%;padding-top:.9rem;border-top:1px solid var(--b0);display:flex;flex-direction:column;gap:7px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <svg width="11" height="11" fill="var(--green)" viewBox="0 0 24 24"><path d="M12 2l9 4v6c0 5.55-3.84 10.74-9 12C6.84 21.74 3 16.55 3 11V6l9-4z"/></svg>
+        <span style="font-size:11px;color:var(--t1)">تشفير DTLS/SRTP كامل</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <svg width="11" height="11" fill="var(--green)" viewBox="0 0 24 24"><path d="M12 2l9 4v6c0 5.55-3.84 10.74-9 12C6.84 21.74 3 16.55 3 11V6l9-4z"/></svg>
+        <span style="font-size:11px;color:var(--t1)">نظير-إلى-نظير مباشر</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <svg width="11" height="11" fill="var(--green)" viewBox="0 0 24 24"><path d="M12 2l9 4v6c0 5.55-3.84 10.74-9 12C6.84 21.74 3 16.55 3 11V6l9-4z"/></svg>
+        <span style="font-size:11px;color:var(--t1)">لا خوادم وسيطة للبيانات</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <svg width="11" height="11" fill="var(--amber)" viewBox="0 0 24 24"><path d="M12 2l9 4v6c0 5.55-3.84 10.74-9 12C6.84 21.74 3 16.55 3 11V6l9-4z"/></svg>
+        <span style="font-size:11px;color:var(--t1)">قطع تلقائي بعد 15 دقيقة</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right -->
+  <div class="rcol">
+
+    <!-- Connect panel -->
+    <div class="card" id="connectArea" style="padding:1.4rem">
+      <h2 style="font-size:16px;font-weight:700;color:var(--t0);margin-bottom:.9rem;display:flex;align-items:center;gap:8px">
+        الاتصال بجهاز
+        <svg width="15" height="15" fill="none" stroke="var(--t2)" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+        </svg>
+      </h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <input type="text" id="targetId" placeholder="رمز مكوّن من 6 أرقام"
+          maxlength="6" inputmode="numeric" pattern="[0-9]*"
+          style="flex:1;min-width:130px;font-family:'JetBrains Mono',monospace;
+          font-size:22px;font-weight:700;letter-spacing:.25em;text-align:center">
+        <button id="connectBtn" class="btn btn-p" onclick="connectToPeer()" style="flex-shrink:0;padding:13px 24px">اقتران</button>
+      </div>
+      <p style="font-size:12px;color:var(--t2);margin-top:9px;line-height:1.65">
+        شارك رمزك مع الطرف الآخر أو امسح رمز QR — الاتصال مباشر ومشفر بالكامل
+      </p>
+      <div id="cErr" style="display:none;margin-top:9px;padding:9px 13px;background:var(--rdim);
+        border:1px solid rgba(239,68,68,0.22);border-radius:10px;font-size:12px;color:var(--red)"></div>
+    </div>
+
+    <!-- Transfer panel -->
+    <div class="card" id="transferArea" style="border-top:2px solid var(--accent);min-height:390px;height:60dvh;position:relative">
+
+      <!-- Header -->
+      <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:1rem 1.2rem;border-bottom:1px solid var(--b0);flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:9px;overflow:hidden">
+          <div style="width:33px;height:33px;border-radius:50%;background:var(--gdim);
+            border:1px solid rgba(34,197,94,0.22);display:flex;align-items:center;
+            justify-content:center;flex-shrink:0;position:relative">
+            <div style="position:absolute;top:0;right:0;width:9px;height:9px;background:var(--green);
+              border:2px solid var(--bg2);border-radius:50%"></div>
+            <svg width="13" height="13" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+          </div>
+          <div style="overflow:hidden">
+            <p style="font-size:9px;color:var(--t2);font-weight:700;letter-spacing:.1em">اتصال مشفر نشط</p>
+            <p id="connTo" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;
+              color:var(--t0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">---</p>
+          </div>
         </div>
-    </header>
+        <button id="discBtn" class="btn btn-d">قطع الاتصال</button>
+      </div>
 
-    <!-- Main Content Grid -->
-    <main class="w-full max-w-4xl grid md:grid-cols-2 gap-4 sm:gap-6 flex-1 items-start pb-4">
-        
-        <!-- LEFT: Identity & QR -->
-        <div class="glass-card p-5 sm:p-6 flex flex-col items-center justify-center text-center w-full">
-            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Your Secure ID</h2>
-            
-            <button onclick="copyMyId()" class="tap-anim group relative bg-slate-50 hover:bg-slate-100 border border-slate-200 py-4 sm:py-5 px-4 w-full rounded-2xl transition-all">
-                <div class="text-4xl sm:text-5xl font-mono font-black text-slate-800 tracking-widest" id="myId">---</div>
-                <div class="text-[11px] sm:text-xs text-slate-400 mt-2 font-medium group-hover:text-blue-600 transition-colors">Tap to copy</div>
-            </button>
-
-            <div class="mt-5 w-full pt-5 border-t border-slate-100 flex flex-col items-center">
-                <div id="qrcode" class="p-2 bg-white rounded-xl shadow-sm border border-slate-100"></div>
-                <p class="text-[11px] text-slate-400 mt-3 font-medium">Scan to pair instantly</p>
-            </div>
+      <!-- Logs -->
+      <div id="logs" style="flex:1;overflow-y:auto;padding:1rem 1.2rem;
+        display:flex;flex-direction:column;gap:10px;min-height:0">
+        <div id="logPH" style="margin:auto;text-align:center;
+          display:flex;flex-direction:column;align-items:center;gap:9px;opacity:.42">
+          <svg width="28" height="28" fill="none" stroke="var(--t2)" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          <span class="sys">القناة المشفرة جاهزة</span>
         </div>
+      </div>
 
-        <!-- RIGHT: Connection / Action Area -->
-        <div class="flex flex-col gap-4 sm:gap-6 h-full w-full">
-            
-            <!-- Connect Panel -->
-            <div class="glass-card p-5 sm:p-6 w-full" id="connectArea">
-                <h2 class="text-sm font-bold text-slate-800 mb-3">Connect to Device</h2>
-                <div class="flex gap-2">
-                    <input type="text" id="targetId" placeholder="6-Digit ID" maxlength="6" inputmode="numeric" pattern="[0-9]*" class="flex-1 w-0 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base sm:text-xl text-center uppercase transition-all placeholder:text-slate-300">
-                    <button id="connectBtn" class="tap-anim bg-blue-600 hover:bg-blue-700 text-white px-5 sm:px-6 py-3 rounded-xl font-bold shadow-md shadow-blue-500/20 transition-all text-sm sm:text-base">Pair</button>
-                </div>
+      <!-- Progress -->
+      <div id="progCont" style="display:none;flex-shrink:0;padding:.7rem 1.2rem;border-top:1px solid var(--b0)">
+        <div style="background:var(--bg3);border:1px solid var(--b0);border-radius:12px;padding:12px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px">
+            <div style="overflow:hidden;flex:1">
+              <p style="font-size:9px;color:var(--t2);font-weight:700;letter-spacing:.1em;margin-bottom:2px">جارٍ النقل</p>
+              <p id="progFile" style="font-size:12px;font-weight:700;color:var(--t0);
+                white-space:nowrap;overflow:hidden;text-overflow:ellipsis">ملف</p>
             </div>
-
-            <!-- Active Transfer Panel -->
-            <div class="glass-card p-4 sm:p-6 hidden flex-col h-[60dvh] md:h-auto md:flex-1 border-blue-100 shadow-blue-500/5 relative w-full" id="transferArea">
-                
-                <!-- Connection Header -->
-                <div class="flex justify-between items-center mb-3 pb-3 border-b border-slate-100 shrink-0">
-                    <div class="flex items-center gap-2.5 overflow-hidden">
-                        <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path></svg>
-                        </div>
-                        <div class="truncate">
-                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Connected to</p>
-                            <p class="text-sm font-bold text-slate-800 font-mono truncate" id="connectedToId">---</p>
-                        </div>
-                    </div>
-                    <button id="disconnectBtn" class="tap-anim text-xs bg-slate-50 text-slate-500 hover:bg-red-50 hover:text-red-600 border border-slate-200 hover:border-red-200 px-3 py-1.5 rounded-lg font-bold transition-colors shrink-0">Disconnect</button>
-                </div>
-                
-                <!-- Chat / Logs Area -->
-                <div class="flex-1 overflow-y-auto mb-3 pr-1 space-y-3 flex flex-col w-full" id="logs">
-                    <div class="m-auto text-center text-slate-400 text-[11px] font-medium bg-slate-50 px-3 py-1.5 rounded-full" id="logPlaceholder">End-to-End Encrypted</div>
-                </div>
-
-                <!-- Progress Bar -->
-                <div id="progressContainer" class="hidden shrink-0 mb-3 bg-slate-50 p-3 rounded-xl border border-slate-200 w-full">
-                    <div class="flex justify-between text-[11px] sm:text-xs mb-1.5 font-bold text-slate-600">
-                        <span id="progressFilename" class="truncate max-w-[50%]">file.ext</span>
-                        <span id="progressStats" class="text-slate-400 font-medium ml-2 mr-auto hidden sm:inline"></span>
-                        <span id="progressPercent" class="text-blue-600 ml-2 shrink-0">0%</span>
-                    </div>
-                    <div class="w-full bg-slate-200 rounded-full h-1.5 sm:h-2 overflow-hidden">
-                        <div id="progressBar" class="bg-blue-500 h-full rounded-full transition-all duration-150 ease-out" style="width: 0%"></div>
-                    </div>
-                </div>
-
-                <!-- Inputs Area -->
-                <div class="space-y-2 shrink-0 w-full">
-                    <div class="flex gap-2 w-full">
-                        <input type="text" id="textInput" placeholder="Message or link..." class="flex-1 w-0 px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm transition-all">
-                        
-                        <button onclick="document.getElementById('fileInput').click()" class="tap-anim bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-slate-600 hover:text-blue-600 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-all flex items-center justify-center shrink-0" title="Send File">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                        </button>
-                        <input type="file" id="fileInput" multiple class="hidden">
-                        
-                        <button id="sendTextBtn" class="tap-anim bg-slate-800 hover:bg-slate-900 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-bold text-sm transition-all shadow-md shrink-0">Send</button>
-                    </div>
-                </div>
-
-                <!-- Invisible Drop Zone Overlay -->
-                <div id="dropZone" class="absolute inset-0 bg-blue-50/95 backdrop-blur-sm border-4 border-dashed border-blue-400 rounded-24 z-50 hidden flex-col items-center justify-center transition-all m-2">
-                    <svg class="w-12 h-12 text-blue-500 mb-3 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                    <p class="text-xl font-bold text-blue-700 text-center px-4">Drop files to send</p>
-                </div>
-
-            </div>
+            <span id="progPct" style="font-size:20px;font-weight:800;color:var(--accent);
+              flex-shrink:0;margin-right:10px">0%</span>
+          </div>
+          <div class="ptrack"><div id="progBar" class="pfill" style="width:0%"></div></div>
+          <p id="progStats" style="font-size:11px;color:var(--t2);margin-top:5px;font-weight:600">0 ب / 0 ب</p>
         </div>
-    </main>
+      </div>
 
-    <!-- Saudi Signature Footer -->
-    <footer class="w-full mt-auto pt-6 pb-2 text-center shrink-0">
-        <p class="text-[11px] font-bold text-slate-400 tracking-wider">صُنِعَ بِفَخْرٍ فِي السُّعُودِيَّةِ 🇸🇦</p>
-    </footer>
+      <!-- Inputs -->
+      <div style="padding:.7rem 1.2rem .95rem;border-top:1px solid var(--b0);flex-shrink:0;
+        display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="textInput" placeholder="اكتب رسالة أو الصق رابطاً..." style="flex:1">
+          <button onclick="document.getElementById('fileInput').click()" title="إرسال ملف"
+            style="background:var(--bg3);border:1px solid var(--b1);color:var(--t1);
+            width:43px;height:43px;border-radius:11px;display:flex;align-items:center;
+            justify-content:center;cursor:pointer;flex-shrink:0;transition:border-color .15s,color .15s"
+            onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+            onmouseleave="this.style.borderColor='var(--b1)';this.style.color='var(--t1)'">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+            </svg>
+          </button>
+          <input type="file" id="fileInput" multiple style="display:none">
+        </div>
+        <button id="sendBtn" class="btn btn-p" style="width:100%;padding:12px;font-size:14px">
+          إرسال الرسالة
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+          </svg>
+        </button>
+      </div>
 
-    <script>
-        // --- PWA NATIVE SETUP ---
-        const manifest = {
-            name: "مِرسال", short_name: "مِرسال", display: "standalone",
-            background_color: "#f8fafc", theme_color: "#f8fafc",
-            icons: [{ src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzNiODJmNiIvPjwvc3ZnPg==", sizes: "192x192", type: "image/svg+xml" }]
-        };
-        document.getElementById('manifest-link').href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type: 'application/json'}));
+      <!-- Drop zone -->
+      <div id="dropZone">
+        <div style="width:56px;height:56px;background:rgba(255,255,255,0.1);border-radius:50%;
+          display:flex;align-items:center;justify-content:center">
+          <svg width="24" height="24" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+          </svg>
+        </div>
+        <p style="font-size:17px;font-weight:800;color:#fff;text-align:center;margin:0">أفلِت الملفات هنا</p>
+        <p style="font-size:13px;color:rgba(255,255,255,0.62);margin:0">تشفير فوري من الطرف إلى الطرف</p>
+      </div>
+    </div>
 
-        // --- HARDWARE APIS & WAKELOCK ---
-        let wakeLock = null;
-        async function requestWakeLock() { 
-            if ('wakeLock' in navigator && !wakeLock) { 
-                try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {} 
-            } 
-        }
-        function releaseWakeLock() { if (wakeLock) { wakeLock.release(); wakeLock = null; } }
-        function vibrate(pattern) { if ('vibrate' in navigator) navigator.vibrate(pattern); }
+  </div><!-- /rcol -->
+</main>
 
-        document.addEventListener('visibilitychange', async () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') await requestWakeLock();
+<!-- Footer -->
+<footer style="text-align:center;padding-bottom:.2rem">
+  <div style="display:inline-flex;align-items:center;gap:8px;padding:5px 16px;
+    background:var(--bg2);border:1px solid var(--b0);border-radius:100px">
+    <span style="font-size:10px;font-weight:700;color:var(--t2);letter-spacing:.1em">صُنِعَ بِفَخْرٍ فِي السُّعُودِيَّةِ</span>
+    <span style="font-size:13px">🇸🇦</span>
+  </div>
+</footer>
+
+<!-- Manifest placeholder -->
+<link id="mfLink" rel="manifest" href="">
+
+<!--
+  ════════════════════════════════════════════════════════════════════
+  SCRIPTS — placed at end of <body> so the DOM is fully parsed first.
+
+  Loading strategy:
+    We inject <script> tags sequentially via JS so we can verify each
+    library loaded before running the app. This eliminates the
+    "Peer is not defined" race condition that happens when:
+      • scripts are in <head> (DOM not ready)
+      • CSP blocks the source domain
+      • network error silently drops the script
+
+  Load order: PeerJS (unpkg.com) → QRCode (cdnjs) → bootApp()
+  ════════════════════════════════════════════════════════════════════
+-->
+<script>
+/* ── Helpers available immediately (before libs load) ──────────────── */
+var _toast, _toastTimer;
+function showToast(msg, isErr) {
+  if (!_toast) _toast = document.getElementById('toast');
+  var ti = document.getElementById('tIcon');
+  var tm = document.getElementById('tMsg');
+  if (!_toast || !ti || !tm) return;
+  tm.textContent = msg;
+  ti.textContent = isErr ? '✕' : '✓';
+  ti.style.color = isErr ? 'var(--red)' : 'var(--green)';
+  _toast.style.borderColor = isErr ? 'rgba(239,68,68,0.28)' : 'var(--b1)';
+  _toast.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function() { _toast.classList.remove('show'); }, 3400);
+}
+window.alert = function(m) { showToast(m, true); };
+
+function openModal(id) {
+  var m = document.getElementById(id);
+  m.classList.add('open');
+  requestAnimationFrame(function() { requestAnimationFrame(function() { m.classList.add('vis'); }); });
+}
+function closeModal(id) {
+  var m = document.getElementById(id);
+  m.classList.remove('vis');
+  setTimeout(function() { m.classList.remove('open'); }, 230);
+}
+
+function setStatus(txt, state) {
+  var d = document.getElementById('sDot');
+  var s = document.getElementById('sTxt');
+  if (s) s.textContent = txt;
+  if (d) d.className = 'dot' + (state === 'ok' ? ' ok' : state === 'err' ? ' err' : '');
+}
+
+/* ── PWA Manifest ───────────────────────────────────────────────────── */
+(function() {
+  var m = { name:'مِرسال', short_name:'مِرسال', display:'standalone',
+    background_color:'#0a0a0f', theme_color:'#0a0a0f',
+    icons:[{src:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzZjNjNmZiIvPjwvc3ZnPg==',sizes:'192x192',type:'image/svg+xml'}]};
+  var el = document.getElementById('mfLink');
+  if (el) el.href = URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/json'}));
+})();
+
+/* ── Sequential script loader ───────────────────────────────────────── */
+function loadScript(src, onOk, onFail) {
+  var s = document.createElement('script');
+  s.src = src;
+  s.crossOrigin = 'anonymous';
+  s.onload  = onOk;
+  s.onerror = onFail;
+  document.head.appendChild(s);
+}
+
+setStatus('جارٍ تحميل المكتبات...', '');
+
+loadScript(
+  'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js',
+  function() {                               /* PeerJS loaded OK */
+    if (typeof Peer === 'undefined') {
+      setStatus('خطأ: PeerJS غير معرَّف رغم تحميله', 'err');
+      showToast('خطأ غير متوقع في PeerJS.', true);
+      return;
+    }
+    loadScript(
+      'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
+      function() { bootApp(true); },         /* both libs OK */
+      function() { bootApp(false); }         /* QRCode failed — still boot */
+    );
+  },
+  function() {                               /* PeerJS failed to load */
+    setStatus('خطأ: فشل تحميل PeerJS', 'err');
+    showToast('فشل تحميل مكتبة الاتصال. تحقق من الإنترنت وأعِد التحميل.', true);
+  }
+);
+
+/* ═══════════════════════════════════════════════════════════════════════
+   BOOT APP — called only after PeerJS is confirmed available
+   ═══════════════════════════════════════════════════════════════════════ */
+function bootApp(hasQR) {
+
+  /* ── Crypto ID ─────────────────────────────────────────────────────── */
+  var buf = new Uint32Array(1);
+  window.crypto.getRandomValues(buf);
+  var MY_ID = String(Math.floor(100000 + (buf[0] % 900000)));
+
+  /* ── State ─────────────────────────────────────────────────────────── */
+  var peer         = null;
+  var conn         = null;       // live DataConnection
+  var pending      = null;       // incoming connection awaiting user auth
+  var authed       = false;
+  var fileQueue    = [];
+  var sending      = false;
+  var txStart      = 0;
+  var idleTimer    = null;
+  var connTimer    = null;
+  var wakeLock     = null;
+  var dragCnt      = 0;
+  var rxBuf        = [];
+  var rxBytes      = 0;
+  var rxMeta       = null;
+  var reconnects   = 0;
+  var MAX_RC       = 6;
+
+  var CHUNK        = 65536;      // 64 KB chunks
+  var BUF_HI       = 262144;     // 256 KB back-pressure threshold
+
+  /* ── DOM ────────────────────────────────────────────────────────────── */
+  function $id(id) { return document.getElementById(id); }
+  var $myId   = $id('myId');
+  var $qr     = $id('qrcode');
+  var $tid    = $id('targetId');
+  var $cBtn   = $id('connectBtn');
+  var $cArea  = $id('connectArea');
+  var $cErr   = $id('cErr');
+  var $tArea  = $id('transferArea');
+  var $connTo = $id('connTo');
+  var $fInp   = $id('fileInput');
+  var $txInp  = $id('textInput');
+  var $logs   = $id('logs');
+  var $pCont  = $id('progCont');
+  var $pFile  = $id('progFile');
+  var $pStats = $id('progStats');
+  var $pBar   = $id('progBar');
+  var $pPct   = $id('progPct');
+  var $drop   = $id('dropZone');
+
+  /* ── WakeLock ───────────────────────────────────────────────────────── */
+  async function reqWL() {
+    if ('wakeLock' in navigator && !wakeLock) {
+      try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
+    }
+  }
+  function relWL() { if (wakeLock) { wakeLock.release(); wakeLock = null; } }
+  document.addEventListener('visibilitychange', async function() {
+    if (wakeLock && document.visibilityState === 'visible') await reqWL();
+  });
+
+  /* ── Idle timer ─────────────────────────────────────────────────────── */
+  function resetIdle() {
+    clearTimeout(idleTimer);
+    if (conn && authed) {
+      idleTimer = setTimeout(function() {
+        log('انتهت مهلة الخمول — قُطع الاتصال تلقائياً.', 'sys');
+        doDisconnect();
+      }, 15 * 60 * 1000);
+    }
+  }
+
+  /* ── Vibrate ────────────────────────────────────────────────────────── */
+  function vib(p) { if (navigator.vibrate) navigator.vibrate(p); }
+
+  /* ── Format bytes ───────────────────────────────────────────────────── */
+  function fmtB(n) {
+    if (!n) return '0 ب';
+    var u = ['ب','ك.ب','م.ب','ج.ب'], i = Math.floor(Math.log(n)/Math.log(1024));
+    return parseFloat((n/Math.pow(1024,i)).toFixed(1)) + ' ' + u[i];
+  }
+
+  /* ── Linkify (XSS-safe) ─────────────────────────────────────────────── */
+  function linkify(escaped) {
+    return escaped.replace(/(https?:\/\/[^\s<"']+)/g, function(u) {
+      return '<a href="' + encodeURI(u) + '" target="_blank" rel="noopener noreferrer" ' +
+             'style="color:var(--accent2);text-decoration:underline;text-underline-offset:3px;word-break:break-all">' + u + '</a>';
+    });
+  }
+
+  /* ── QR ─────────────────────────────────────────────────────────────── */
+  $myId.textContent = MY_ID;
+  if (hasQR && typeof QRCode !== 'undefined' && $qr) {
+    try {
+      new QRCode($qr, {
+        text: location.origin + location.pathname + '?pair=' + MY_ID,
+        width: 118, height: 118,
+        colorDark: '#ffffff', colorLight: '#0f0f18'
+      });
+    } catch(e) { $qr.style.display = 'none'; }
+  } else if ($qr && $qr.parentElement) {
+    $qr.parentElement.style.display = 'none';
+  }
+
+  /* ── Copy ID ────────────────────────────────────────────────────────── */
+  window.copyMyId = function() {
+    navigator.clipboard.writeText(MY_ID).then(function() {
+      vib(50); showToast('تم نسخ رمزك الآمن');
+      var o = $myId.textContent;
+      $myId.textContent = 'نُسِخ ✓'; $myId.style.color = 'var(--green)';
+      setTimeout(function() { $myId.textContent = o; $myId.style.color = ''; }, 1600);
+    }).catch(function() { showToast('فشل النسخ', true); });
+  };
+
+  /* ── Log ─────────────────────────────────────────────────────────────── */
+  function log(msg, type, raw) {
+    resetIdle();
+    var ph = $id('logPH'); if (ph) ph.remove();
+    var w = document.createElement('div');
+
+    if (type === 'sys') {
+      w.className = 'sys'; w.textContent = msg;
+    } else if (type === 'out') {
+      w.className = 'mwrap out';
+      var b = document.createElement('div');
+      b.className = 'bubble out'; b.textContent = msg;
+      b.innerHTML = linkify(b.innerHTML); w.appendChild(b);
+    } else {                                   /* 'in' */
+      w.className = 'mwrap in';
+      var b2 = document.createElement('div');
+      b2.className = 'bubble in'; b2.textContent = msg;
+      b2.innerHTML = linkify(b2.innerHTML);
+      var sr = encodeURIComponent(raw || msg);
+      var cp = document.createElement('button');
+      cp.style.cssText='font-size:10px;font-weight:700;color:var(--t2);background:var(--bg3);border:1px solid var(--b0);padding:3px 10px;border-radius:8px;cursor:pointer;font-family:inherit;transition:color .15s';
+      cp.textContent = 'نسخ';
+      cp.onclick = function() {
+        navigator.clipboard.writeText(decodeURIComponent(sr)).then(function(){
+          cp.textContent='✓ تم'; cp.style.color='var(--green)';
+          setTimeout(function(){ cp.textContent='نسخ'; cp.style.color=''; }, 2000);
         });
+      };
+      w.appendChild(b2); w.appendChild(cp);
+    }
+    $logs.appendChild(w);
+    setTimeout(function() { $logs.scrollTop = $logs.scrollHeight; }, 35);
+  }
 
-        // --- CRYPTOGRAPHIC ID GENERATION ---
-        function generateSecureId() {
-            const array = new Uint32Array(1);
-            window.crypto.getRandomValues(array);
-            return Math.floor(100000 + (array[0] % 900000)).toString(); // Secure 6-digit code
-        }
+  /* ── Progress ───────────────────────────────────────────────────────── */
+  function showProg(name, total) {
+    $pCont.style.display = 'block';
+    $pFile.textContent = name;
+    updProg(0, total || 1);
+  }
+  function updProg(cur, total) {
+    var pct = Math.min(100, Math.round(cur / (total || 1) * 100));
+    $pBar.style.width = pct + '%'; $pPct.textContent = pct + '%';
+    var el = (Date.now() - txStart) / 1000;
+    $pStats.textContent = el > 0.5 && cur > 0
+      ? fmtB(cur) + ' / ' + fmtB(total) + ' — ' + fmtB(cur/el) + '/ث'
+      : fmtB(cur) + ' / ' + fmtB(total);
+  }
+  function hideProg() { $pCont.style.display = 'none'; }
 
-        // --- APP LOGIC & STATE ---
-        const myGeneratedId = generateSecureId();
-        let peer = null, currentConnection = null, pendingConnection = null, connectionTimeout = null;
-        let isAuthenticated = false; // Security Flag
-        let fileQueue = [], isSending = false;
-        let transferStartTime = 0;
+  /* ── Reset UI ────────────────────────────────────────────────────────── */
+  function resetUI() {
+    clearTimeout(idleTimer); clearTimeout(connTimer);
+    conn = null; pending = null; authed = false;
+    fileQueue = []; sending = false; rxBuf = []; rxBytes = 0; rxMeta = null;
+    closeModal('authModal');
+    $cArea.style.display = ''; $tArea.classList.remove('on');
+    $tid.value = ''; $cBtn.textContent = 'اقتران'; $cBtn.disabled = false;
+    $cErr.style.display = 'none'; hideProg(); relWL();
+    history.replaceState({}, '', location.pathname);
+  }
 
-        const el = id => document.getElementById(id);
-        const UI = {
-            myId: el('myId'), statusTxt: el('statusText'), statusDot: el('statusDot'),
-            targetId: el('targetId'), connectBtn: el('connectBtn'),
-            connectArea: el('connectArea'), transferArea: el('transferArea'),
-            connectedToId: el('connectedToId'), fileInput: el('fileInput'),
-            textInput: el('textInput'), logs: el('logs'), qrcode: el('qrcode'),
-            progCont: el('progressContainer'), progFile: el('progressFilename'),
-            progStats: el('progressStats'), progBar: el('progressBar'), 
-            progPct: el('progressPercent'), dropZone: el('dropZone'),
-            authModal: el('authModal'), reqDeviceId: el('reqDeviceId'),
-            acceptBtn: el('acceptBtn'), declineBtn: el('declineBtn')
-        };
+  /* ── Activate transfer UI ────────────────────────────────────────────── */
+  function goTransfer(peerId) {
+    clearTimeout(connTimer);
+    $cArea.style.display = 'none'; $tArea.classList.add('on');
+    $connTo.textContent = peerId; vib([50,50,50]);
+    log('✅ الاتصال مشفر بالكامل وجاهز.', 'sys');
+    resetIdle(); reqWL();
+  }
 
-        let receiveBuffer = [], receivedBytes = 0, incomingFile = null;
+  /* ── Attach data + lifecycle listeners ──────────────────────────────── */
+  function bindConn(c) {
+    c.on('data', function(d) {
+      if (!authed || !d || typeof d !== 'object') return;
+      resetIdle();
+      switch (d.type) {
+        case 'text':
+          vib(100); log(d.content, 'in', d.content); break;
 
-        // --- SECURE FORMATTING UTILITIES ---
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-        }
+        case 'file-ack':
+          vib([60,110,60]); log('✅ استلم الطرف الآخر الملف وحفظه بنجاح.', 'sys'); break;
 
-        // XSS SECURE URL Regex strictly constrained to prevent attribute breakouts
-        function linkifyText(escapedText) {
-            // [^\s<"']+ -> Stops at spaces, tags, AND quotes. Eliminates XSS risk entirely.
-            const urlRegex = /(https?:\/\/[^\s<"']+)/g;
-            return escapedText.replace(urlRegex, url => {
-                const encodedUrl = encodeURI(url);
-                return `<a href="${encodedUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline underline-offset-2 break-all">${url}</a>`
-            });
-        }
+        case 'file-start':
+          reqWL(); rxMeta = d; rxBuf = []; rxBytes = 0; txStart = Date.now();
+          showProg('استلام: ' + d.name, d.size); break;
 
-        window.copyExactText = async function(btn, rawText) {
-            try {
-                await navigator.clipboard.writeText(decodeURIComponent(rawText));
-                vibrate(50);
-                const originalHtml = btn.innerHTML;
-                btn.innerHTML = '✅';
-                btn.classList.add('text-green-600', 'bg-green-50', 'border-green-200');
-                setTimeout(() => {
-                    btn.innerHTML = originalHtml;
-                    btn.classList.remove('text-green-600', 'bg-green-50', 'border-green-200');
-                }, 2000);
-            } catch (err) { alert("Failed to copy"); }
-        };
+        case 'file-chunk':
+          if (!rxMeta) break;
+          rxBuf.push(d.data); rxBytes += d.data.byteLength;
+          updProg(rxBytes, rxMeta.size); break;
 
-        function copyMyId() {
-            navigator.clipboard.writeText(myGeneratedId);
-            vibrate(50);
-            const original = UI.myId.innerText;
-            UI.myId.innerText = "COPIED!";
-            UI.myId.classList.add("text-green-500");
-            setTimeout(() => { UI.myId.innerText = original; UI.myId.classList.remove("text-green-500"); }, 1500);
-        }
-
-        // --- 100% SECURE DOM INJECTION (XSS IMMUNE) ---
-        function logMessage(msg, type = 'system', rawText = '') {
-            const placeholder = document.getElementById('logPlaceholder');
-            if (placeholder) placeholder.remove();
-            
-            const div = document.createElement('div');
-            
-            if (type === 'system') {
-                div.className = 'text-[11px] sm:text-xs text-center text-slate-500 bg-slate-50 py-1.5 px-3 rounded-lg mx-auto w-fit border border-slate-100 max-w-full break-words';
-                div.textContent = msg; // 100% safe
-            } 
-            else if (type === 'sent') {
-                div.className = 'flex justify-end w-full pl-6 sm:pl-8';
-                
-                const bubble = document.createElement('div');
-                bubble.className = 'bg-blue-600 text-white p-2.5 sm:p-3 rounded-2xl rounded-tr-sm msg-bubble text-[13px] sm:text-sm shadow-sm whitespace-pre-wrap';
-                
-                // Safe text node assignment escapes HTML entirely, then we inject safe anchors via linkifyText
-                bubble.textContent = msg;
-                bubble.innerHTML = linkifyText(bubble.innerHTML); 
-                
-                div.appendChild(bubble);
-            } 
-            else if (type === 'received') {
-                const safeRaw = encodeURIComponent(rawText || msg);
-                div.className = 'flex justify-start w-full pr-6 sm:pr-8 group';
-                
-                const container = document.createElement('div');
-                container.className = 'flex flex-col items-start gap-1 max-w-full';
-                
-                const bubble = document.createElement('div');
-                bubble.className = 'bg-white border border-slate-200 text-slate-800 p-2.5 sm:p-3 rounded-2xl rounded-tl-sm msg-bubble text-[13px] sm:text-sm shadow-sm whitespace-pre-wrap';
-                
-                bubble.textContent = msg;
-                bubble.innerHTML = linkifyText(bubble.innerHTML);
-                
-                const copyBtn = document.createElement('button');
-                copyBtn.className = 'opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-[10px] font-bold text-slate-500 bg-white border border-slate-200 px-2 py-1 rounded-md ml-1 tap-anim';
-                copyBtn.textContent = 'Copy';
-                copyBtn.onclick = function() { copyExactText(this, safeRaw); };
-                
-                container.appendChild(bubble);
-                container.appendChild(copyBtn);
-                div.appendChild(container);
+        case 'file-end':
+          if (!rxMeta) break;
+          hideProg();
+          (function(meta, buf) {
+            log('⏳ جارٍ تجميع الملف...', 'sys');
+            var name = meta.name;
+            var mime = meta.filetype || 'application/octet-stream';
+            /* neutralise executable web formats */
+            if (/\.(html?|js|mjs|ts|svg|php|sh|py|rb|exe|bat|ps1)$/i.test(name)) {
+              name += '.txt'; mime = 'text/plain';
             }
+            name = name.replace(/[/\\?%*:|"<>]/g,'_');
+            var blob = new Blob(buf, { type: mime });
+            saveToDisk(blob, name);
+            relWL();
+          })(rxMeta, rxBuf);
+          rxMeta = null; rxBuf = []; rxBytes = 0; break;
+      }
+    });
 
-            UI.logs.appendChild(div);
-            setTimeout(() => { UI.logs.scrollTop = UI.logs.scrollHeight; }, 50);
+    c.on('close', function() {
+      if (c === conn) { showToast('قُطع الاتصال من الطرف الآخر.', true); resetUI(); }
+      if (c === pending) { closeModal('authModal'); pending = null; }
+    });
+
+    c.on('error', function(e) {
+      log('خطأ في الاتصال: ' + (e && e.message ? e.message : String(e)), 'sys');
+      if (c === conn) resetUI();
+    });
+  }
+
+  /* ── Save file ───────────────────────────────────────────────────────── */
+  async function saveToDisk(blob, name) {
+    var url = URL.createObjectURL(blob);
+
+    if (window.showSaveFilePicker && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      try {
+        var h = await window.showSaveFilePicker({ suggestedName: name });
+        var w = await h.createWritable();
+        await w.write(blob); await w.close();
+        URL.revokeObjectURL(url);
+        log('💾 حُفظ الملف بأمان على جهازك.', 'sys');
+        if (conn && conn.open) conn.send({ type:'file-ack', name:name });
+        return;
+      } catch(e) {
+        if (e.name === 'AbortError') { URL.revokeObjectURL(url); return; }
+        /* fall through */
+      }
+    }
+
+    /* anchor fallback */
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;justify-content:center;width:100%;padding:2px 0';
+    var a = document.createElement('a');
+    a.href=url; a.download=name;
+    a.style.cssText='background:var(--accent);color:#fff;padding:11px 17px;border-radius:12px;font-weight:700;font-size:13px;display:flex;align-items:center;gap:9px;max-width:91%;text-decoration:none;font-family:inherit';
+    var iw=document.createElement('div');
+    iw.style.cssText='background:rgba(255,255,255,0.14);padding:6px;border-radius:7px;flex-shrink:0';
+    iw.innerHTML='<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>';
+    var tw=document.createElement('div');
+    tw.style.cssText='display:flex;flex-direction:column;align-items:flex-start;overflow:hidden';
+    var ns=document.createElement('span');
+    ns.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:195px';
+    ns.textContent='حفظ '+name;
+    var ss=document.createElement('span');
+    ss.style.cssText='font-size:10px;font-family:"JetBrains Mono",monospace;opacity:.68;margin-top:1px';
+    ss.textContent=fmtB(blob.size);
+    tw.appendChild(ns); tw.appendChild(ss);
+    a.appendChild(iw); a.appendChild(tw); wrap.appendChild(a);
+    $logs.appendChild(wrap);
+    setTimeout(function(){$logs.scrollTop=$logs.scrollHeight;},35);
+    a.addEventListener('click',function(){
+      setTimeout(function(){
+        URL.revokeObjectURL(url);
+        a.style.background='var(--green)';
+        ns.textContent='تم الحفظ ✓'; a.style.pointerEvents='none';
+      },2200);
+    });
+    log('✅ اكتمل النقل — احفظ ملفك أدناه.', 'sys');
+    if (conn && conn.open) conn.send({ type:'file-ack', name:name });
+  }
+
+  /* ── Send text ───────────────────────────────────────────────────────── */
+  function sendText() {
+    var t = $txInp.value.trim();
+    if (!t || !conn || !conn.open || !authed) return;
+    conn.send({ type:'text', content:t });
+    log(t, 'out'); $txInp.value=''; $txInp.focus(); resetIdle();
+  }
+  $id('sendBtn').addEventListener('click', sendText);
+  $txInp.addEventListener('keypress', function(e){ if(e.key==='Enter') sendText(); });
+
+  /* ── Send files ──────────────────────────────────────────────────────── */
+  $fInp.addEventListener('change', function(e){
+    Array.from(e.target.files).forEach(function(f){ fileQueue.push(f); });
+    $fInp.value=''; if(!sending) processQ();
+  });
+
+  async function processQ() {
+    if (!fileQueue.length || !conn || !conn.open || !authed) { sending=false; relWL(); return; }
+    sending=true; reqWL(); resetIdle();
+    var file = fileQueue.shift();
+    var name = file.name.replace(/[/\\?%*:|"<>]/g,'_');
+    txStart = Date.now();
+    showProg(name, file.size);
+    conn.send({ type:'file-start', name:name, size:file.size, filetype:file.type||'application/octet-stream' });
+
+    if (file.size > 0) {
+      var off = 0;
+      while (off < file.size) {
+        if (!sending || !conn || !conn.open) break;
+        /* back-pressure */
+        while (conn.dataChannel && conn.dataChannel.bufferedAmount > BUF_HI) {
+          await new Promise(function(r){ setTimeout(r, 20); });
+          if (!sending || !conn || !conn.open) break;
         }
+        if (!sending || !conn || !conn.open) break;
+        var slice = file.slice(off, off + CHUNK);
+        var ab = await slice.arrayBuffer();
+        conn.send({ type:'file-chunk', data:ab });
+        off += ab.byteLength; updProg(off, file.size);
+      }
+    }
 
-        // --- PEERJS & SECURITY SETUP ---
-        function initPeer() {
-            // Note: Data is natively E2EE Encrypted by WebRTC standards (DTLS/SRTP).
-            // PeerJS only brokers the IP addresses for connection signaling.
-            peer = new Peer(myGeneratedId);
+    if (conn && conn.open) {
+      conn.send({ type:'file-end' });
+      log('🚀 أُرسل الملف بنجاح.', 'sys');
+    }
+    hideProg();
+    setTimeout(processQ, 250);
+  }
 
-            peer.on('open', (id) => {
-                UI.myId.textContent = id;
-                UI.statusTxt.textContent = "Ready";
-                UI.statusDot.classList.replace('bg-yellow-400', 'bg-green-500');
-                UI.statusDot.classList.remove('animate-pulse');
-                
-                UI.qrcode.innerHTML = '';
-                new QRCode(UI.qrcode, { text: `${window.location.origin}${window.location.pathname}?connect=${id}`, width: 120, height: 120, colorDark: "#1e293b", colorLight: "#ffffff" });
+  /* ── Drag & drop ─────────────────────────────────────────────────────── */
+  document.addEventListener('dragenter', function(e){
+    if (!conn||!authed) return; e.preventDefault(); dragCnt++;
+    $drop.style.display='flex';
+  });
+  document.addEventListener('dragleave', function(e){
+    if (!conn||!authed) return; e.preventDefault();
+    if (--dragCnt===0) $drop.style.display='none';
+  });
+  document.addEventListener('dragover', function(e){ e.preventDefault(); });
+  document.addEventListener('drop', function(e){
+    e.preventDefault(); dragCnt=0; $drop.style.display='none';
+    if (!conn||!authed) return;
+    Array.from(e.dataTransfer.files).forEach(function(f){ fileQueue.push(f); });
+    if (!sending) processQ();
+  });
 
-                if(new URLSearchParams(window.location.search).has('connect')) {
-                    UI.targetId.value = new URLSearchParams(window.location.search).get('connect');
-                    connectToPeer();
-                }
-            });
+  /* ── Disconnect ──────────────────────────────────────────────────────── */
+  function doDisconnect() {
+    if (conn) { try { conn.close(); } catch(e){} }
+    resetUI();
+  }
+  $id('discBtn').addEventListener('click', doDisconnect);
 
-            peer.on('disconnected', () => {
-                if (!peer.destroyed) {
-                    UI.statusTxt.textContent = "Reconnecting...";
-                    UI.statusDot.classList.replace('bg-green-500', 'bg-yellow-400');
-                    peer.reconnect();
-                }
-            });
+  /* ── Auth modal buttons ──────────────────────────────────────────────── */
+  $id('acceptBtn').addEventListener('click', function(){
+    if (!pending) return;
+    var c = pending; pending = null;
+    closeModal('authModal');
+    authed = true; conn = c;
+    try { c.send({ type:'auth-accept' }); } catch(e){}
+    bindConn(c);
+    goTransfer(c.peer);
+  });
 
-            // RECEIVER LOGIC: Someone is trying to connect to us
-            peer.on('connection', (conn) => {
-                if (currentConnection || pendingConnection) { conn.close(); return; }
-                pendingConnection = conn;
-                
-                conn.on('open', () => {
-                    UI.reqDeviceId.textContent = conn.peer;
-                    UI.authModal.classList.remove('hidden');
-                    UI.authModal.classList.add('flex');
-                    vibrate([50, 100, 50]);
-                });
+  $id('declineBtn').addEventListener('click', function(){
+    if (pending) {
+      try { pending.send({ type:'auth-decline' }); pending.close(); } catch(e){}
+    }
+    pending = null; closeModal('authModal');
+  });
 
-                conn.on('close', () => {
-                    if (pendingConnection === conn) closeAuthModal();
-                });
-            });
+  /* ── Connect to peer ─────────────────────────────────────────────────── */
+  window.connectToPeer = function() {
+    var tid = $tid.value.replace(/\s/g,'');
+    $cErr.style.display='none';
+
+    if (!/^\d{6}$/.test(tid)) {
+      $cErr.textContent='الرجاء إدخال رمز صحيح من 6 أرقام.'; $cErr.style.display='block'; return;
+    }
+    if (tid === MY_ID) {
+      $cErr.textContent='لا يمكنك الاتصال بنفسك.'; $cErr.style.display='block'; return;
+    }
+    if (!peer || peer.destroyed || peer.disconnected) {
+      $cErr.textContent='الاتصال بخادم الإشارة غير مكتمل — انتظر ثوانٍ وحاول مجدداً.';
+      $cErr.style.display='block'; return;
+    }
+
+    $cBtn.innerHTML='<svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 2a10 10 0 0110 10" stroke-linecap="round"/></svg>';
+    $cBtn.disabled = true;
+
+    var c = peer.connect(tid, { reliable:true, serialization:'binary' });
+
+    /* auth handler — replaced with full data handler after auth */
+    var onAuthData = function(d) {
+      if (!d || typeof d !== 'object') return;
+      if (d.type === 'auth-accept') {
+        c.off('data', onAuthData);
+        authed = true; conn = c;
+        bindConn(c);
+        goTransfer(c.peer);
+      } else if (d.type === 'auth-decline') {
+        c.off('data', onAuthData);
+        showToast('رفض المستقبل طلب الاتصال.', true);
+        try { c.close(); } catch(e){}
+        resetUI();
+      }
+    };
+    c.on('data', onAuthData);
+
+    c.on('error', function(err){
+      clearTimeout(connTimer);
+      var msg = err && err.message ? err.message : String(err);
+      $cErr.textContent = 'فشل الاتصال: ' + msg;
+      $cErr.style.display = 'block';
+      showToast('فشل الاتصال.', true);
+      resetUI();
+    });
+
+    c.on('close', function(){ if (!conn) resetUI(); });
+
+    connTimer = setTimeout(function(){
+      if (!authed) {
+        $cErr.textContent = 'انتهت مهلة الاتصال — لم يستجب المستقبل خلال 30 ثانية.';
+        $cErr.style.display = 'block';
+        showToast('انتهت مهلة الاتصال.', true);
+        try { c.close(); } catch(e){}
+        resetUI();
+      }
+    }, 30000);
+  };
+
+  /* ── Init PeerJS ─────────────────────────────────────────────────────── */
+  function initPeer() {
+    setStatus('جارٍ الاتصال بخادم الإشارة...', '');
+
+    try {
+      peer = new Peer(MY_ID, {
+        host: '0.peerjs.com',
+        port: 443,
+        path: '/',
+        secure: true,
+        debug: 0,
+        config: {
+          iceServers: [
+            { urls:'stun:stun.l.google.com:19302' },
+            { urls:'stun:stun1.l.google.com:19302' },
+            { urls:'stun:stun2.l.google.com:19302' },
+            { urls:'stun:stun3.l.google.com:19302' },
+            { urls:'stun:stun4.l.google.com:19302' }
+          ],
+          iceCandidatePoolSize: 10
         }
+      });
+    } catch(e) {
+      setStatus('خطأ في إنشاء Peer: ' + e.message, 'err');
+      showToast('خطأ غير متوقع: ' + e.message, true);
+      return;
+    }
 
-        // --- AUTHENTICATION MODAL LOGIC ---
-        function closeAuthModal() {
-            UI.authModal.classList.add('hidden');
-            UI.authModal.classList.remove('flex');
-            pendingConnection = null;
-        }
+    peer.on('open', function() {
+      reconnects = 0;
+      setStatus('جاهز — اتصال مشفر', 'ok');
+      /* auto-pair from URL */
+      var p = new URLSearchParams(location.search).get('pair');
+      if (p && /^\d{6}$/.test(p) && p !== MY_ID) {
+        $tid.value = p; connectToPeer();
+      }
+    });
 
-        UI.acceptBtn.addEventListener('click', () => {
-            if(!pendingConnection) return;
-            const conn = pendingConnection;
-            closeAuthModal();
-            isAuthenticated = true;
-            conn.send({ type: 'auth-accept' }); // Tell sender we accepted
-            attachDataListeners(conn);
-            finalizeConnectionUI(conn);
-        });
+    peer.on('connection', function(c) {
+      if (conn || pending) {
+        try { c.send({ type:'auth-decline' }); c.close(); } catch(e){}
+        return;
+      }
+      pending = c;
+      c.on('open', function(){
+        $id('reqId').textContent = c.peer;
+        openModal('authModal');
+        vib([60,100,60]);
+      });
+      c.on('close', function(){
+        if (pending===c) { closeModal('authModal'); pending=null; }
+      });
+      c.on('error', function(){
+        if (pending===c) { closeModal('authModal'); pending=null; }
+      });
+    });
 
-        UI.declineBtn.addEventListener('click', () => {
-            if(pendingConnection) {
-                pendingConnection.send({ type: 'auth-decline' });
-                setTimeout(() => pendingConnection.close(), 500);
-            }
-            closeAuthModal();
-        });
+    peer.on('disconnected', function(){
+      if (peer.destroyed) return;
+      setStatus('إعادة الاتصال...', '');
+      if (reconnects < MAX_RC) {
+        reconnects++;
+        var delay = Math.min(1500 * reconnects, 10000); /* exponential back-off, max 10s */
+        setTimeout(function(){ if (peer && !peer.destroyed) peer.reconnect(); }, delay);
+      } else {
+        setStatus('انقطع الاتصال بالخادم', 'err');
+        showToast('انقطع الاتصال بخادم الإشارة. أعِد تحميل الصفحة.', true);
+      }
+    });
 
-        // --- SENDER LOGIC: Connecting to someone ---
-        function connectToPeer() {
-            const targetId = UI.targetId.value.trim();
-            if (targetId.length !== 6 || targetId === myGeneratedId) return alert("Invalid ID.");
-            
-            UI.connectBtn.textContent = "Waiting for accept..."; 
-            UI.connectBtn.disabled = true;
-            
-            const conn = peer.connect(targetId, { reliable: true });
-            
-            conn.on('data', (data) => {
-                if (!isAuthenticated) {
-                    if (data.type === 'auth-accept') {
-                        isAuthenticated = true;
-                        attachDataListeners(conn);
-                        finalizeConnectionUI(conn);
-                    } else if (data.type === 'auth-decline') {
-                        alert("Connection declined by peer.");
-                        conn.close();
-                        resetUI();
-                    }
-                }
-            });
+    peer.on('error', function(err) {
+      var t = err && err.type ? err.type : '';
+      var m = err && err.message ? err.message : String(err);
+      if (t === 'peer-unavailable') {
+        $cErr.textContent='الجهاز غير متاح حالياً — تأكد من الرمز وأن الجهاز الآخر متصل.';
+        $cErr.style.display='block';
+        showToast('الجهاز غير متاح.', true);
+        resetUI(); return;
+      }
+      if (t === 'unavailable-id') {
+        showToast('تعارض في الرمز — يُعاد توليده...', false);
+        setTimeout(function(){ location.reload(); }, 1500); return;
+      }
+      if (t === 'network' || t === 'server-error') {
+        setStatus('خطأ في الشبكة', 'err');
+        showToast('خطأ في الشبكة: ' + m, true); return;
+      }
+      setStatus('خطأ: ' + (t||m), 'err');
+    });
 
-            conn.on('close', () => { if (!currentConnection) resetUI(); });
+    peer.on('close', function(){ setStatus('الاتصال مغلق', 'err'); });
+  }
 
-            connectionTimeout = setTimeout(() => {
-                if(!isAuthenticated) {
-                    alert("Connection timed out. Peer didn't accept.");
-                    conn.close();
-                    resetUI();
-                }
-            }, 20000);
-        }
+  /* ── Layout ──────────────────────────────────────────────────────────── */
+  function applyLayout() {
+    var g = document.querySelector('.grid');
+    if (g) g.style.gridTemplateColumns = innerWidth < 661 ? '1fr' : '258px 1fr';
+  }
+  applyLayout();
+  addEventListener('resize', applyLayout);
 
-        function finalizeConnectionUI(conn) {
-            currentConnection = conn;
-            clearTimeout(connectionTimeout);
-            UI.connectArea.classList.add('hidden');
-            UI.transferArea.classList.remove('hidden');
-            UI.transferArea.classList.add('flex');
-            UI.connectedToId.textContent = conn.peer;
-            vibrate([50, 50, 50]);
-            logMessage(`✅ Paired securely with ${conn.peer}`, 'system');
-            
-            conn.on('close', resetUI);
-            conn.on('error', resetUI);
-        }
+  /* ── Enter on ID input ───────────────────────────────────────────────── */
+  $tid.addEventListener('keypress', function(e){ if(e.key==='Enter') connectToPeer(); });
 
-        // --- DATA HANDLING (TEXT & FILES) ---
-        function attachDataListeners(conn) {
-            conn.on('data', async (data) => {
-                if (!isAuthenticated) return;
+  /* ── Go! ─────────────────────────────────────────────────────────────── */
+  initPeer();
 
-                if (data.type === 'text') {
-                    vibrate(100);
-                    logMessage(data.content, 'received', data.content);
-                }
-                else if (data.type === 'file-ack') {
-                    vibrate([50, 100, 50]);
-                    logMessage(`✅ ${data.name} saved by receiver`, 'system');
-                }
-                else if (data.type === 'file-start') {
-                    requestWakeLock();
-                    incomingFile = data; receiveBuffer = []; receivedBytes = 0;
-                    transferStartTime = Date.now();
-                    showProgress(`Receiving: ${data.name}`, data.size);
-                }
-                else if (data.type === 'file-chunk') {
-                    receiveBuffer.push(data.data);
-                    receivedBytes += data.data.byteLength;
-                    updateProgress(receivedBytes, incomingFile.size);
-                }
-                else if (data.type === 'file-end') {
-                    hideProgress();
-                    logMessage(`⏳ Processing file...`, 'system');
-                    
-                    // Security: Prevent browser execution of risky file extensions payload
-                    const riskyTypes = ['text/html', 'image/svg+xml', 'application/javascript'];
-                    let mimeType = incomingFile.filetype || 'application/octet-stream';
-                    if (riskyTypes.includes(mimeType)) mimeType = 'application/octet-stream';
-
-                    // Prevent memory leaks on mobile by building blob and clearing RAM instantly
-                    const blob = new Blob(receiveBuffer, { type: mimeType });
-                    receiveBuffer = []; // IMMEDIATE GARBAGE COLLECTION 
-                    
-                    await saveFileToDisk(blob, incomingFile.name);
-                    incomingFile = null; 
-                    releaseWakeLock();
-                }
-            });
-        }
-
-        // --- 100% RELIABLE MOBILE DOWNLOAD LOGIC ---
-        async function saveFileToDisk(blob, filename) {
-            // OS-Level Sanitization: Removes slashes and illegal chars safely.
-            const safeName = filename.replace(/[/\\?%*:|"<>]/g, '_');
-            const url = URL.createObjectURL(blob);
-            
-            // 1. Try Desktop File System API (Chrome/Edge Desktop only)
-            if ('showSaveFilePicker' in window && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
-                try {
-                    const handle = await window.showSaveFilePicker({ suggestedName: safeName });
-                    const writable = await handle.createWritable();
-                    await writable.write(blob);
-                    await writable.close();
-                    logMessage(`💾 Saved to PC: ${safeName}`, 'system');
-                    currentConnection.send({ type: 'file-ack', name: safeName });
-                    URL.revokeObjectURL(url); // Clean up immediately
-                    return;
-                } catch (err) {
-                    if (err.name === 'AbortError') {
-                        URL.revokeObjectURL(url);
-                        return; // User cancelled
-                    }
-                    // Fall back to button if API fails
-                }
-            }
-            
-            // 2. Universal Mobile & Fallback (100% Reliable on iOS Safari)
-            // Constructing DOM elements manually guarantees zero XSS risk.
-            const container = document.createElement('div');
-            container.className = 'flex justify-center w-full my-3';
-            
-            const downloadBtn = document.createElement('a');
-            downloadBtn.href = url;
-            downloadBtn.download = safeName;
-            downloadBtn.className = 'tap-anim bg-green-500 hover:bg-green-600 text-white px-5 py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-green-500/30 flex items-center gap-2 max-w-[95%] w-fit transition-all cursor-pointer';
-            
-            downloadBtn.innerHTML = `
-                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                <span class="truncate save-text"></span>
-                <span class="text-green-100 text-xs ml-1 shrink-0 font-mono">(${formatBytes(blob.size)})</span>
-            `;
-            
-            // Inject text safely
-            downloadBtn.querySelector('.save-text').textContent = `Save ${safeName}`;
-
-            // Critical iOS Fix: Wait 2 seconds before revoking blob URL so device OS has time to pull the buffer!
-            downloadBtn.addEventListener('click', function() {
-                setTimeout(() => {
-                    URL.revokeObjectURL(url);
-                    downloadBtn.classList.replace('bg-green-500', 'bg-slate-300');
-                    downloadBtn.classList.replace('hover:bg-green-600', 'hover:bg-slate-300');
-                    downloadBtn.classList.replace('shadow-green-500/30', 'shadow-none');
-                    downloadBtn.style.pointerEvents = 'none';
-                    downloadBtn.querySelector('.save-text').textContent = "Saved";
-                }, 2000);
-            });
-
-            container.appendChild(downloadBtn);
-            UI.logs.appendChild(container);
-            setTimeout(() => { UI.logs.scrollTop = UI.logs.scrollHeight; }, 50);
-            
-            logMessage(`✅ File ready. Tap the green button above to save.`, 'system');
-            currentConnection.send({ type: 'file-ack', name: safeName });
-        }
-
-        el('connectBtn').addEventListener('click', connectToPeer);
-        el('disconnectBtn').addEventListener('click', () => { if(currentConnection) currentConnection.close(); resetUI(); });
-
-        function resetUI() {
-            currentConnection = null; isAuthenticated = false; pendingConnection = null;
-            fileQueue = []; isSending = false;
-            closeAuthModal();
-            UI.connectArea.classList.remove('hidden');
-            UI.transferArea.classList.add('hidden'); UI.transferArea.classList.remove('flex');
-            UI.targetId.value = ''; UI.connectBtn.textContent = "Pair"; UI.connectBtn.disabled = false;
-            UI.progCont.classList.add('hidden');
-            window.history.replaceState({}, document.title, window.location.pathname);
-            releaseWakeLock();
-        }
-
-        // --- SEND TEXT ---
-        function sendText() {
-            const text = UI.textInput.value.trim();
-            if(!text || !currentConnection || !isAuthenticated) return;
-            currentConnection.send({ type: 'text', content: text });
-            logMessage(text, 'sent');
-            UI.textInput.value = '';
-            UI.textInput.focus();
-        }
-        el('sendTextBtn').addEventListener('click', sendText);
-        UI.textInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendText(); });
-
-        // --- SEND FILES (QUEUE) ---
-        UI.fileInput.addEventListener('change', (e) => {
-            for(let file of e.target.files) {
-                if (file.size > 1024 * 1024 * 1024) { // 1GB Warning for Mobile
-                    alert(`"${file.name}" is very large. Mobile browsers may close the app if they run out of RAM during transfer.`);
-                }
-                fileQueue.push(file);
-            }
-            UI.fileInput.value = '';
-            if(!isSending) processFileQueue();
-        });
-
-        async function processFileQueue() {
-            if (fileQueue.length === 0 || !currentConnection || !isAuthenticated) { isSending = false; releaseWakeLock(); return; }
-            
-            isSending = true; requestWakeLock();
-            const file = fileQueue.shift();
-            transferStartTime = Date.now();
-            
-            // Safe display name
-            const safeDisplayName = file.name.replace(/[/\\?%*:|"<>]/g, '_');
-            showProgress(`Sending: ${safeDisplayName}`, file.size);
-            
-            currentConnection.send({ type: 'file-start', name: safeDisplayName, size: file.size, filetype: file.type });
-            
-            if (file.size === 0) {
-                updateProgress(0, 1);
-            } else {
-                const chunkSize = 32 * 1024; // 32KB is highly stable for older mobile WebRTC
-                let offset = 0;
-                
-                while (offset < file.size) {
-                    // Critical Fix: Break loop if connection drops (prevents infinite freezing)
-                    if (!isSending || !currentConnection || !currentConnection.open) break;
-
-                    const slice = file.slice(offset, offset + chunkSize);
-                    const buffer = await slice.arrayBuffer();
-                    
-                    // Network Backpressure tuned specifically for mobile. Waits at 64KB threshold.
-                    while (currentConnection && currentConnection.dataChannel && currentConnection.dataChannel.bufferedAmount > 64 * 1024) { 
-                        await new Promise(r => setTimeout(r, 10)); 
-                        if (!isSending || !currentConnection || !currentConnection.open) break;
-                    }
-                    if (!isSending || !currentConnection || !currentConnection.open) break;
-                    
-                    currentConnection.send({ type: 'file-chunk', data: buffer });
-                    offset += buffer.byteLength;
-                    updateProgress(offset, file.size);
-                }
-            }
-
-            if (currentConnection && currentConnection.open) {
-                currentConnection.send({ type: 'file-end' });
-                logMessage(`🚀 Sent: ${safeDisplayName}`, 'system');
-            }
-            
-            hideProgress();
-            setTimeout(processFileQueue, 500);
-        }
-
-        // --- DRAG & DROP ---
-        let dragCounter = 0;
-        document.addEventListener('dragenter', (e) => {
-            if (!currentConnection || !isAuthenticated) return;
-            e.preventDefault(); dragCounter++;
-            UI.dropZone.classList.remove('hidden'); UI.dropZone.classList.add('flex');
-        });
-        document.addEventListener('dragleave', (e) => {
-            if (!currentConnection || !isAuthenticated) return;
-            e.preventDefault(); dragCounter--;
-            if (dragCounter === 0) { UI.dropZone.classList.add('hidden'); UI.dropZone.classList.remove('flex'); }
-        });
-        document.addEventListener('dragover', (e) => e.preventDefault());
-        document.addEventListener('drop', (e) => {
-            e.preventDefault(); dragCounter = 0;
-            UI.dropZone.classList.add('hidden'); UI.dropZone.classList.remove('flex');
-            if (!currentConnection || !isAuthenticated) return;
-            for(let file of e.dataTransfer.files) fileQueue.push(file);
-            if(!isSending) processFileQueue();
-        });
-
-        // --- PROGRESS UI ---
-        function showProgress(text, totalBytes) { 
-            UI.progCont.classList.remove('hidden'); 
-            UI.progFile.textContent = text; 
-            UI.progStats.textContent = `0 / ${formatBytes(totalBytes)}`;
-            updateProgress(0, 1); 
-        }
-        function updateProgress(current, total) {
-            const safeTotal = total === 0 ? 1 : total;
-            const pct = Math.round((current / safeTotal) * 100);
-            
-            UI.progBar.style.width = pct + '%'; 
-            UI.progPct.textContent = pct + '%';
-
-            const elapsedSeconds = (Date.now() - transferStartTime) / 1000;
-            if (elapsedSeconds > 0.5 && current > 0) {
-                const speedBps = current / elapsedSeconds;
-                UI.progStats.textContent = `${formatBytes(current)} / ${formatBytes(total)} (${formatBytes(speedBps)}/s)`;
-            }
-        }
-        function hideProgress() { UI.progCont.classList.add('hidden'); }
-
-        initPeer();
-    </script>
+} /* end bootApp */
+</script>
 </body>
 </html>
