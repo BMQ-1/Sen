@@ -7,128 +7,116 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0a0f">
 <!--
-  سياسة أمان المحتوى (CSP):
-  - unpkg.com: لتحميل مكتبة PeerJS
-  - cdnjs.cloudflare.com: لتحميل مكتبة QRCode
-  - 0.peerjs.com (wss + https): خادم الإشارة لـ PeerJS (تبادل العناوين فقط)
-  - خوادم Google STUN: معفاة تلقائياً من connect-src (WebRTC)
-  - fonts.googleapis.com / fonts.gstatic.com: الخط العربي
+  سياسة أمان المحتوى (CSP) - صارمة لحماية المستخدم:
+  - لا يتم تحميل أي سكربتات خارجية باستثناء PeerJS و QRCode.
+  - خوادم STUN معفاة للاتصال المباشر (WebRTC).
 -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' wss://0.peerjs.com https://0.peerjs.com; img-src 'self' data: blob:; worker-src 'self' blob:; media-src 'self' blob:;">
-<title>مِرسال — نقل آمن</title>
+<title>مِرسال — نقل آمن ومباشر</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
 <style>
+/* CSS Reset & Variables */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg0:#08080e;--bg1:#0f0f18;--bg2:#15151f;--bg3:#1d1d2a;--bg4:#252537;
-  --b0:rgba(255,255,255,0.055);--b1:rgba(255,255,255,0.10);--b2:rgba(255,255,255,0.17);
-  --accent:#6c63ff;--accent2:#9490ff;--adim:rgba(108,99,255,0.13);--aglow:rgba(108,99,255,0.22);
-  --t0:#eeeef8;--t1:#8e8eae;--t2:#4e4e68;
-  --green:#22c55e;--gdim:rgba(34,197,94,0.10);
-  --red:#ef4444;--rdim:rgba(239,68,68,0.10);
+  --bg0:#08080e; --bg1:#0f0f18; --bg2:#15151f; --bg3:#1d1d2a; --bg4:#252537;
+  --b0:rgba(255,255,255,0.06); --b1:rgba(255,255,255,0.12); --b2:rgba(255,255,255,0.2);
+  --accent:#6c63ff; --accent2:#9490ff; --adim:rgba(108,99,255,0.15); --aglow:rgba(108,99,255,0.25);
+  --t0:#f8f8f8; --t1:#a0a0b8; --t2:#606078;
+  --green:#22c55e; --gdim:rgba(34,197,94,0.15);
+  --red:#ef4444; --rdim:rgba(239,68,68,0.15);
   --amber:#f59e0b;
-  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
+  --st:env(safe-area-inset-top, 0px); --sb:env(safe-area-inset-bottom, 0px);
 }
 html{height:100%}
 body{
-  min-height:100dvh;background:var(--bg0);color:var(--t0);
-  font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;font-size:15px;line-height:1.6;
-  overflow-x:hidden;-webkit-tap-highlight-color:transparent;
-  padding-top:max(1.25rem,var(--st));padding-bottom:max(1rem,var(--sb));
-  padding-inline:1rem;display:flex;flex-direction:column;align-items:center;gap:1.2rem;
+  min-height:100dvh; background:var(--bg0); color:var(--t0);
+  font-family:'IBM Plex Sans Arabic', system-ui, sans-serif; font-size:15px; line-height:1.6;
+  overflow-x:hidden; -webkit-tap-highlight-color:transparent;
+  padding-top:max(1.5rem, var(--st)); padding-bottom:max(1.5rem, var(--sb));
+  padding-inline:1rem; display:flex; flex-direction:column; align-items:center; gap:1.5rem;
 }
 body::before{
-  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-  background-image:radial-gradient(circle,rgba(108,99,255,0.055) 1px,transparent 1px);
-  background-size:30px 30px;
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:radial-gradient(circle, rgba(108,99,255,0.04) 1px, transparent 1px);
+  background-size:32px 32px;
 }
-/* Cards */
-.card{position:relative;z-index:1;background:var(--bg2);border:1px solid var(--b0);border-radius:18px;overflow:hidden}
-.card::before{content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;
-  background:linear-gradient(130deg,rgba(108,99,255,0.045) 0%,transparent 55%)}
-/* Buttons */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;
-  font-family:inherit;font-size:15px;font-weight:700;border:none;border-radius:12px;
-  cursor:pointer;transition:opacity .15s,transform .12s,box-shadow .15s,background-color .15s;white-space:nowrap;
-  min-height:44px;}
-.btn:active{transform:scale(0.96)}
-.btn-p{background:var(--accent);color:#fff;padding:10px 22px}
-.btn-p:hover{opacity:.9;box-shadow:0 0 20px var(--aglow)}
-.btn-g{background:var(--bg3);color:var(--t0);border:1px solid var(--b1);padding:10px 18px}
-.btn-g:hover{background:var(--bg4);border-color:var(--b2)}
-.btn-d{background:var(--rdim);color:var(--red);border:1px solid rgba(239,68,68,0.22);
-  padding:8px 15px;font-size:13px;border-radius:10px;min-height:38px}
-.btn-d:hover{background:var(--red);color:#fff}
-/* Inputs */
-input[type=text]{
-  background:var(--bg1);border:1px solid var(--b1);border-radius:12px;
-  color:var(--t0);font-family:inherit;font-size:16px;padding:13px 16px;
-  outline:none;transition:border-color .15s,box-shadow .15s;width:100%;
-  appearance:none;} /* 16px prevents iOS zoom */
-input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--adim)}
-input::placeholder{color:var(--t2);font-size:14px}
-/* Status */
-.pill{display:inline-flex;align-items:center;gap:8px;padding:5px 14px;
-  background:var(--bg2);border:1px solid var(--b0);border-radius:100px;
-  font-size:12px;font-weight:700;letter-spacing:.05em;color:var(--t1)}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--amber);
-  animation:blink 1.8s ease-in-out infinite}
-.dot.ok{background:var(--green);box-shadow:0 0 8px rgba(34,197,94,0.55);animation:none}
-.dot.err{background:var(--red);animation:none}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
-/* Modals */
-.modal{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.8);
-  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:1rem;
-  opacity:0;transition:opacity .22s ease}
-.modal.open{display:flex}.modal.vis{opacity:1}
-.mbox{background:var(--bg2);border:1px solid var(--b1);border-radius:22px;padding:2rem;
-  width:100%;max-width:400px;transform:scale(.92) translateY(12px);
-  transition:transform .22s ease;position:relative}
-.modal.vis .mbox{transform:scale(1) translateY(0)}
-/* Messages */
-.mwrap{display:flex;width:100%}
-.mwrap.out{justify-content:flex-start}
-.mwrap.in{justify-content:flex-end;flex-direction:column;align-items:flex-end;gap:5px}
-.bubble{max-width:85%;padding:10px 14px;font-size:15px;line-height:1.55;word-break:break-word;border-radius:18px}
-.bubble.out{background:var(--accent);color:#fff;border-bottom-right-radius:4px}
-.bubble.in{background:var(--bg3);border:1px solid var(--b0);color:var(--t0);border-bottom-left-radius:4px}
-.sys{margin:0 auto;background:var(--bg3);border:1px solid var(--b0);color:var(--t2);
-  font-size:12px;font-weight:600;padding:6px 16px;border-radius:100px;
-  text-align:center;letter-spacing:.02em;width:fit-content}
-/* Progress */
-.ptrack{background:var(--bg1);border-radius:100px;height:6px;overflow:hidden;margin-top:4px}
-.pfill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));
-  border-radius:100px;transition:width .2s linear}
-/* QR */
-#qrcode{background:#ffffff;padding:12px;border-radius:14px;display:flex;align-items:center;justify-content:center;}
-#qrcode canvas, #qrcode img{display:block!important;max-width:100%;height:auto;}
-/* Toast */
-#toast{position:fixed;bottom:1.5rem;left:50%;
-  transform:translateX(-50%) translateY(14px);z-index:300;
-  display:flex;align-items:center;gap:10px;padding:12px 22px;
-  background:var(--bg3);border:1px solid var(--b1);border-radius:14px;
-  font-size:14px;font-weight:600;color:var(--t0);pointer-events:none;
-  opacity:0;transition:opacity .2s,transform .2s;white-space:nowrap;max-width:92vw;
-  box-shadow:0 10px 30px rgba(0,0,0,0.5)}
-#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-/* Drop zone */
-#dropZone{display:none;position:absolute;inset:0;z-index:50;
-  background:rgba(108,99,255,0.93);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:18px;
-  flex-direction:column;align-items:center;justify-content:center;gap:12px}
-/* Scrollbar */
-::-webkit-scrollbar{width:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--b1);border-radius:10px}
+
 /* Layout */
-.grid{width:100%;max-width:900px;display:grid;grid-template-columns:280px 1fr;gap:16px;z-index:1;flex:1}
-@media(max-width:720px){.grid{grid-template-columns:1fr}}
-.rcol{display:flex;flex-direction:column;gap:16px;min-height:60dvh;}
-#transferArea{display:none;flex-direction:column;flex:1}
-#transferArea.on{display:flex}
-@keyframes spin{to{transform:rotate(360deg)}}
-.spin{animation:spin 1s linear infinite;display:inline-block}
-header,footer,main{width:100%;max-width:900px;z-index:1}
+.grid { width:100%; max-width:960px; display:grid; grid-template-columns:300px 1fr; gap:1.2rem; z-index:1; flex:1; align-items:start; }
+@media(max-width:768px) { .grid { grid-template-columns:1fr; } }
+.rcol { display:flex; flex-direction:column; gap:1.2rem; min-height:65dvh; width:100%; min-width:0; }
+
+/* Cards */
+.card { position:relative; z-index:1; background:var(--bg2); border:1px solid var(--b0); border-radius:20px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,0.2); }
+.card::before { content:''; position:absolute; inset:0; pointer-events:none; border-radius:inherit; background:linear-gradient(130deg, rgba(108,99,255,0.05) 0%, transparent 60%); }
+
+/* Buttons */
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family:inherit; font-size:14px; font-weight:700; border:none; border-radius:14px; cursor:pointer; transition:all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space:nowrap; min-height:46px; user-select:none; }
+.btn:active { transform:scale(0.96); }
+.btn-p { background:var(--accent); color:#fff; padding:10px 24px; box-shadow:0 4px 15px rgba(108,99,255,0.2); }
+.btn-p:hover { background:var(--accent2); box-shadow:0 6px 20px var(--aglow); }
+.btn-g { background:var(--bg3); color:var(--t0); border:1px solid var(--b1); padding:10px 20px; }
+.btn-g:hover { background:var(--bg4); border-color:var(--b2); }
+.btn-d { background:var(--rdim); color:var(--red); border:1px solid rgba(239,68,68,0.2); padding:8px 16px; font-size:13px; border-radius:12px; min-height:40px; }
+.btn-d:hover { background:var(--red); color:#fff; }
+
+/* Inputs (font-size 16px prevents iOS auto-zoom) */
+input[type=text] { background:var(--bg1); border:1px solid var(--b1); border-radius:14px; color:var(--t0); font-family:inherit; font-size:16px; padding:14px 18px; outline:none; transition:all 0.2s; width:100%; appearance:none; }
+input[type=text]:focus { border-color:var(--accent); box-shadow:0 0 0 4px var(--adim); background:var(--bg2); }
+input::placeholder { color:var(--t2); font-size:14px; }
+
+/* Status Pill */
+.pill { display:inline-flex; align-items:center; gap:8px; padding:6px 16px; background:var(--bg2); border:1px solid var(--b0); border-radius:100px; font-size:12px; font-weight:700; letter-spacing:0.05em; color:var(--t1); }
+.dot { width:8px; height:8px; border-radius:50%; background:var(--amber); animation:blink 1.5s ease-in-out infinite; }
+.dot.ok { background:var(--green); box-shadow:0 0 10px rgba(34,197,94,0.4); animation:none; }
+.dot.err { background:var(--red); box-shadow:0 0 10px rgba(239,68,68,0.4); animation:none; }
+@keyframes blink { 0%, 100% {opacity:1} 50% {opacity:0.3} }
+
+/* QR Code Wrapper - Strict Sizing */
+.qr-wrapper { background:#ffffff; padding:14px; border-radius:16px; display:flex; align-items:center; justify-content:center; width:160px; height:160px; margin:0 auto; box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+#qrcode { width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+#qrcode img, #qrcode canvas { width:100% !important; height:100% !important; object-fit:contain; border-radius:4px; display:block; }
+
+/* Modals */
+.modal { display:none; position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:1rem; opacity:0; transition:opacity 0.25s ease; }
+.modal.open { display:flex; } .modal.vis { opacity:1; }
+.mbox { background:var(--bg2); border:1px solid var(--b1); border-radius:24px; padding:2rem; width:100%; max-width:420px; transform:scale(0.95) translateY(15px); transition:transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); position:relative; box-shadow:0 20px 40px rgba(0,0,0,0.5); }
+.modal.vis .mbox { transform:scale(1) translateY(0); }
+
+/* Messages Area */
+.mwrap { display:flex; width:100%; margin-bottom:8px; }
+.mwrap.out { justify-content:flex-start; }
+.mwrap.in { justify-content:flex-end; flex-direction:column; align-items:flex-end; gap:6px; }
+.bubble { max-width:85%; padding:12px 16px; font-size:15px; line-height:1.6; word-break:break-word; border-radius:20px; }
+.bubble.out { background:var(--accent); color:#fff; border-bottom-right-radius:4px; }
+.bubble.in { background:var(--bg3); border:1px solid var(--b0); color:var(--t0); border-bottom-left-radius:4px; }
+.sys { margin:4px auto; background:var(--bg3); border:1px solid var(--b0); color:var(--t1); font-size:12px; font-weight:600; padding:6px 18px; border-radius:100px; text-align:center; }
+
+/* Progress Bar */
+.ptrack { background:var(--bg1); border-radius:100px; height:6px; overflow:hidden; margin-top:6px; box-shadow:inset 0 1px 3px rgba(0,0,0,0.2); }
+.pfill { height:100%; background:linear-gradient(90deg, var(--accent), var(--accent2)); border-radius:100px; transition:width 0.2s linear; }
+
+/* Toast Notification */
+#toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(20px); z-index:300; display:flex; align-items:center; gap:12px; padding:14px 24px; background:var(--bg3); border:1px solid var(--b1); border-radius:100px; font-size:14px; font-weight:600; color:var(--t0); pointer-events:none; opacity:0; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); white-space:nowrap; max-width:90vw; box-shadow:0 10px 30px rgba(0,0,0,0.4); }
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* Drag & Drop Overlay */
+#dropZone { display:none; position:absolute; inset:0; z-index:50; background:rgba(108,99,255,0.95); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border-radius:20px; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
+
+/* Scrollbars */
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--b2); border-radius:10px; }
+::-webkit-scrollbar-thumb:hover { background:var(--t2); }
+
+/* Utilities */
+#transferArea { display:none; flex-direction:column; flex:1; }
+#transferArea.on { display:flex; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.spin { animation:spin 1s linear infinite; display:inline-block; }
+.text-ellipsis { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+header, footer { width:100%; max-width:960px; z-index:1; }
 </style>
 </head>
 <body>
@@ -139,932 +127,718 @@ header,footer,main{width:100%;max-width:900px;z-index:1}
 <!-- Privacy Modal -->
 <div id="privacyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="pmT">
   <div class="mbox">
-    <button onclick="closeModal('privacyModal')" aria-label="إغلاق"
-      style="position:absolute;top:1rem;left:1rem;background:var(--bg3);border:1px solid var(--b1);
-      color:var(--t1);border-radius:10px;width:36px;height:36px;font-size:20px;cursor:pointer;
-      display:flex;align-items:center;justify-content:center;line-height:1">×</button>
-    <div style="width:50px;height:50px;background:var(--gdim);border:1px solid rgba(34,197,94,0.25);
-      border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem">
-      <svg width="24" height="24" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-      </svg>
+    <button onclick="closeModal('privacyModal')" aria-label="إغلاق" style="position:absolute; top:1.2rem; left:1.2rem; background:var(--bg3); border:1px solid var(--b1); color:var(--t1); border-radius:12px; width:36px; height:36px; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s;">×</button>
+    <div style="width:54px; height:54px; background:var(--gdim); border:1px solid rgba(34,197,94,0.3); border-radius:16px; display:flex; align-items:center; justify-content:center; margin-bottom:1.2rem">
+      <svg width="26" height="26" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
     </div>
-    <h2 id="pmT" style="font-size:20px;font-weight:700;color:var(--t0);margin-bottom:.5rem">أمان بلا وسيط</h2>
-    <p style="font-size:14px;color:var(--t1);margin-bottom:1.5rem;line-height:1.7">
-      مِرسال يعمل كلياً في متصفحك. لا توجد خوادم تخزن بياناتك، لا تتبع، ولا تسجيل. إليك التفاصيل:
-    </p>
-    <ul style="list-style:none;display:flex;flex-direction:column;gap:14px;margin-bottom:1.8rem">
-      <li style="display:flex;gap:12px;align-items:flex-start">
-        <div style="background:var(--adim);border-radius:10px;padding:8px;flex-shrink:0;margin-top:2px">
-          <svg width="14" height="14" fill="var(--accent)" viewBox="0 0 24 24"><path d="M4.5 3.75a3 3 0 00-3 3v.75h21v-.75a3 3 0 00-3-3h-15zM1.5 10.5v6a3 3 0 003 3h15a3 3 0 003-3v-6h-21z"/></svg>
-        </div>
-        <p style="font-size:13px;color:var(--t1);line-height:1.65">
-          <strong style="color:var(--t0)">لا تخزين سحابي:</strong> الملفات والرسائل تُنقل مباشرة من جهاز إلى آخر عبر WebRTC دون المرور بأي خادم وسيط.
-        </p>
+    <h2 id="pmT" style="font-size:22px; font-weight:800; color:var(--t0); margin-bottom:0.5rem">شفافية الأمان</h2>
+    <p style="font-size:14px; color:var(--t1); margin-bottom:1.5rem; line-height:1.7">مِرسال مصمم ليكون أداة نقل من نظير إلى نظير (P2P). لا توجد خوادم وسيطة تخزن ملفاتك. إليك كيف نحمي بياناتك:</p>
+    <ul style="list-style:none; display:flex; flex-direction:column; gap:14px; margin-bottom:2rem">
+      <li style="display:flex; gap:12px; align-items:flex-start">
+        <div style="background:var(--adim); border-radius:10px; padding:8px; flex-shrink:0; margin-top:2px"><svg width="14" height="14" fill="var(--accent)" viewBox="0 0 24 24"><path d="M4.5 3.75a3 3 0 00-3 3v.75h21v-.75a3 3 0 00-3-3h-15zM1.5 10.5v6a3 3 0 003 3h15a3 3 0 003-3v-6h-21z"/></svg></div>
+        <p style="font-size:13px; color:var(--t1); line-height:1.6"><strong style="color:var(--t0); display:block; font-size:14px; margin-bottom:2px">لا تخزين سحابي</strong>الملفات تُنقل مباشرة بين الأجهزة عبر تقنية WebRTC. بمجرد إغلاق الصفحة، يختفي كل شيء.</p>
       </li>
-      <li style="display:flex;gap:12px;align-items:flex-start">
-        <div style="background:var(--adim);border-radius:10px;padding:8px;flex-shrink:0;margin-top:2px">
-          <svg width="14" height="14" fill="var(--accent)" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
-        </div>
-        <p style="font-size:13px;color:var(--t1);line-height:1.65">
-          <strong style="color:var(--t0)">تشفير DTLS/SRTP:</strong> كل البيانات مشفرة تشفيراً تاماً من الطرف إلى الطرف — لا يمكن فك تشفيرها من أي جهة خارجية.
-        </p>
-      </li>
-      <li style="display:flex;gap:12px;align-items:flex-start">
-        <div style="background:var(--adim);border-radius:10px;padding:8px;flex-shrink:0;margin-top:2px">
-          <svg width="14" height="14" fill="var(--accent)" viewBox="0 0 24 24"><path d="M12 2l9 4v6c0 5.55-3.84 10.74-9 12C6.84 21.74 3 16.55 3 11V6l9-4z"/></svg>
-        </div>
-        <p style="font-size:13px;color:var(--t1);line-height:1.65">
-          <strong style="color:var(--t0)">خادم الإشارة:</strong> يُستخدم فقط لاكتشاف العناوين لبدء الاتصال (مثل دليل الهاتف)، ولا يرى أياً من محتوى رسائلك.
-        </p>
+      <li style="display:flex; gap:12px; align-items:flex-start">
+        <div style="background:var(--adim); border-radius:10px; padding:8px; flex-shrink:0; margin-top:2px"><svg width="14" height="14" fill="var(--accent)" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg></div>
+        <p style="font-size:13px; color:var(--t1); line-height:1.6"><strong style="color:var(--t0); display:block; font-size:14px; margin-bottom:2px">تشفير كامل (E2EE)</strong>البيانات مشفرة بروتوكولياً (DTLS/SRTP). لا يمكننا نحن ولا مزود الإنترنت الخاص بك قراءة محتواها.</p>
       </li>
     </ul>
-    <button onclick="closeModal('privacyModal')" class="btn btn-p" style="width:100%;padding:14px;font-size:15px">حسناً، فهمت</button>
+    <button onclick="closeModal('privacyModal')" class="btn btn-p" style="width:100%; padding:14px; font-size:15px">فهمت ذلك</button>
   </div>
 </div>
 
-<!-- Auth Modal -->
+<!-- Auth Modal (Incoming Connection) -->
 <div id="authModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="amT">
   <div class="mbox" style="text-align:center">
-    <div style="width:64px;height:64px;background:var(--adim);border:1px solid rgba(108,99,255,0.3);
-      border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.2rem">
-      <svg width="28" height="28" fill="none" stroke="var(--accent)" stroke-width="1.8" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-      </svg>
+    <div style="width:64px; height:64px; background:var(--adim); border:1px solid rgba(108,99,255,0.3); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1.2rem; animation:pulse 2s infinite;">
+      <svg width="28" height="28" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
     </div>
-    <h2 id="amT" style="font-size:20px;font-weight:700;margin-bottom:.5rem">طلب اتصال وارد</h2>
-    <p style="font-size:14px;color:var(--t1);margin-bottom:1.8rem;line-height:1.65">
-      الجهاز
-      <span id="reqId" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--accent);
-        background:var(--adim);padding:3px 10px;border-radius:8px;margin:0 4px"></span>
-      يطلب الاقتران بجهازك
-    </p>
-    <div style="display:flex;gap:12px">
-      <button id="declineBtn" class="btn btn-g" style="flex:1;padding:14px">رفض</button>
-      <button id="acceptBtn" class="btn btn-p" style="flex:1;padding:14px">قبول الاقتران</button>
+    <style>@keyframes pulse{0%{box-shadow:0 0 0 0 var(--aglow)}70%{box-shadow:0 0 0 15px transparent}100%{box-shadow:0 0 0 0 transparent}}</style>
+    <h2 id="amT" style="font-size:20px; font-weight:700; margin-bottom:0.5rem">طلب اقتران وارد</h2>
+    <p style="font-size:14px; color:var(--t1); margin-bottom:1.8rem; line-height:1.6">الجهاز ذو الرمز <span id="reqId" style="font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--accent); background:var(--bg1); border:1px solid var(--b1); padding:4px 10px; border-radius:8px; margin:0 4px"></span> يطلب الاتصال بك.</p>
+    <div style="display:flex; gap:12px">
+      <button id="declineBtn" class="btn btn-g" style="flex:1; padding:14px">رفض</button>
+      <button id="acceptBtn" class="btn btn-p" style="flex:1; padding:14px">قبول وبدء التشفير</button>
     </div>
   </div>
 </div>
 
 <!-- Header -->
-<header style="display:flex;justify-content:space-between;align-items:center;padding-top:.2rem">
+<header style="display:flex; justify-content:space-between; align-items:center;">
   <div>
-    <h1 style="font-size:24px;font-weight:800;color:var(--t0);display:flex;align-items:center;gap:10px;margin-bottom:8px">
+    <h1 style="font-size:26px; font-weight:800; color:var(--t0); display:flex; align-items:center; gap:10px; margin-bottom:6px; letter-spacing:-0.02em">
       مِرسال
-      <span style="font-size:11px;font-weight:700;background:var(--adim);color:var(--accent);
-        border:1px solid rgba(108,99,255,0.25);padding:3px 10px;border-radius:8px;letter-spacing:.08em">آمن</span>
+      <span style="font-size:11px; font-weight:700; background:var(--adim); color:var(--accent); border:1px solid rgba(108,99,255,0.25); padding:4px 10px; border-radius:8px; letter-spacing:0.05em">آمن</span>
     </h1>
     <div class="pill">
       <span id="sDot" class="dot"></span>
-      <span id="sTxt">جارٍ التهيئة...</span>
+      <span id="sTxt">تهيئة الاتصال...</span>
     </div>
   </div>
-  <button onclick="openModal('privacyModal')" class="btn btn-g" style="font-size:13px;gap:6px;padding:10px 16px;border-radius:12px">
-    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-    </svg>
-    الخصوصية
+  <button onclick="openModal('privacyModal')" class="btn btn-g" style="font-size:13px; padding:10px 16px; border-radius:12px; gap:8px">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+    الأمان
   </button>
 </header>
 
-<!-- Main -->
+<!-- Main Grid -->
 <main class="grid">
 
-  <!-- Left: Identity -->
-  <div class="card" style="padding:1.5rem;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1.2rem;align-self:start">
-    <p style="font-size:11px;font-weight:700;color:var(--t2);letter-spacing:.15em">هويّتك الآمنة</p>
-
-    <!-- ID Display -->
-    <div style="width:100%;background:var(--bg1);border:1px solid var(--b1);border-radius:14px;padding:1.4rem 1rem;">
-      <div id="myId" style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;
-        letter-spacing:.25em;color:var(--t0)">------</div>
+  <!-- Left Column: Identity & Security Info -->
+  <div class="card" style="padding:1.6rem; display:flex; flex-direction:column; align-items:center; text-align:center; gap:1.4rem;">
+    
+    <div style="width:100%">
+      <p style="font-size:12px; font-weight:700; color:var(--t2); letter-spacing:0.1em; margin-bottom:10px; text-transform:uppercase">رمز جهازك</p>
+      <div style="background:var(--bg1); border:1px solid var(--b1); border-radius:16px; padding:1.5rem 1rem; box-shadow:inset 0 2px 10px rgba(0,0,0,0.2)">
+        <div id="myId" style="font-family:'JetBrains Mono',monospace; font-size:36px; font-weight:800; letter-spacing:0.25em; color:var(--t0); text-shadow:0 2px 10px rgba(255,255,255,0.1)">------</div>
+      </div>
     </div>
 
     <!-- Action Buttons -->
-    <div style="display:flex;gap:10px;width:100%;">
-      <button onclick="copyMyId()" class="btn btn-g" style="flex:1;font-size:13px;padding:12px;gap:6px">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-        </svg>
-        نسخ الرمز
+    <div style="display:flex; gap:10px; width:100%;">
+      <button id="copyBtn" onclick="handleCopyId()" class="btn btn-g" style="flex:1; font-size:13px; padding:12px; gap:8px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        <span>نسخ الرمز</span>
       </button>
-      <button onclick="shareMyId()" id="shareBtn" class="btn btn-p" style="flex:1;font-size:13px;padding:12px;gap:6px;display:none">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
-        </svg>
+      <button onclick="handleShareId()" id="shareBtn" class="btn btn-p" style="flex:1; font-size:13px; padding:12px; gap:8px; display:none">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
         مشاركة
       </button>
     </div>
 
-    <!-- QR Code -->
-    <div style="width:100%;padding-top:1.2rem;border-top:1px solid var(--b0);
-      display:flex;flex-direction:column;align-items:center;gap:10px">
-      <div id="qrcode"></div>
-      <p style="font-size:11px;color:var(--t2);font-weight:700;letter-spacing:.1em">امسح الكود للاقتران الفوري</p>
+    <!-- Strict QR Code Container -->
+    <div style="width:100%; padding-top:1.4rem; border-top:1px solid var(--b0); display:flex; flex-direction:column; align-items:center; gap:12px">
+      <div class="qr-wrapper">
+        <div id="qrcode"></div>
+      </div>
+      <p style="font-size:12px; color:var(--t2); font-weight:600;">امسح الكاميرا للاقتران الفوري</p>
     </div>
 
-    <!-- Security badges -->
-    <div style="width:100%;padding-top:1rem;border-top:1px solid var(--b0);display:flex;flex-direction:column;gap:8px">
-      <div style="display:flex;align-items:center;gap:8px">
-        <svg width="12" height="12" fill="var(--green)" viewBox="0 0 24 24"><path d="M12 2l9 4v6c0 5.55-3.84 10.74-9 12C6.84 21.74 3 16.55 3 11V6l9-4z"/></svg>
-        <span style="font-size:12px;color:var(--t1)">تشفير DTLS/SRTP كامل</span>
+    <!-- Security Badges -->
+    <div style="width:100%; padding-top:1.2rem; border-top:1px solid var(--b0); display:flex; flex-direction:column; gap:10px; text-align:right">
+      <div style="display:flex; align-items:center; gap:10px">
+        <div style="background:var(--gdim); padding:4px; border-radius:6px"><svg width="14" height="14" fill="var(--green)" viewBox="0 0 24 24"><path d="M12 2l9 4v6c0 5.55-3.84 10.74-9 12C6.84 21.74 3 16.55 3 11V6l9-4z"/></svg></div>
+        <span style="font-size:12px; color:var(--t1); font-weight:500">نقل مباشر دون خوادم وسيطة</span>
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <svg width="12" height="12" fill="var(--green)" viewBox="0 0 24 24"><path d="M12 2l9 4v6c0 5.55-3.84 10.74-9 12C6.84 21.74 3 16.55 3 11V6l9-4z"/></svg>
-        <span style="font-size:12px;color:var(--t1)">نظير-إلى-نظير (P2P) مباشر</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <svg width="12" height="12" fill="var(--amber)" viewBox="0 0 24 24"><path d="M12 2l9 4v6c0 5.55-3.84 10.74-9 12C6.84 21.74 3 16.55 3 11V6l9-4z"/></svg>
-        <span style="font-size:12px;color:var(--t1)">يُقطع تلقائياً بعد 15 دقيقة خمول</span>
+      <div style="display:flex; align-items:center; gap:10px">
+        <div style="background:var(--gdim); padding:4px; border-radius:6px"><svg width="14" height="14" fill="var(--green)" viewBox="0 0 24 24"><path d="M12 2l9 4v6c0 5.55-3.84 10.74-9 12C6.84 21.74 3 16.55 3 11V6l9-4z"/></svg></div>
+        <span style="font-size:12px; color:var(--t1); font-weight:500">تشفير P2P كامل (End-to-End)</span>
       </div>
     </div>
   </div>
 
-  <!-- Right -->
+  <!-- Right Column: Connect & Transfer -->
   <div class="rcol">
 
-    <!-- Connect panel -->
-    <div class="card" id="connectArea" style="padding:1.6rem">
-      <h2 style="font-size:18px;font-weight:700;color:var(--t0);margin-bottom:1rem;display:flex;align-items:center;gap:10px">
+    <!-- Connect Panel -->
+    <div class="card" id="connectArea" style="padding:1.8rem">
+      <h2 style="font-size:20px; font-weight:800; color:var(--t0); margin-bottom:1.2rem; display:flex; align-items:center; gap:10px">
         الاتصال بجهاز آخر
-        <svg width="18" height="18" fill="none" stroke="var(--t2)" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-        </svg>
+        <svg width="20" height="20" fill="none" stroke="var(--t2)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
       </h2>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <input type="text" id="targetId" placeholder="أدخل الرمز (6 أرقام)"
-          maxlength="6" inputmode="numeric" pattern="[0-9]*"
-          style="flex:1;min-width:150px;font-family:'JetBrains Mono',monospace;
-          font-size:22px;font-weight:700;letter-spacing:.25em;text-align:center">
-        <button id="connectBtn" class="btn btn-p" onclick="connectToPeer()" style="flex-shrink:0;padding:14px 28px;font-size:16px">اقتران</button>
+      <div style="display:flex; gap:12px; flex-wrap:wrap">
+        <input type="text" id="targetId" placeholder="أدخل رمز الجهاز (6 أرقام)" maxlength="6" inputmode="numeric" pattern="[0-9]*" style="flex:1; min-width:180px; font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; letter-spacing:0.2em; text-align:center">
+        <button id="connectBtn" class="btn btn-p" onclick="handleConnect()" style="flex-shrink:0; padding:14px 32px; font-size:16px">اقتران</button>
       </div>
-      <p style="font-size:13px;color:var(--t2);margin-top:12px;line-height:1.65">
-        أدخل الرمز الخاص بالطرف الآخر للبدء. الاتصال سيكون مباشراً ومشفراً بالكامل.
-      </p>
-      <div id="cErr" style="display:none;margin-top:12px;padding:12px 16px;background:var(--rdim);
-        border:1px solid rgba(239,68,68,0.22);border-radius:12px;font-size:13px;color:var(--red)"></div>
+      <p style="font-size:13px; color:var(--t2); margin-top:14px; line-height:1.6">أدخل الرمز المكون من 6 أرقام الخاص بالطرف الآخر. بمجرد القبول، سيتم إنشاء نفق مشفر بينكما.</p>
+      <div id="cErr" style="display:none; margin-top:14px; padding:12px 16px; background:var(--rdim); border:1px solid rgba(239,68,68,0.3); border-radius:12px; font-size:13px; font-weight:600; color:var(--red)"></div>
     </div>
 
-    <!-- Transfer panel -->
-    <div class="card" id="transferArea" style="border-top:2px solid var(--accent);position:relative">
-
+    <!-- Transfer Panel -->
+    <div class="card" id="transferArea" style="border-top:3px solid var(--accent);">
+      
       <!-- Header -->
-      <div style="display:flex;justify-content:space-between;align-items:center;
-        padding:1rem 1.4rem;border-bottom:1px solid var(--b0);flex-shrink:0">
-        <div style="display:flex;align-items:center;gap:10px;overflow:hidden">
-          <div style="width:36px;height:36px;border-radius:50%;background:var(--gdim);
-            border:1px solid rgba(34,197,94,0.22);display:flex;align-items:center;
-            justify-content:center;flex-shrink:0;position:relative">
-            <div style="position:absolute;top:0;right:0;width:10px;height:10px;background:var(--green);
-              border:2px solid var(--bg2);border-radius:50%"></div>
-            <svg width="16" height="16" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-            </svg>
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:1.2rem 1.6rem; border-bottom:1px solid var(--b0); background:var(--bg1)">
+        <div style="display:flex; align-items:center; gap:12px; min-width:0">
+          <div style="width:40px; height:40px; border-radius:12px; background:var(--gdim); border:1px solid rgba(34,197,94,0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0; position:relative">
+            <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
           </div>
-          <div style="overflow:hidden">
-            <p style="font-size:10px;color:var(--t2);font-weight:700;letter-spacing:.1em">اتصال مشفر نشط</p>
-            <p id="connTo" style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;
-              color:var(--t0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">---</p>
+          <div style="min-width:0">
+            <p style="font-size:11px; color:var(--t1); font-weight:700; letter-spacing:0.05em; display:flex; align-items:center; gap:4px">
+              <span style="display:inline-block; width:6px; height:6px; background:var(--green); border-radius:50%"></span> متصل ومشفر
+            </p>
+            <p id="connTo" class="text-ellipsis" style="font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:800; color:var(--t0);">---</p>
           </div>
         </div>
-        <button id="discBtn" class="btn btn-d">إنهاء الاتصال</button>
+        <button id="discBtn" class="btn btn-d">إنهاء</button>
       </div>
 
-      <!-- Logs -->
-      <div id="logs" style="flex:1;overflow-y:auto;padding:1.2rem 1.4rem;
-        display:flex;flex-direction:column;gap:12px;min-height:0;scroll-behavior:smooth;">
-        <div id="logPH" style="margin:auto;text-align:center;
-          display:flex;flex-direction:column;align-items:center;gap:10px;opacity:.5">
-          <svg width="32" height="32" fill="none" stroke="var(--t2)" stroke-width="1.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-          </svg>
-          <span class="sys">القناة المشفرة جاهزة للتواصل</span>
+      <!-- Logs Area -->
+      <div id="logs" style="flex:1; overflow-y:auto; padding:1.5rem; display:flex; flex-direction:column; gap:14px; scroll-behavior:smooth;">
+        <div id="logPH" style="margin:auto; text-align:center; display:flex; flex-direction:column; align-items:center; gap:12px; opacity:0.6">
+          <svg width="40" height="40" fill="none" stroke="var(--t2)" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <span style="font-size:14px; font-weight:600; color:var(--t1)">النفق الآمن جاهز. ابدأ الإرسال.</span>
         </div>
       </div>
 
-      <!-- Progress -->
-      <div id="progCont" style="display:none;flex-shrink:0;padding:.8rem 1.4rem;border-top:1px solid var(--b0)">
-        <div style="background:var(--bg3);border:1px solid var(--b0);border-radius:14px;padding:14px">
-          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px">
-            <div style="overflow:hidden;flex:1">
-              <p style="font-size:10px;color:var(--t2);font-weight:700;letter-spacing:.1em;margin-bottom:3px">جارٍ النقل</p>
-              <p id="progFile" style="font-size:13px;font-weight:700;color:var(--t0);
-                white-space:nowrap;overflow:hidden;text-overflow:ellipsis">ملف</p>
+      <!-- Progress Area -->
+      <div id="progCont" style="display:none; padding:1rem 1.6rem; border-top:1px solid var(--b0); background:var(--bg1)">
+        <div style="background:var(--bg2); border:1px solid var(--b1); border-radius:16px; padding:16px; box-shadow:0 4px 15px rgba(0,0,0,0.2)">
+          <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:12px">
+            <div style="overflow:hidden; flex:1; padding-left:12px">
+              <p style="font-size:11px; color:var(--accent2); font-weight:700; letter-spacing:0.05em; margin-bottom:4px">جارٍ النقل...</p>
+              <p id="progFile" class="text-ellipsis" style="font-size:14px; font-weight:700; color:var(--t0);">ملف</p>
             </div>
-            <span id="progPct" style="font-size:22px;font-weight:800;color:var(--accent);
-              flex-shrink:0;margin-right:12px">0%</span>
+            <span id="progPct" style="font-size:24px; font-weight:800; color:var(--accent); font-family:'JetBrains Mono',monospace">0%</span>
           </div>
           <div class="ptrack"><div id="progBar" class="pfill" style="width:0%"></div></div>
-          <p id="progStats" style="font-size:12px;color:var(--t2);margin-top:6px;font-weight:600">0 ب / 0 ب</p>
+          <p id="progStats" style="font-size:12px; color:var(--t1); margin-top:8px; font-weight:600; text-align:left; direction:ltr; font-family:'JetBrains Mono',monospace">0 B / 0 B</p>
         </div>
       </div>
 
-      <!-- Inputs -->
-      <div style="padding:.9rem 1.4rem 1.1rem;border-top:1px solid var(--b0);flex-shrink:0;
-        display:flex;flex-direction:column;gap:10px">
-        <div style="display:flex;gap:10px;align-items:center">
-          <input type="text" id="textInput" placeholder="اكتب رسالة أو الصق رابطاً..." style="flex:1">
-          <button onclick="document.getElementById('fileInput').click()" title="إرسال ملف"
-            style="background:var(--bg3);border:1px solid var(--b1);color:var(--t1);
-            width:48px;height:48px;border-radius:12px;display:flex;align-items:center;
-            justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s"
-            onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
-            onmouseleave="this.style.borderColor='var(--b1)';this.style.color='var(--t1)'"
-            onmousedown="this.style.transform='scale(0.92)'"
-            onmouseup="this.style.transform='scale(1)'">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-            </svg>
+      <!-- Input Controls -->
+      <div style="padding:1.2rem 1.6rem; border-top:1px solid var(--b0); background:var(--bg2); display:flex; flex-direction:column; gap:12px">
+        <div style="display:flex; gap:10px; align-items:center">
+          <input type="text" id="textInput" placeholder="اكتب رسالة أو الصق رابطاً..." style="flex:1; border-radius:16px; padding:16px">
+          <button onclick="document.getElementById('fileInput').click()" title="إرسال ملف" style="background:var(--bg3); border:1px solid var(--b1); color:var(--t0); width:54px; height:54px; border-radius:16px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:all 0.2s" onmouseenter="this.style.background='var(--bg4)';this.style.borderColor='var(--accent)'" onmouseleave="this.style.background='var(--bg3)';this.style.borderColor='var(--b1)'" onmousedown="this.style.transform='scale(0.92)'" onmouseup="this.style.transform='scale(1)'">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
           </button>
           <input type="file" id="fileInput" multiple style="display:none">
         </div>
-        <button id="sendBtn" class="btn btn-p" style="width:100%;padding:14px;font-size:15px">
-          إرسال الرسالة
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-          </svg>
+        <button id="sendBtn" class="btn btn-p" style="width:100%; padding:16px; font-size:16px; border-radius:16px">
+          إرسال
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="transform:rotate(180deg)"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
         </button>
       </div>
 
-      <!-- Drop zone -->
+      <!-- Drag & Drop Overlay -->
       <div id="dropZone">
-        <div style="width:64px;height:64px;background:rgba(255,255,255,0.15);border-radius:50%;
-          display:flex;align-items:center;justify-content:center">
-          <svg width="28" height="28" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-          </svg>
+        <div style="width:80px; height:80px; background:rgba(255,255,255,0.15); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 30px rgba(255,255,255,0.1)">
+          <svg width="36" height="36" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
         </div>
-        <p style="font-size:20px;font-weight:800;color:#fff;text-align:center;margin:0">أفلِت الملفات هنا</p>
-        <p style="font-size:14px;color:rgba(255,255,255,0.7);margin:0">تشفير فوري من الطرف إلى الطرف</p>
+        <p style="font-size:24px; font-weight:800; color:#fff; margin:0">أفلِت الملفات هنا للإرسال</p>
+        <p style="font-size:15px; color:rgba(255,255,255,0.8); margin:0; font-weight:500">سيتم تشفيرها فوراً قبل النقل</p>
       </div>
     </div>
 
-  </div><!-- /rcol -->
+  </div>
 </main>
 
-<!-- Footer -->
-<footer style="text-align:center;padding-bottom:.2rem">
-  <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 18px;
-    background:var(--bg2);border:1px solid var(--b0);border-radius:100px">
-    <span style="font-size:11px;font-weight:700;color:var(--t2);letter-spacing:.1em">صُنِعَ بِفَخْرٍ فِي السُّعُودِيَّةِ</span>
-    <span style="font-size:14px">🇸🇦</span>
+<footer style="text-align:center; padding-top:1rem">
+  <div style="display:inline-flex; align-items:center; gap:10px; padding:8px 20px; background:var(--bg2); border:1px solid var(--b0); border-radius:100px; box-shadow:0 4px 15px rgba(0,0,0,0.1)">
+    <span style="font-size:12px; font-weight:700; color:var(--t2); letter-spacing:0.05em">صُنِعَ بِفَخْرٍ فِي السُّعُودِيَّةِ</span>
+    <span style="font-size:16px">🇸🇦</span>
   </div>
 </footer>
 
-<!-- Manifest placeholder -->
-<link id="mfLink" rel="manifest" href="">
-
 <script>
-/* ── Helpers available immediately ───────────────────────────────────── */
-var _toast, _toastTimer;
-function showToast(msg, isErr) {
-  if (!_toast) _toast = document.getElementById('toast');
-  var ti = document.getElementById('tIcon');
-  var tm = document.getElementById('tMsg');
-  if (!_toast || !ti || !tm) return;
+/* ── UI Helpers ──────────────────────────────────────────────────────── */
+let _toastTimer;
+function showToast(msg, isErr = false) {
+  const t = document.getElementById('toast');
+  const ti = document.getElementById('tIcon');
+  const tm = document.getElementById('tMsg');
+  if (!t || !ti || !tm) return;
   tm.textContent = msg;
   ti.textContent = isErr ? '✕' : '✓';
   ti.style.color = isErr ? 'var(--red)' : 'var(--green)';
-  _toast.style.borderColor = isErr ? 'rgba(239,68,68,0.3)' : 'var(--b1)';
-  _toast.classList.add('show');
+  t.style.borderColor = isErr ? 'rgba(239,68,68,0.4)' : 'var(--b1)';
+  t.classList.add('show');
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(function() { _toast.classList.remove('show'); }, 3500);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
 }
-window.alert = function(m) { showToast(m, true); };
 
 function openModal(id) {
-  var m = document.getElementById(id);
+  const m = document.getElementById(id);
   m.classList.add('open');
-  requestAnimationFrame(function() { requestAnimationFrame(function() { m.classList.add('vis'); }); });
+  requestAnimationFrame(() => requestAnimationFrame(() => m.classList.add('vis')));
 }
 function closeModal(id) {
-  var m = document.getElementById(id);
+  const m = document.getElementById(id);
   m.classList.remove('vis');
-  setTimeout(function() { m.classList.remove('open'); }, 230);
+  setTimeout(() => m.classList.remove('open'), 250);
 }
 
 function setStatus(txt, state) {
-  var d = document.getElementById('sDot');
-  var s = document.getElementById('sTxt');
+  const d = document.getElementById('sDot');
+  const s = document.getElementById('sTxt');
   if (s) s.textContent = txt;
   if (d) d.className = 'dot' + (state === 'ok' ? ' ok' : state === 'err' ? ' err' : '');
 }
 
-/* ── PWA Manifest ───────────────────────────────────────────────────── */
-(function() {
-  var m = { name:'مِرسال', short_name:'مِرسال', display:'standalone',
-    background_color:'#0a0a0f', theme_color:'#0a0a0f',
-    icons:[{src:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzZjNjNmZiIvPjwvc3ZnPg==',sizes:'192x192',type:'image/svg+xml'}]};
-  var el = document.getElementById('mfLink');
-  if (el) el.href = URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/json'}));
-})();
+/* ── Robust Copy Function ────────────────────────────────────────────── */
+async function copyToClipboard(text, btnElement) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      // Fallback for older browsers
+      let textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand('copy');
+      textArea.remove();
+    }
+    
+    // Visual Feedback
+    if (btnElement) {
+      const originalHTML = btnElement.innerHTML;
+      btnElement.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>تم النسخ</span>`;
+      btnElement.style.color = 'var(--green)';
+      btnElement.style.borderColor = 'rgba(34,197,94,0.4)';
+      if(navigator.vibrate) navigator.vibrate(50);
+      setTimeout(() => {
+        btnElement.innerHTML = originalHTML;
+        btnElement.style.color = '';
+        btnElement.style.borderColor = '';
+      }, 2000);
+    } else {
+      showToast('تم النسخ بنجاح');
+    }
+  } catch (err) {
+    showToast('فشل النسخ تلقائياً، يرجى التحديد والنسخ يدوياً', true);
+  }
+}
 
-/* ── Sequential script loader ───────────────────────────────────────── */
+/* ── Script Loader ───────────────────────────────────────────────────── */
 function loadScript(src, onOk, onFail) {
-  var s = document.createElement('script');
-  s.src = src;
-  s.crossOrigin = 'anonymous';
-  s.onload  = onOk;
-  s.onerror = onFail;
+  const s = document.createElement('script');
+  s.src = src; s.crossOrigin = 'anonymous';
+  s.onload = onOk; s.onerror = onFail;
   document.head.appendChild(s);
 }
 
-setStatus('جارٍ تحميل المكتبات...', '');
+setStatus('جاري تهيئة بيئة النقل...', '');
 
 loadScript(
   'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js',
-  function() {
+  () => {
     if (typeof Peer === 'undefined') {
-      setStatus('خطأ: فشل إعداد PeerJS', 'err');
-      showToast('خطأ غير متوقع في المكتبة الأساسية.', true);
-      return;
+      setStatus('خطأ في تحميل المكتبة الأساسية', 'err'); return;
     }
     loadScript(
       'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
-      function() { bootApp(true); },
-      function() { bootApp(false); }
+      () => bootApp(true),
+      () => bootApp(false)
     );
   },
-  function() {
-    setStatus('خطأ: فشل التحميل', 'err');
-    showToast('فشل تحميل مكتبة الاتصال. تحقق من الإنترنت وأعِد التحميل.', true);
-  }
+  () => setStatus('تعذر الاتصال بالخادم الرئيسي', 'err')
 );
 
 /* ═══════════════════════════════════════════════════════════════════════
-   BOOT APP — Main Logic
+   Main Application Logic
    ═══════════════════════════════════════════════════════════════════════ */
 function bootApp(hasQR) {
+  // Prevent Double Booting (fixes QR bug and multiple event listeners)
+  if (window.__appBooted) return;
+  window.__appBooted = true;
 
-  /* ── Crypto ID ─────────────────────────────────────────────────────── */
-  var buf = new Uint32Array(1);
+  const buf = new Uint32Array(1);
   window.crypto.getRandomValues(buf);
-  var MY_ID = String(Math.floor(100000 + (buf[0] % 900000)));
+  const MY_ID = String(Math.floor(100000 + (buf[0] % 900000)));
 
-  /* ── State ─────────────────────────────────────────────────────────── */
-  var peer         = null;
-  var conn         = null;
-  var pending      = null;
-  var authed       = false;
-  var fileQueue    = [];
-  var sending      = false;
-  var txStart      = 0;
-  var idleTimer    = null;
-  var connTimer    = null;
-  var wakeLock     = null;
-  var dragCnt      = 0;
-  var rxBuf        = [];
-  var rxBytes      = 0;
-  var rxMeta       = null;
-  var reconnects   = 0;
-  var MAX_RC       = 6;
+  let peer = null, conn = null, pending = null, authed = false;
+  let fileQueue = [], sending = false, txStart = 0, idleTimer = null, wakeLock = null;
+  let dragCnt = 0, rxBuf = [], rxBytes = 0, rxMeta = null;
+  
+  const CHUNK = 65536; // 64KB chunks
+  const BUF_HI = 262144; // 256KB pressure limit
+  const MAX_MEM_FILE = 500 * 1024 * 1024; // 500MB RAM warning
 
-  var CHUNK        = 65536;      // 64 KB
-  var BUF_HI       = 262144;     // 256 KB
-  var MAX_MEM_FILE = 500 * 1024 * 1024; // 500 MB Warning limit
+  const $id = (id) => document.getElementById(id);
+  const UI = {
+    myId: $id('myId'), qr: $id('qrcode'), tid: $id('targetId'),
+    cBtn: $id('connectBtn'), cArea: $id('connectArea'), cErr: $id('cErr'),
+    tArea: $id('transferArea'), connTo: $id('connTo'), fInp: $id('fileInput'),
+    txInp: $id('textInput'), logs: $id('logs'), pCont: $id('progCont'),
+    pFile: $id('progFile'), pStats: $id('progStats'), pBar: $id('progBar'),
+    pPct: $id('progPct'), drop: $id('dropZone'), shareB: $id('shareBtn'),
+    copyB: $id('copyBtn')
+  };
 
-  /* ── DOM ────────────────────────────────────────────────────────────── */
-  function $id(id) { return document.getElementById(id); }
-  var $myId   = $id('myId');
-  var $qr     = $id('qrcode');
-  var $tid    = $id('targetId');
-  var $cBtn   = $id('connectBtn');
-  var $cArea  = $id('connectArea');
-  var $cErr   = $id('cErr');
-  var $tArea  = $id('transferArea');
-  var $connTo = $id('connTo');
-  var $fInp   = $id('fileInput');
-  var $txInp  = $id('textInput');
-  var $logs   = $id('logs');
-  var $pCont  = $id('progCont');
-  var $pFile  = $id('progFile');
-  var $pStats = $id('progStats');
-  var $pBar   = $id('progBar');
-  var $pPct   = $id('progPct');
-  var $drop   = $id('dropZone');
-  var $shareB = $id('shareBtn');
+  /* ── Setup UI ──────────────────────────────────────────────────────── */
+  UI.myId.textContent = MY_ID;
 
-  /* ── WakeLock ───────────────────────────────────────────────────────── */
+  if (navigator.share) UI.shareB.style.display = 'inline-flex';
+
+  window.handleCopyId = () => copyToClipboard(MY_ID, UI.copyB);
+  
+  window.handleShareId = () => {
+    const url = `${location.origin}${location.pathname}?pair=${MY_ID}`;
+    if (navigator.share) {
+      navigator.share({ title:'مِرسال', text:`نقل آمن للملفات. رمز جهازي: ${MY_ID}`, url:url }).catch(()=>{});
+    } else {
+      copyToClipboard(url);
+    }
+  };
+
+  // Strict QR Generation
+  if (hasQR && typeof QRCode !== 'undefined' && UI.qr) {
+    UI.qr.innerHTML = ''; // Clear container
+    try {
+      new QRCode(UI.qr, {
+        text: `${location.origin}${location.pathname}?pair=${MY_ID}`,
+        width: 160, height: 160, // Match CSS
+        colorDark: '#000000', colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.L
+      });
+    } catch(e) { UI.qr.parentElement.style.display = 'none'; }
+  } else if (UI.qr) {
+    UI.qr.parentElement.style.display = 'none';
+  }
+
+  UI.tid.addEventListener('input', function() { this.value = this.value.replace(/[^0-9]/g, ''); });
+
+  /* ── Utilities ─────────────────────────────────────────────────────── */
   async function reqWL() {
     if ('wakeLock' in navigator && !wakeLock) {
-      try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
+      try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
     }
   }
   function relWL() { if (wakeLock) { wakeLock.release(); wakeLock = null; } }
-  document.addEventListener('visibilitychange', async function() {
+  document.addEventListener('visibilitychange', async () => {
     if (wakeLock && document.visibilityState === 'visible') await reqWL();
   });
 
-  /* ── Idle timer ─────────────────────────────────────────────────────── */
   function resetIdle() {
     clearTimeout(idleTimer);
     if (conn && authed) {
-      idleTimer = setTimeout(function() {
-        log('انتهت مهلة الخمول (15 دقيقة) — قُطع الاتصال تلقائياً للحماية.', 'sys');
+      idleTimer = setTimeout(() => {
+        log('انتهت مهلة الخمول (15 دقيقة). تم قطع الاتصال لحماية أمانك.', 'sys');
         doDisconnect();
       }, 15 * 60 * 1000);
     }
   }
 
-  /* ── Utilities ──────────────────────────────────────────────────────── */
-  function vib(p) { if (navigator.vibrate) navigator.vibrate(p); }
-
   function fmtB(n) {
-    if (!n) return '0 ب';
-    var u = ['ب','ك.ب','م.ب','ج.ب'], i = Math.floor(Math.log(n)/Math.log(1024));
-    return parseFloat((n/Math.pow(1024,i)).toFixed(1)) + ' ' + u[i];
+    if (!n) return '0 B';
+    const u = ['B','KB','MB','GB'];
+    const i = Math.floor(Math.log(n) / Math.log(1024));
+    return parseFloat((n / Math.pow(1024, i)).toFixed(2)) + ' ' + u[i];
   }
 
-  function linkify(escaped) {
-    return escaped.replace(/(https?:\/\/[^\s<"']+)/g, function(u) {
-      return '<a href="' + encodeURI(u) + '" target="_blank" rel="noopener noreferrer" ' +
-             'style="color:var(--accent2);text-decoration:underline;text-underline-offset:3px;word-break:break-all">' + u + '</a>';
-    });
+  function linkify(text) {
+    return text.replace(/(https?:\/\/[^\s<"']+)/g, u => 
+      `<a href="${encodeURI(u)}" target="_blank" rel="noopener" style="color:var(--accent2);text-decoration:underline">${u}</a>`
+    );
   }
 
-  /* ── Input Validation ───────────────────────────────────────────────── */
-  $tid.addEventListener('input', function() {
-    this.value = this.value.replace(/[^0-9]/g, '');
-  });
-
-  /* ── Setup Identity & QR ────────────────────────────────────────────── */
-  $myId.textContent = MY_ID;
-
-  if (navigator.share) {
-    $shareB.style.display = 'inline-flex';
-  }
-
-  window.shareMyId = function() {
-    var url = location.origin + location.pathname + '?pair=' + MY_ID;
-    if (navigator.share) {
-      navigator.share({
-        title: 'مِرسال',
-        text: 'اتصل بجهازي عبر مِرسال لنقل الملفات بأمان. الرمز الخاص بي: ' + MY_ID,
-        url: url
-      }).catch(function(e){ console.log(e); });
-    } else {
-      copyMyId();
-    }
-  };
-
-  window.copyMyId = function() {
-    navigator.clipboard.writeText(MY_ID).then(function() {
-      vib(50); showToast('تم نسخ رمزك الآمن');
-    }).catch(function() { showToast('فشل النسخ', true); });
-  };
-
-  if (hasQR && typeof QRCode !== 'undefined' && $qr) {
-    try {
-      new QRCode($qr, {
-        text: location.origin + location.pathname + '?pair=' + MY_ID,
-        width: 140, height: 140,
-        colorDark: '#000000', colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.L // L makes blocks larger and easier to scan
-      });
-    } catch(e) { $qr.style.display = 'none'; }
-  } else if ($qr) {
-    $qr.style.display = 'none';
-  }
-
-  /* ── Log ─────────────────────────────────────────────────────────────── */
+  /* ── Logs & Progress ───────────────────────────────────────────────── */
   function log(msg, type, raw) {
     resetIdle();
-    var ph = $id('logPH'); if (ph) ph.remove();
-    var w = document.createElement('div');
-
+    const ph = $id('logPH'); if (ph) ph.remove();
+    const w = document.createElement('div');
+    
     if (type === 'sys') {
       w.className = 'sys'; w.textContent = msg;
-    } else if (type === 'out') {
-      w.className = 'mwrap out';
-      var b = document.createElement('div');
-      b.className = 'bubble out'; b.textContent = msg;
-      b.innerHTML = linkify(b.innerHTML); w.appendChild(b);
     } else {
-      w.className = 'mwrap in';
-      var b2 = document.createElement('div');
-      b2.className = 'bubble in'; b2.textContent = msg;
-      b2.innerHTML = linkify(b2.innerHTML);
-      var sr = encodeURIComponent(raw || msg);
-      var cp = document.createElement('button');
-      cp.style.cssText='font-size:11px;font-weight:700;color:var(--t2);background:var(--bg3);border:1px solid var(--b0);padding:4px 12px;border-radius:8px;cursor:pointer;font-family:inherit;transition:color .15s';
-      cp.textContent = 'نسخ';
-      cp.onclick = function() {
-        navigator.clipboard.writeText(decodeURIComponent(sr)).then(function(){
-          cp.textContent='✓ تم'; cp.style.color='var(--green)';
-          setTimeout(function(){ cp.textContent='نسخ'; cp.style.color=''; }, 2000);
-        });
-      };
-      w.appendChild(b2); w.appendChild(cp);
+      w.className = `mwrap ${type}`;
+      const b = document.createElement('div');
+      b.className = `bubble ${type}`; 
+      b.textContent = msg;
+      b.innerHTML = linkify(b.innerHTML);
+      w.appendChild(b);
+
+      if (type === 'in') {
+        const cp = document.createElement('button');
+        cp.style.cssText = 'font-size:11px; font-weight:700; color:var(--t2); background:transparent; border:none; cursor:pointer; padding:2px 6px; margin-top:2px; transition:0.2s';
+        cp.textContent = 'نسخ';
+        cp.onclick = () => copyToClipboard(raw || msg, cp);
+        w.appendChild(cp);
+      }
     }
-    $logs.appendChild(w);
-    setTimeout(function() { $logs.scrollTop = $logs.scrollHeight; }, 50);
+    UI.logs.appendChild(w);
+    setTimeout(() => UI.logs.scrollTop = UI.logs.scrollHeight, 50);
   }
 
-  /* ── Progress ───────────────────────────────────────────────────────── */
-  function showProg(name, total) {
-    $pCont.style.display = 'block';
-    $pFile.textContent = name;
-    updProg(0, total || 1);
-  }
   function updProg(cur, total) {
-    var pct = Math.min(100, Math.round(cur / (total || 1) * 100));
-    $pBar.style.width = pct + '%'; $pPct.textContent = pct + '%';
-    var el = (Date.now() - txStart) / 1000;
-    $pStats.textContent = el > 0.5 && cur > 0
-      ? fmtB(cur) + ' / ' + fmtB(total) + ' — ' + fmtB(cur/el) + '/ث'
-      : fmtB(cur) + ' / ' + fmtB(total);
+    const pct = Math.min(100, Math.round(cur / (total || 1) * 100));
+    UI.pBar.style.width = pct + '%'; 
+    UI.pPct.textContent = pct + '%';
+    const el = (Date.now() - txStart) / 1000;
+    UI.pStats.textContent = el > 0.5 && cur > 0
+      ? `${fmtB(cur)} / ${fmtB(total)} — ${fmtB(cur/el)}/s`
+      : `${fmtB(cur)} / ${fmtB(total)}`;
   }
-  function hideProg() { $pCont.style.display = 'none'; }
 
-  /* ── Reset UI ────────────────────────────────────────────────────────── */
+  /* ── Core Transfer Logic ───────────────────────────────────────────── */
   function resetUI() {
-    clearTimeout(idleTimer); clearTimeout(connTimer);
+    clearTimeout(idleTimer);
     conn = null; pending = null; authed = false;
     fileQueue = []; sending = false; rxBuf = []; rxBytes = 0; rxMeta = null;
     closeModal('authModal');
-    $cArea.style.display = ''; $tArea.classList.remove('on');
-    $tid.value = ''; $cBtn.textContent = 'اقتران'; $cBtn.disabled = false;
-    $cErr.style.display = 'none'; hideProg(); relWL();
+    UI.cArea.style.display = ''; UI.tArea.classList.remove('on');
+    UI.tid.value = ''; UI.cBtn.textContent = 'اقتران'; UI.cBtn.disabled = false;
+    UI.cErr.style.display = 'none'; UI.pCont.style.display = 'none'; relWL();
     history.replaceState({}, '', location.pathname);
   }
 
-  function goTransfer(peerId) {
-    clearTimeout(connTimer);
-    $cArea.style.display = 'none'; $tArea.classList.add('on');
-    $connTo.textContent = peerId; vib([50,50,50]);
-    log('✅ الاتصال مشفر بالكامل وجاهز.', 'sys');
-    resetIdle(); reqWL();
-  }
-
-  /* ── Connection Events ──────────────────────────────────────────────── */
   function bindConn(c) {
-    c.on('data', function(d) {
+    c.on('data', d => {
       if (!authed || !d || typeof d !== 'object') return;
       resetIdle();
       switch (d.type) {
         case 'text':
-          vib(100); log(d.content, 'in', d.content); break;
-
+          if(navigator.vibrate) navigator.vibrate(100);
+          log(d.content, 'in', d.content); 
+          break;
         case 'file-ack':
-          vib([60,110,60]); log('✅ استلم الطرف الآخر الملف بنجاح.', 'sys'); break;
-
+          log('✅ تم استلام الملف وحفظه لدى الطرف الآخر بنجاح.', 'sys'); 
+          break;
         case 'file-start':
           reqWL(); rxMeta = d; rxBuf = []; rxBytes = 0; txStart = Date.now();
-          showProg('استلام: ' + d.name, d.size); break;
-
+          UI.pCont.style.display = 'block'; UI.pFile.textContent = 'استلام: ' + d.name;
+          updProg(0, d.size);
+          break;
         case 'file-chunk':
           if (!rxMeta) break;
           rxBuf.push(d.data); rxBytes += d.data.byteLength;
-          updProg(rxBytes, rxMeta.size); break;
-
+          updProg(rxBytes, rxMeta.size); 
+          break;
         case 'file-end':
           if (!rxMeta) break;
-          hideProg();
-          (function(meta, buf) {
-            log('⏳ جارٍ تجهيز الملف للحفظ...', 'sys');
-            var name = meta.name;
-            var mime = meta.filetype || 'application/octet-stream';
+          UI.pCont.style.display = 'none';
+          const meta = rxMeta; const buf = rxBuf;
+          rxMeta = null; rxBuf = []; rxBytes = 0;
+          
+          log('⏳ جاري فك التشفير وتجهيز الملف...', 'sys');
+          setTimeout(() => {
+            let name = meta.name.replace(/[/\\?%*:|"<>]/g,'_');
+            let mime = meta.filetype || 'application/octet-stream';
             if (/\.(html?|js|mjs|ts|svg|php|sh|py|rb|exe|bat|ps1)$/i.test(name)) {
               name += '.txt'; mime = 'text/plain';
             }
-            name = name.replace(/[/\\?%*:|"<>]/g,'_');
-            var blob = new Blob(buf, { type: mime });
-            saveToDisk(blob, name);
+            saveToDisk(new Blob(buf, {type: mime}), name);
             relWL();
-          })(rxMeta, rxBuf);
-          rxMeta = null; rxBuf = []; rxBytes = 0; break;
+          }, 50);
+          break;
       }
     });
 
-    c.on('close', function() {
-      if (c === conn) { showToast('قُطع الاتصال من الطرف الآخر.', true); resetUI(); }
+    c.on('close', () => {
+      if (c === conn) { showToast('تم إنهاء الاتصال من الطرف الآخر', true); resetUI(); }
       if (c === pending) { closeModal('authModal'); pending = null; }
     });
-
-    c.on('error', function(e) {
-      log('خطأ في الاتصال: ' + (e && e.message ? e.message : String(e)), 'sys');
+    c.on('error', e => {
+      log('حدث خطأ في القناة: ' + e.message, 'sys');
       if (c === conn) resetUI();
     });
   }
 
-  /* ── Save file ───────────────────────────────────────────────────────── */
   async function saveToDisk(blob, name) {
-    var url = URL.createObjectURL(blob);
-
+    const url = URL.createObjectURL(blob);
     if (window.showSaveFilePicker && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
       try {
-        var h = await window.showSaveFilePicker({ suggestedName: name });
-        var w = await h.createWritable();
+        const h = await window.showSaveFilePicker({ suggestedName: name });
+        const w = await h.createWritable();
         await w.write(blob); await w.close();
         URL.revokeObjectURL(url);
-        log('💾 حُفظ الملف بنجاح على جهازك.', 'sys');
+        log('💾 تم حفظ الملف في جهازك.', 'sys');
         if (conn && conn.open) conn.send({ type:'file-ack', name:name });
         return;
-      } catch(e) {
-        if (e.name === 'AbortError') { URL.revokeObjectURL(url); return; }
-      }
+      } catch(e) { if (e.name === 'AbortError') { URL.revokeObjectURL(url); return; } }
     }
 
-    /* Fallback for Mobile / Unsupported Browsers */
-    var wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;justify-content:center;width:100%;padding:4px 0';
-    var a = document.createElement('a');
-    a.href=url; a.download=name;
-    a.style.cssText='background:var(--accent);color:#fff;padding:12px 20px;border-radius:14px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:12px;max-width:95%;text-decoration:none;font-family:inherit;box-shadow:0 4px 15px rgba(108,99,255,0.2)';
-    var iw=document.createElement('div');
-    iw.style.cssText='background:rgba(255,255,255,0.15);padding:8px;border-radius:10px;flex-shrink:0';
-    iw.innerHTML='<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>';
-    var tw=document.createElement('div');
-    tw.style.cssText='display:flex;flex-direction:column;align-items:flex-start;overflow:hidden';
-    var ns=document.createElement('span');
-    ns.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px';
-    ns.textContent='تحميل '+name;
-    var ss=document.createElement('span');
-    ss.style.cssText='font-size:11px;font-family:"JetBrains Mono",monospace;opacity:.8;margin-top:2px';
-    ss.textContent=fmtB(blob.size);
-    tw.appendChild(ns); tw.appendChild(ss);
-    a.appendChild(iw); a.appendChild(tw); wrap.appendChild(a);
-    $logs.appendChild(wrap);
-    setTimeout(function(){$logs.scrollTop=$logs.scrollHeight;},50);
+    // Fallback Mobile/Standard Download
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex; justify-content:flex-end; width:100%; margin-bottom:8px';
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    a.style.cssText = 'background:var(--accent); color:#fff; padding:12px 20px; border-radius:16px; font-weight:700; font-size:14px; display:flex; align-items:center; gap:12px; text-decoration:none; box-shadow:0 6px 20px rgba(108,99,255,0.2); max-width:85%';
+    a.innerHTML = `
+      <div style="background:rgba(255,255,255,0.2); padding:8px; border-radius:10px; flex-shrink:0">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+      </div>
+      <div style="display:flex; flex-direction:column; overflow:hidden">
+        <span class="text-ellipsis" style="max-width:180px; direction:ltr; text-align:right">Save ${name}</span>
+        <span style="font-size:11px; opacity:0.8; font-family:'JetBrains Mono',monospace">${fmtB(blob.size)}</span>
+      </div>`;
     
-    a.addEventListener('click',function(){
-      setTimeout(function(){
+    a.onclick = () => {
+      setTimeout(() => {
         URL.revokeObjectURL(url);
-        a.style.background='var(--green)';
-        a.style.boxShadow='0 4px 15px rgba(34,197,94,0.2)';
-        ns.textContent='تم التحميل ✓'; a.style.pointerEvents='none';
-      },2500);
-    });
-    log('✅ اكتمل النقل — اضغط على الزر أدناه لحفظ الملف.', 'sys');
+        a.style.background = 'var(--green)';
+        a.style.boxShadow = '0 6px 20px rgba(34,197,94,0.2)';
+        a.querySelector('span').textContent = 'تم الحفظ ✓';
+        a.style.pointerEvents = 'none';
+      }, 2000);
+    };
+
+    wrap.appendChild(a); UI.logs.appendChild(wrap);
+    setTimeout(() => UI.logs.scrollTop = UI.logs.scrollHeight, 50);
+    log('✅ اكتمل النقل. اضغط على الزر أعلاه للحفظ.', 'sys');
     if (conn && conn.open) conn.send({ type:'file-ack', name:name });
   }
 
-  /* ── Send text ───────────────────────────────────────────────────────── */
+  /* ── Sending Logic ─────────────────────────────────────────────────── */
   function sendText() {
-    var t = $txInp.value.trim();
+    const t = UI.txInp.value.trim();
     if (!t || !conn || !conn.open || !authed) return;
     conn.send({ type:'text', content:t });
-    log(t, 'out'); $txInp.value=''; $txInp.focus(); resetIdle();
+    log(t, 'out'); UI.txInp.value = ''; UI.txInp.focus(); resetIdle();
   }
-  $id('sendBtn').addEventListener('click', sendText);
-  $txInp.addEventListener('keypress', function(e){ if(e.key==='Enter') sendText(); });
+  $id('sendBtn').onclick = sendText;
+  UI.txInp.onkeypress = e => { if(e.key === 'Enter') sendText(); };
 
-  /* ── Send files ──────────────────────────────────────────────────────── */
-  $fInp.addEventListener('change', function(e){
-    Array.from(e.target.files).forEach(function(f){ fileQueue.push(f); });
-    $fInp.value=''; if(!sending) processQ();
-  });
+  UI.fInp.onchange = e => {
+    Array.from(e.target.files).forEach(f => fileQueue.push(f));
+    UI.fInp.value = ''; // Reset input to allow selecting same file again
+    if (!sending) processQ();
+  };
 
   async function processQ() {
     if (!fileQueue.length || !conn || !conn.open || !authed) { sending=false; relWL(); return; }
-    sending=true; reqWL(); resetIdle();
-    var file = fileQueue.shift();
+    sending = true; reqWL(); resetIdle();
+    const file = fileQueue.shift();
     
     if (file.size > MAX_MEM_FILE) {
-      if (!confirm('الملف كبير جداً (' + fmtB(file.size) + ') وقد يستهلك ذاكرة المتصفح بالكامل. هل تريد الاستمرار في الإرسال؟')) {
-        sending=false; relWL(); processQ(); return;
+      if (!confirm(`الملف كبير جداً (${fmtB(file.size)}) وقد يستهلك ذاكرة المتصفح. هل تريد الاستمرار؟`)) {
+        sending = false; relWL(); processQ(); return;
       }
     }
 
-    var name = file.name.replace(/[/\\?%*:|"<>]/g,'_');
+    const name = file.name.replace(/[/\\?%*:|"<>]/g,'_');
     txStart = Date.now();
-    showProg(name, file.size);
+    UI.pCont.style.display = 'block'; UI.pFile.textContent = 'إرسال: ' + name;
+    updProg(0, file.size);
+    
     conn.send({ type:'file-start', name:name, size:file.size, filetype:file.type||'application/octet-stream' });
 
     if (file.size > 0) {
-      var off = 0;
+      let off = 0;
       while (off < file.size) {
-        if (!sending || !conn || !conn.open) break;
-        /* back-pressure to prevent buffer overflow */
+        if (!sending || !conn || !conn.open || !conn.dataChannel || conn.dataChannel.readyState !== 'open') break;
+        resetIdle(); // Keep alive during long chunks
+        
+        // Backpressure
         while (conn.dataChannel && conn.dataChannel.bufferedAmount > BUF_HI) {
-          await new Promise(function(r){ setTimeout(r, 20); });
-          if (!sending || !conn || !conn.open) break;
+          await new Promise(r => setTimeout(r, 10)); // Faster polling
+          if (!sending || !conn || !conn.open || conn.dataChannel.readyState !== 'open') break;
         }
-        if (!sending || !conn || !conn.open) break;
-        var slice = file.slice(off, off + CHUNK);
-        var ab = await slice.arrayBuffer();
+        if (!sending || !conn || !conn.open || conn.dataChannel.readyState !== 'open') break;
+        
+        const slice = file.slice(off, off + CHUNK);
+        const ab = await slice.arrayBuffer();
         conn.send({ type:'file-chunk', data:ab });
         off += ab.byteLength; updProg(off, file.size);
       }
     }
 
-    if (conn && conn.open) {
+    if (conn && conn.open && conn.dataChannel && conn.dataChannel.readyState === 'open') {
       conn.send({ type:'file-end' });
-      log('🚀 أُرسل الملف بنجاح.', 'sys');
+      log(`🚀 تم إرسال (${name}) بنجاح. بانتظار حفظ الطرف الآخر.`, 'sys');
+    } else {
+      log('❌ فشل الإرسال بسبب انقطاع الاتصال.', 'sys');
     }
-    hideProg();
-    setTimeout(processQ, 300);
+    
+    UI.pCont.style.display = 'none';
+    setTimeout(processQ, 200);
   }
 
-  /* ── Drag & drop ─────────────────────────────────────────────────────── */
-  document.addEventListener('dragenter', function(e){
-    if (!conn||!authed) return; e.preventDefault(); dragCnt++;
-    $drop.style.display='flex';
-  });
-  document.addEventListener('dragleave', function(e){
-    if (!conn||!authed) return; e.preventDefault();
-    if (--dragCnt===0) $drop.style.display='none';
-  });
-  document.addEventListener('dragover', function(e){ e.preventDefault(); });
-  document.addEventListener('drop', function(e){
-    e.preventDefault(); dragCnt=0; $drop.style.display='none';
+  /* ── Drag & Drop ───────────────────────────────────────────────────── */
+  document.ondragenter = e => { if(!conn||!authed) return; e.preventDefault(); dragCnt++; UI.drop.style.display='flex'; };
+  document.ondragleave = e => { if(!conn||!authed) return; e.preventDefault(); if(--dragCnt===0) UI.drop.style.display='none'; };
+  document.ondragover = e => e.preventDefault();
+  document.ondrop = e => {
+    e.preventDefault(); dragCnt=0; UI.drop.style.display='none';
     if (!conn||!authed) return;
-    Array.from(e.dataTransfer.files).forEach(function(f){ fileQueue.push(f); });
+    Array.from(e.dataTransfer.files).forEach(f => fileQueue.push(f));
     if (!sending) processQ();
-  });
+  };
 
-  /* ── Disconnect ──────────────────────────────────────────────────────── */
-  function doDisconnect() {
-    if (conn) { try { conn.close(); } catch(e){} }
-    resetUI();
-  }
-  $id('discBtn').addEventListener('click', doDisconnect);
+  /* ── Connection Setup ──────────────────────────────────────────────── */
+  function doDisconnect() { if (conn) { try { conn.close(); } catch(e){} } resetUI(); }
+  $id('discBtn').onclick = doDisconnect;
 
-  /* ── Auth modal buttons ──────────────────────────────────────────────── */
-  $id('acceptBtn').addEventListener('click', function(){
+  $id('acceptBtn').onclick = () => {
     if (!pending) return;
-    var c = pending; pending = null;
+    const c = pending; pending = null;
     closeModal('authModal');
     authed = true; conn = c;
     try { c.send({ type:'auth-accept' }); } catch(e){}
     bindConn(c);
-    goTransfer(c.peer);
-  });
+    
+    UI.cArea.style.display = 'none'; UI.tArea.classList.add('on');
+    UI.connTo.textContent = c.peer;
+    if(navigator.vibrate) navigator.vibrate([50,50,50]);
+    log('✅ تم تأمين الاتصال (E2EE).', 'sys');
+    resetIdle(); reqWL();
+  };
 
-  $id('declineBtn').addEventListener('click', function(){
-    if (pending) {
-      try { pending.send({ type:'auth-decline' }); pending.close(); } catch(e){}
-    }
+  $id('declineBtn').onclick = () => {
+    if (pending) { try { pending.send({ type:'auth-decline' }); pending.close(); } catch(e){} }
     pending = null; closeModal('authModal');
-  });
+  };
 
-  /* ── Connect to peer ─────────────────────────────────────────────────── */
-  window.connectToPeer = function() {
-    var tid = $tid.value.replace(/\s/g,'');
-    $cErr.style.display='none';
+  window.handleConnect = () => {
+    const tid = UI.tid.value.trim();
+    UI.cErr.style.display = 'none';
 
-    if (!/^\d{6}$/.test(tid)) {
-      $cErr.textContent='الرجاء إدخال رمز صحيح مكوّن من 6 أرقام.'; $cErr.style.display='block'; return;
-    }
-    if (tid === MY_ID) {
-      $cErr.textContent='لا يمكنك الاتصال بنفس جهازك.'; $cErr.style.display='block'; return;
-    }
-    if (!peer || peer.destroyed || peer.disconnected) {
-      $cErr.textContent='جاري الاتصال بالخادم الرئيسي — يرجى الانتظار ثوانٍ والمحاولة.';
-      $cErr.style.display='block'; return;
-    }
+    if (!/^\d{6}$/.test(tid)) { UI.cErr.textContent='أدخل رمزاً صحيحاً من 6 أرقام.'; UI.cErr.style.display='block'; return; }
+    if (tid === MY_ID) { UI.cErr.textContent='لا يمكنك الاتصال بنفس جهازك.'; UI.cErr.style.display='block'; return; }
+    if (!peer || peer.destroyed || peer.disconnected) { UI.cErr.textContent='جاري الاتصال بالخادم، انتظر ثوانٍ...'; UI.cErr.style.display='block'; return; }
 
-    $cBtn.innerHTML='<svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 2a10 10 0 0110 10" stroke-linecap="round"/></svg>';
-    $cBtn.disabled = true;
+    UI.cBtn.innerHTML = '<svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 2a10 10 0 0110 10" stroke-linecap="round"/></svg>';
+    UI.cBtn.disabled = true;
 
-    var c = peer.connect(tid, { reliable:true, serialization:'binary' });
+    const c = peer.connect(tid, { reliable:true, serialization:'binary' });
+    let connTimer = setTimeout(() => {
+      if (!authed) { UI.cErr.textContent='لم يرد الطرف الآخر.'; UI.cErr.style.display='block'; try{c.close();}catch(e){} resetUI(); }
+    }, 30000);
 
-    var onAuthData = function(d) {
+    const onAuthData = d => {
       if (!d || typeof d !== 'object') return;
       if (d.type === 'auth-accept') {
-        c.off('data', onAuthData);
-        authed = true; conn = c;
-        bindConn(c);
-        goTransfer(c.peer);
+        clearTimeout(connTimer); c.off('data', onAuthData);
+        authed = true; conn = c; bindConn(c);
+        UI.cArea.style.display = 'none'; UI.tArea.classList.add('on');
+        UI.connTo.textContent = c.peer;
+        if(navigator.vibrate) navigator.vibrate([50,50,50]);
+        log('✅ تم تأمين الاتصال (E2EE).', 'sys');
+        resetIdle(); reqWL();
       } else if (d.type === 'auth-decline') {
-        c.off('data', onAuthData);
-        showToast('تم رفض طلب الاتصال من الطرف الآخر.', true);
-        try { c.close(); } catch(e){}
-        resetUI();
+        clearTimeout(connTimer); c.off('data', onAuthData);
+        showToast('تم رفض طلبك.', true); try{c.close();}catch(e){} resetUI();
       }
     };
     c.on('data', onAuthData);
-
-    c.on('error', function(err){
-      clearTimeout(connTimer);
-      var msg = err && err.message ? err.message : String(err);
-      $cErr.textContent = 'فشل الاتصال: ' + msg;
-      $cErr.style.display = 'block';
-      showToast('فشل الاتصال.', true);
-      resetUI();
-    });
-
-    c.on('close', function(){ if (!conn) resetUI(); });
-
-    connTimer = setTimeout(function(){
-      if (!authed) {
-        $cErr.textContent = 'انتهت مهلة الاتصال — لم يستجب الطرف الآخر.';
-        $cErr.style.display = 'block';
-        showToast('انتهت مهلة الاتصال.', true);
-        try { c.close(); } catch(e){}
-        resetUI();
-      }
-    }, 30000);
+    c.on('error', err => { clearTimeout(connTimer); UI.cErr.textContent='فشل الاتصال: '+err.message; UI.cErr.style.display='block'; resetUI(); });
+    c.on('close', () => { if(!conn) resetUI(); });
   };
+  UI.tid.onkeypress = e => { if(e.key === 'Enter') handleConnect(); };
 
-  /* ── Init PeerJS ─────────────────────────────────────────────────────── */
-  function initPeer() {
-    setStatus('جارٍ الاتصال بالخادم...', '');
+  /* ── Initialize PeerJS ─────────────────────────────────────────────── */
+  try {
+    peer = new Peer(MY_ID, {
+      host: '0.peerjs.com', port: 443, path: '/', secure: true, debug: 0,
+      config: { iceServers: [ {urls:'stun:stun.l.google.com:19302'}, {urls:'stun:stun1.l.google.com:19302'} ] }
+    });
+  } catch(e) { setStatus('فشل الإعداد', 'err'); return; }
 
-    try {
-      peer = new Peer(MY_ID, {
-        host: '0.peerjs.com',
-        port: 443,
-        path: '/',
-        secure: true,
-        debug: 0,
-        config: {
-          iceServers: [
-            { urls:'stun:stun.l.google.com:19302' },
-            { urls:'stun:stun1.l.google.com:19302' },
-            { urls:'stun:stun2.l.google.com:19302' },
-            { urls:'stun:stun3.l.google.com:19302' },
-            { urls:'stun:stun4.l.google.com:19302' }
-          ]
-        }
-      });
-    } catch(e) {
-      setStatus('خطأ في الإعداد: ' + e.message, 'err');
-      showToast('خطأ غير متوقع: ' + e.message, true);
-      return;
+  peer.on('open', () => {
+    setStatus('متصل بالشبكة الآمنة', 'ok');
+    const p = new URLSearchParams(location.search).get('pair');
+    if (p && /^\d{6}$/.test(p) && p !== MY_ID) { UI.tid.value = p; handleConnect(); }
+  });
+
+  peer.on('connection', c => {
+    if (conn || pending) { try { c.send({type:'auth-decline'}); c.close(); } catch(e){} return; }
+    pending = c;
+    c.on('open', () => { $id('reqId').textContent = c.peer; openModal('authModal'); if(navigator.vibrate) navigator.vibrate([60,100,60]); });
+    c.on('close', () => { if(pending===c){ closeModal('authModal'); pending=null; } });
+    c.on('error', () => { if(pending===c){ closeModal('authModal'); pending=null; } });
+  });
+
+  peer.on('disconnected', () => {
+    if (peer.destroyed) return;
+    setStatus('جاري استعادة الاتصال...', '');
+    setTimeout(() => { if (peer && !peer.destroyed && peer.disconnected) peer.reconnect(); }, 3000);
+  });
+
+  peer.on('error', err => {
+    if (err.type === 'peer-unavailable') {
+      UI.cErr.textContent='الجهاز غير متاح. تأكد من الرمز.'; UI.cErr.style.display='block'; resetUI();
+    } else if (err.type === 'unavailable-id') {
+      location.reload();
+    } else {
+      setStatus('خطأ في الشبكة', 'err');
     }
-
-    peer.on('open', function() {
-      reconnects = 0;
-      setStatus('جاهز — اتصال مشفر', 'ok');
-      
-      /* Auto-pair from URL */
-      var p = new URLSearchParams(location.search).get('pair');
-      if (p && /^\d{6}$/.test(p) && p !== MY_ID) {
-        $tid.value = p; connectToPeer();
-      }
-    });
-
-    peer.on('connection', function(c) {
-      if (conn || pending) {
-        try { c.send({ type:'auth-decline' }); c.close(); } catch(e){}
-        return;
-      }
-      pending = c;
-      c.on('open', function(){
-        $id('reqId').textContent = c.peer;
-        openModal('authModal');
-        vib([60,100,60]);
-      });
-      c.on('close', function(){
-        if (pending===c) { closeModal('authModal'); pending=null; }
-      });
-      c.on('error', function(){
-        if (pending===c) { closeModal('authModal'); pending=null; }
-      });
-    });
-
-    peer.on('disconnected', function(){
-      if (peer.destroyed) return;
-      setStatus('إعادة الاتصال...', '');
-      if (reconnects < MAX_RC) {
-        reconnects++;
-        var delay = Math.min(1500 * reconnects, 10000);
-        setTimeout(function(){ if (peer && !peer.destroyed) peer.reconnect(); }, delay);
-      } else {
-        setStatus('انقطع الاتصال', 'err');
-        showToast('انقطع الاتصال بالخادم. يرجى تحديث الصفحة.', true);
-      }
-    });
-
-    peer.on('error', function(err) {
-      var t = err && err.type ? err.type : '';
-      var m = err && err.message ? err.message : String(err);
-      if (t === 'peer-unavailable') {
-        $cErr.textContent='الجهاز غير متاح حالياً — تأكد من الرمز وأن الطرف الآخر متصل.';
-        $cErr.style.display='block';
-        showToast('الجهاز غير متاح.', true);
-        resetUI(); return;
-      }
-      if (t === 'unavailable-id') {
-        showToast('تعارض في الرمز — سيتم إعادة التوليد...', false);
-        setTimeout(function(){ location.reload(); }, 1500); return;
-      }
-      if (t === 'network' || t === 'server-error') {
-        setStatus('خطأ في الشبكة', 'err');
-        showToast('خطأ في الشبكة: ' + m, true); return;
-      }
-      setStatus('خطأ: ' + (t||m), 'err');
-    });
-
-    peer.on('close', function(){ setStatus('الاتصال مغلق', 'err'); });
-  }
-
-  /* ── Layout Resize Listener ──────────────────────────────────────────── */
-  function applyLayout() {
-    var g = document.querySelector('.grid');
-    if (g) g.style.gridTemplateColumns = innerWidth < 720 ? '1fr' : '280px 1fr';
-  }
-  applyLayout();
-  addEventListener('resize', applyLayout);
-
-  /* ── Enter Key Submit ────────────────────────────────────────────────── */
-  $tid.addEventListener('keypress', function(e){ if(e.key==='Enter') connectToPeer(); });
-
-  /* ── Start ───────────────────────────────────────────────────────────── */
-  initPeer();
-
-} 
+  });
+}
 </script>
 </body>
 </html>
