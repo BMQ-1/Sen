@@ -10,9 +10,9 @@
 
 <!-- 
   Strict Content Security Policy (CSP):
-  يمنع تنفيذ أي نصوص برمجية خارجية غير مصرح بها، ويحمي من ثغرات XSS.
+  تم تحديثه للسماح بخوادم Scaledrone و WebRTC STUN.
 -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' wss://0.peerjs.com https://0.peerjs.com stun:stun.l.google.com:19302 stun:stun1.l.google.com:19302; img-src 'self' data: blob:; worker-src 'self' blob:; media-src 'self' blob:; object-src 'none'; base-uri 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.scaledrone.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' wss://*.scaledrone.com https://*.scaledrone.com stun:stun.l.google.com:19302 stun:stun1.l.google.com:19302 stun:stun2.l.google.com:19302; img-src 'self' data: blob:; worker-src 'self' blob:; media-src 'self' blob:; object-src 'none'; base-uri 'self';">
 
 <title>مِرسال — نقل آمن ومباشر</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -301,8 +301,8 @@ header, footer { width:100%; max-width:960px; z-index:1; }
   </div>
 </footer>
 
-<!-- المكتبات الأساسية (محملة بأمان من CDN موثوق) -->
-<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<!-- مكتبات التشفير والاتصال -->
+<script src="https://cdn.scaledrone.com/scaledrone.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
 <script>
@@ -381,11 +381,11 @@ async function copyToClipboard(text, btnElement) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   Main Application Logic
+   Main Application Logic (WebRTC + Scaledrone)
    ═══════════════════════════════════════════════════════════════════════ */
 document.addEventListener("DOMContentLoaded", () => {
-  if (typeof Peer === 'undefined') {
-    setStatus('خطأ في تحميل المكتبة الأساسية', 'err'); return;
+  if (typeof Scaledrone === 'undefined') {
+    setStatus('خطأ في تحميل خادم الإشارات', 'err'); return;
   }
   bootApp();
 });
@@ -395,7 +395,14 @@ function bootApp() {
   window.crypto.getRandomValues(buf);
   const MY_ID = String(Math.floor(100000 + (buf[0] % 900000)));
 
-  let peer = null, conn = null, pending = null, authed = false;
+  // WebRTC & App State
+  let drone = null;
+  let pc = null;
+  let dc = null; // DataChannel
+  let authed = false;
+  let activeTargetId = null;
+  let pendingOffer = null; // Store incoming offer temporarily
+  
   let fileQueue =[], sending = false, txStart = 0, idleTimer = null, wakeLock = null;
   let dragCnt = 0, rxBuf =[], rxBytes = 0, rxMeta = null;
   let cancelTx = false;
@@ -450,7 +457,7 @@ function bootApp() {
 
   function resetIdle() {
     clearTimeout(idleTimer);
-    if (conn && authed) {
+    if (dc && dc.readyState === 'open' && authed) {
       idleTimer = setTimeout(() => {
         log('انتهت مهلة الخمول (15 دقيقة). تم إنهاء النفق الآمن لحمايتك.', 'sys');
         doDisconnect();
@@ -465,7 +472,6 @@ function bootApp() {
     return parseFloat((n / Math.pow(1024, i)).toFixed(2)) + ' ' + u[i];
   }
 
-  // 100% XSS-Safe Linkifier (DOM Nodes Only)
   function appendSafeText(container, text) {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     let lastIdx = 0, match;
@@ -483,7 +489,6 @@ function bootApp() {
     if (lastIdx < text.length) container.appendChild(document.createTextNode(text.substring(lastIdx)));
   }
 
-  // Strict sanitization for filenames
   function sanitizeFilename(name) {
     let safeName = name.replace(/[^a-zA-Z0-9.\-_ \u0600-\u06FF]/g, '_');
     const ext = safeName.split('.').pop().toLowerCase();
@@ -529,71 +534,215 @@ function bootApp() {
       : `${fmtB(cur)} / ${fmtB(total)}`;
   }
 
-  /* ── Core Transfer Logic ───────────────────────────────────────────── */
+  /* ── WebRTC & Scaledrone Setup ─────────────────────────────────────── */
+  const CLIENT_ID = '6YAXNgoGaL9bjRrZ'; // معرف Scaledrone
+  const webrtcConfig = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' }
+    ]
+  };
+
+  function initScaledrone() {
+    drone = new Scaledrone(CLIENT_ID);
+    drone.on('open', error => {
+      if (error) { setStatus('فشل الاتصال بالخادم', 'err'); return; }
+      setStatus('متصل بالشبكة الآمنة', 'ok');
+      
+      // الانضمام إلى الغرفة الخاصة بهذا الجهاز لاستقبال الإشارات
+      const roomName = 'observable-' + MY_ID;
+      const room = drone.subscribe(roomName);
+      
+      room.on('data', (message, member) => {
+        // تجاهل الرسائل الصادرة من نفس الجهاز
+        if (member.id === drone.clientId) return;
+        handleSignalingData(message);
+      });
+
+      // التحقق من وجود رابط دعوة
+      const p = new URLSearchParams(location.search).get('pair');
+      if (p && /^\d{6}$/.test(p) && p !== MY_ID) { UI.tid.value = p; handleConnect(); }
+    });
+
+    drone.on('error', err => setStatus('خطأ في الشبكة', 'err'));
+    drone.on('close', () => setStatus('انقطع الاتصال', 'err'));
+  }
+
+  function sendSignal(targetId, message) {
+    if (!drone) return;
+    drone.publish({
+      room: 'observable-' + targetId,
+      message: message
+    });
+  }
+
+  function handleSignalingData(msg) {
+    if (!msg || !msg.type || !msg.from) return;
+
+    if (msg.type === 'offer') {
+      if (pc || authed) {
+        // رفض الاتصال إذا كان الجهاز مشغولاً
+        sendSignal(msg.from, { type: 'decline', from: MY_ID });
+        return;
+      }
+      pendingOffer = msg;
+      $id('reqId').textContent = msg.from;
+      openModal('authModal');
+      if(navigator.vibrate) navigator.vibrate([60,100,60]);
+    } 
+    else if (msg.type === 'answer' && pc) {
+      pc.setRemoteDescription(new RTCSessionDescription(msg.sdp)).catch(e => console.error(e));
+    } 
+    else if (msg.type === 'candidate' && pc) {
+      pc.addIceCandidate(new RTCIceCandidate(msg.candidate)).catch(e => console.error(e));
+    }
+    else if (msg.type === 'decline') {
+      showToast('تم رفض طلبك أو الجهاز مشغول.', true);
+      doDisconnect();
+    }
+  }
+
+  function createPeerConnection(targetId, isCaller) {
+    pc = new RTCPeerConnection(webrtcConfig);
+    activeTargetId = targetId;
+
+    pc.onicecandidate = event => {
+      if (event.candidate) {
+        sendSignal(targetId, { type: 'candidate', candidate: event.candidate, from: MY_ID });
+      }
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      if (pc && (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'closed')) {
+        showToast('تم إنهاء الاتصال', true);
+        doDisconnect();
+      }
+    };
+
+    if (isCaller) {
+      dc = pc.createDataChannel('mersal-channel');
+      setupDataChannel();
+      
+      pc.createOffer().then(offer => {
+        return pc.setLocalDescription(offer);
+      }).then(() => {
+        sendSignal(targetId, { type: 'offer', sdp: pc.localDescription, from: MY_ID });
+      }).catch(e => {
+        UI.cErr.textContent = 'فشل إنشاء الاتصال.'; UI.cErr.style.display='block'; doDisconnect();
+      });
+    } else {
+      pc.ondatachannel = event => {
+        dc = event.channel;
+        setupDataChannel();
+      };
+    }
+  }
+
+  function setupDataChannel() {
+    dc.binaryType = 'arraybuffer'; // ضروري لنقل الملفات
+
+    dc.onopen = () => {
+      authed = true;
+      closeModal('authModal');
+      UI.cArea.style.display = 'none'; 
+      UI.tArea.classList.add('on');
+      UI.connTo.textContent = activeTargetId;
+      if(navigator.vibrate) navigator.vibrate([50,50,50]);
+      log('✅ تم تأمين النفق (E2EE) بنجاح.', 'sys');
+      resetIdle(); reqWL();
+    };
+
+    dc.onclose = () => {
+      doDisconnect();
+    };
+
+    dc.onmessage = event => {
+      if (!authed) return;
+      resetIdle();
+      
+      // إذا كانت البيانات من نوع ArrayBuffer فهي جزء من ملف
+      if (event.data instanceof ArrayBuffer) {
+        handleIncomingData({ type: 'file-chunk', data: event.data });
+        return;
+      }
+      
+      // عدا ذلك فهي نص أو بيانات وصفية (JSON)
+      try {
+        const d = JSON.parse(event.data);
+        handleIncomingData(d);
+      } catch (e) { console.error("Invalid data received"); }
+    };
+  }
+
+  function sendViaDC(data) {
+    if (!dc || dc.readyState !== 'open') return;
+    if (data.data instanceof ArrayBuffer && data.type === 'file-chunk') {
+      dc.send(data.data); // إرسال الباينري مباشرة
+    } else {
+      dc.send(JSON.stringify(data)); // إرسال JSON
+    }
+  }
+
   function resetUI() {
     clearTimeout(idleTimer);
-    conn = null; pending = null; authed = false;
+    if (dc) { dc.close(); dc = null; }
+    if (pc) { pc.close(); pc = null; }
+    pendingOffer = null; authed = false; activeTargetId = null;
     fileQueue = []; sending = false; cancelTx = false; rxBuf =[]; rxBytes = 0; rxMeta = null;
+    
     closeModal('authModal');
     UI.cArea.style.display = ''; UI.tArea.classList.remove('on');
-    UI.tid.value = ''; UI.cBtn.textContent = 'اقتران آمن'; UI.cBtn.disabled = false;
+    UI.tid.value = ''; UI.cBtn.innerHTML = 'اقتران آمن'; UI.cBtn.disabled = false;
     UI.cErr.style.display = 'none'; UI.pCont.style.display = 'none'; relWL();
     history.replaceState({}, '', location.pathname);
   }
 
-  function bindConn(c) {
-    c.on('data', d => {
-      if (!authed || !d || typeof d !== 'object') return;
-      resetIdle();
-      switch (d.type) {
-        case 'text':
-          if(navigator.vibrate) navigator.vibrate(100);
-          log(d.content, 'in', d.content); 
-          break;
-        case 'file-ack':
-          log('✅ تم استلام الملف وحفظه لدى الطرف الآخر بنجاح.', 'sys'); 
-          break;
-        case 'file-cancel':
-          log('⚠️ تم إلغاء نقل الملف من قبل الطرف الآخر.', 'sys');
-          UI.pCont.style.display = 'none'; rxMeta = null; rxBuf =[]; relWL();
-          break;
-        case 'file-start':
-          reqWL(); rxMeta = d; rxBuf =[]; rxBytes = 0; txStart = Date.now();
-          UI.pCont.style.display = 'block'; UI.pFile.textContent = 'استلام: ' + sanitizeFilename(d.name);
-          UI.cancelTxBtn.style.display = 'none'; // Receiver can't cancel mid-chunk easily in this simple flow, hide button.
-          updProg(0, d.size);
-          break;
-        case 'file-chunk':
-          if (!rxMeta) break;
-          rxBuf.push(d.data); rxBytes += d.data.byteLength;
-          updProg(rxBytes, rxMeta.size); 
-          break;
-        case 'file-end':
-          if (!rxMeta) break;
-          UI.pCont.style.display = 'none';
-          const meta = rxMeta; const buf = rxBuf;
-          rxMeta = null; rxBuf =[]; rxBytes = 0;
-          
-          log('⏳ جاري فك التشفير وتجهيز الملف...', 'sys');
-          setTimeout(() => {
-            const safeName = sanitizeFilename(meta.name);
-            let mime = meta.filetype || 'application/octet-stream';
-            if (safeName.endsWith('.txt') && !meta.name.endsWith('.txt')) mime = 'text/plain'; // Adjusted mime if sanitized
-            saveToDisk(new Blob(buf, {type: mime}), safeName);
-            relWL();
-          }, 50);
-          break;
-      }
-    });
+  function doDisconnect() {
+    resetUI();
+  }
+  $id('discBtn').onclick = doDisconnect;
 
-    c.on('close', () => {
-      if (c === conn) { showToast('تم إنهاء الاتصال من الطرف الآخر', true); resetUI(); }
-      if (c === pending) { closeModal('authModal'); pending = null; }
-    });
-    c.on('error', e => {
-      log('حدث خطأ في القناة: ' + e.message, 'sys');
-      if (c === conn) resetUI();
-    });
+  /* ── Incoming Data Handling ────────────────────────────────────────── */
+  function handleIncomingData(d) {
+    switch (d.type) {
+      case 'text':
+        if(navigator.vibrate) navigator.vibrate(100);
+        log(d.content, 'in', d.content); 
+        break;
+      case 'file-ack':
+        log('✅ تم استلام الملف وحفظه لدى الطرف الآخر بنجاح.', 'sys'); 
+        break;
+      case 'file-cancel':
+        log('⚠️ تم إلغاء نقل الملف من قبل الطرف الآخر.', 'sys');
+        UI.pCont.style.display = 'none'; rxMeta = null; rxBuf =[]; relWL();
+        break;
+      case 'file-start':
+        reqWL(); rxMeta = d; rxBuf =[]; rxBytes = 0; txStart = Date.now();
+        UI.pCont.style.display = 'block'; UI.pFile.textContent = 'استلام: ' + sanitizeFilename(d.name);
+        UI.cancelTxBtn.style.display = 'none';
+        updProg(0, d.size);
+        break;
+      case 'file-chunk':
+        if (!rxMeta) break;
+        rxBuf.push(d.data); rxBytes += d.data.byteLength;
+        updProg(rxBytes, rxMeta.size); 
+        break;
+      case 'file-end':
+        if (!rxMeta) break;
+        UI.pCont.style.display = 'none';
+        const meta = rxMeta; const buf = rxBuf;
+        rxMeta = null; rxBuf =[]; rxBytes = 0;
+        
+        log('⏳ جاري فك التشفير وتجهيز الملف...', 'sys');
+        setTimeout(() => {
+          const safeName = sanitizeFilename(meta.name);
+          let mime = meta.filetype || 'application/octet-stream';
+          if (safeName.endsWith('.txt') && !meta.name.endsWith('.txt')) mime = 'text/plain';
+          saveToDisk(new Blob(buf, {type: mime}), safeName);
+          relWL();
+        }, 50);
+        break;
+    }
   }
 
   async function saveToDisk(blob, name) {
@@ -605,7 +754,7 @@ function bootApp() {
         await w.write(blob); await w.close();
         URL.revokeObjectURL(url);
         log('💾 تم حفظ الملف في جهازك.', 'sys');
-        if (conn && conn.open) conn.send({ type:'file-ack', name:name });
+        sendViaDC({ type:'file-ack', name:name });
         return;
       } catch(e) { if (e.name === 'AbortError') { URL.revokeObjectURL(url); return; } }
     }
@@ -616,7 +765,6 @@ function bootApp() {
     a.href = url; a.download = name;
     a.style.cssText = 'background:var(--accent); color:#fff; padding:12px 20px; border-radius:16px; font-weight:700; font-size:14px; display:flex; align-items:center; gap:12px; text-decoration:none; box-shadow:0 6px 20px rgba(108,99,255,0.2); max-width:85%';
     
-    // XSS Safe DOM creation
     const iconDiv = document.createElement('div');
     iconDiv.style.cssText = 'background:rgba(255,255,255,0.2); padding:8px; border-radius:10px; flex-shrink:0';
     iconDiv.innerHTML = `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>`;
@@ -649,14 +797,14 @@ function bootApp() {
     wrap.appendChild(a); UI.logs.appendChild(wrap);
     setTimeout(() => UI.logs.scrollTop = UI.logs.scrollHeight, 50);
     log('✅ اكتمل النقل وفك التشفير. اضغط على الزر أعلاه للحفظ.', 'sys');
-    if (conn && conn.open) conn.send({ type:'file-ack', name:name });
+    sendViaDC({ type:'file-ack', name:name });
   }
 
   /* ── Sending Logic ─────────────────────────────────────────────────── */
   function sendText() {
     const t = UI.txInp.value.trim();
-    if (!t || !conn || !conn.open || !authed) return;
-    conn.send({ type:'text', content:t });
+    if (!t || !dc || dc.readyState !== 'open' || !authed) return;
+    sendViaDC({ type:'text', content:t });
     log(t, 'out'); UI.txInp.value = ''; UI.txInp.focus(); resetIdle();
   }
   $id('sendBtn').onclick = sendText;
@@ -671,7 +819,7 @@ function bootApp() {
   UI.cancelTxBtn.onclick = () => { cancelTx = true; };
 
   async function processQ() {
-    if (!fileQueue.length || !conn || !conn.open || !authed) { sending=false; relWL(); return; }
+    if (!fileQueue.length || !dc || dc.readyState !== 'open' || !authed) { sending=false; relWL(); return; }
     sending = true; cancelTx = false; reqWL(); resetIdle();
     const file = fileQueue.shift();
     
@@ -687,32 +835,32 @@ function bootApp() {
     UI.cancelTxBtn.style.display = 'inline-flex';
     updProg(0, file.size);
     
-    conn.send({ type:'file-start', name:name, size:file.size, filetype:file.type||'application/octet-stream' });
+    sendViaDC({ type:'file-start', name:name, size:file.size, filetype:file.type||'application/octet-stream' });
 
     if (file.size > 0) {
       let off = 0;
       while (off < file.size) {
-        if (!sending || !conn || !conn.open || !conn.dataChannel || conn.dataChannel.readyState !== 'open' || cancelTx) break;
+        if (!sending || !dc || dc.readyState !== 'open' || cancelTx) break;
         resetIdle(); 
         
-        while (conn.dataChannel && conn.dataChannel.bufferedAmount > BUF_HI) {
+        while (dc && dc.bufferedAmount > BUF_HI) {
           await new Promise(r => setTimeout(r, 20)); 
-          if (!sending || !conn || !conn.open || conn.dataChannel.readyState !== 'open' || cancelTx) break;
+          if (!sending || !dc || dc.readyState !== 'open' || cancelTx) break;
         }
-        if (!sending || !conn || !conn.open || conn.dataChannel.readyState !== 'open' || cancelTx) break;
+        if (!sending || !dc || dc.readyState !== 'open' || cancelTx) break;
         
         const slice = file.slice(off, off + CHUNK);
         const ab = await slice.arrayBuffer();
-        conn.send({ type:'file-chunk', data:ab });
+        sendViaDC({ type:'file-chunk', data:ab });
         off += ab.byteLength; updProg(off, file.size);
       }
     }
 
     if (cancelTx) {
-      if (conn && conn.open) conn.send({ type:'file-cancel' });
+      if (dc && dc.readyState === 'open') sendViaDC({ type:'file-cancel' });
       log(`⚠️ تم إلغاء إرسال (${name}).`, 'sys');
-    } else if (conn && conn.open && conn.dataChannel && conn.dataChannel.readyState === 'open') {
-      conn.send({ type:'file-end' });
+    } else if (dc && dc.readyState === 'open') {
+      sendViaDC({ type:'file-end' });
       log(`🚀 تم التشفير والإرسال (${name}) بنجاح. بانتظار حفظ الطرف الآخر.`, 'sys');
     } else {
       log('❌ فشل الإرسال بسبب انقطاع الاتصال.', 'sys');
@@ -723,38 +871,42 @@ function bootApp() {
   }
 
   /* ── Drag & Drop ───────────────────────────────────────────────────── */
-  document.ondragenter = e => { if(!conn||!authed) return; e.preventDefault(); dragCnt++; UI.drop.style.display='flex'; };
-  document.ondragleave = e => { if(!conn||!authed) return; e.preventDefault(); if(--dragCnt===0) UI.drop.style.display='none'; };
+  document.ondragenter = e => { if(!dc||!authed) return; e.preventDefault(); dragCnt++; UI.drop.style.display='flex'; };
+  document.ondragleave = e => { if(!dc||!authed) return; e.preventDefault(); if(--dragCnt===0) UI.drop.style.display='none'; };
   document.ondragover = e => e.preventDefault();
   document.ondrop = e => {
     e.preventDefault(); dragCnt=0; UI.drop.style.display='none';
-    if (!conn||!authed) return;
+    if (!dc||!authed) return;
     Array.from(e.dataTransfer.files).forEach(f => fileQueue.push(f));
     if (!sending) processQ();
   };
 
-  /* ── Connection Setup ──────────────────────────────────────────────── */
-  function doDisconnect() { if (conn) { try { conn.close(); } catch(e){} } resetUI(); }
-  $id('discBtn').onclick = doDisconnect;
-
+  /* ── UI Actions ────────────────────────────────────────────────────── */
   $id('acceptBtn').onclick = () => {
-    if (!pending) return;
-    const c = pending; pending = null;
-    closeModal('authModal');
-    authed = true; conn = c;
-    try { c.send({ type:'auth-accept' }); } catch(e){}
-    bindConn(c);
+    if (!pendingOffer) return;
+    const offer = pendingOffer;
     
-    UI.cArea.style.display = 'none'; UI.tArea.classList.add('on');
-    UI.connTo.textContent = c.peer;
-    if(navigator.vibrate) navigator.vibrate([50,50,50]);
-    log('✅ تم تأمين النفق (E2EE) بنجاح.', 'sys');
-    resetIdle(); reqWL();
+    createPeerConnection(offer.from, false);
+    
+    pc.setRemoteDescription(new RTCSessionDescription(offer.sdp))
+      .then(() => pc.createAnswer())
+      .then(answer => pc.setLocalDescription(answer))
+      .then(() => {
+        sendSignal(offer.from, { type: 'answer', sdp: pc.localDescription, from: MY_ID });
+      })
+      .catch(e => {
+        console.error(e); doDisconnect();
+      });
+      
+    pendingOffer = null;
+    UI.cBtn.innerHTML = 'اقتران آمن'; UI.cBtn.disabled = false;
   };
 
   $id('declineBtn').onclick = () => {
-    if (pending) { try { pending.send({ type:'auth-decline' }); pending.close(); } catch(e){} }
-    pending = null; closeModal('authModal');
+    if (pendingOffer) {
+      sendSignal(pendingOffer.from, { type: 'decline', from: MY_ID });
+    }
+    pendingOffer = null; closeModal('authModal');
   };
 
   window.handleConnect = () => {
@@ -763,74 +915,27 @@ function bootApp() {
 
     if (!/^\d{6}$/.test(tid)) { UI.cErr.textContent='أدخل رمزاً صحيحاً من 6 أرقام.'; UI.cErr.style.display='block'; return; }
     if (tid === MY_ID) { UI.cErr.textContent='لا يمكنك الاتصال بنفس جهازك.'; UI.cErr.style.display='block'; return; }
-    if (!peer || peer.destroyed || peer.disconnected) { UI.cErr.textContent='جاري الاتصال بالخادم، انتظر ثوانٍ...'; UI.cErr.style.display='block'; return; }
+    if (!drone) { UI.cErr.textContent='جاري الاتصال بالخادم، انتظر ثوانٍ...'; UI.cErr.style.display='block'; return; }
 
     UI.cBtn.innerHTML = '<svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 2a10 10 0 0110 10" stroke-linecap="round"/></svg>';
     UI.cBtn.disabled = true;
 
-    const c = peer.connect(tid, { reliable:true, serialization:'binary' });
-    let connTimer = setTimeout(() => {
-      if (!authed) { UI.cErr.textContent='لم يرد الطرف الآخر.'; UI.cErr.style.display='block'; try{c.close();}catch(e){} resetUI(); }
-    }, 30000);
-
-    const onAuthData = d => {
-      if (!d || typeof d !== 'object') return;
-      if (d.type === 'auth-accept') {
-        clearTimeout(connTimer); c.off('data', onAuthData);
-        authed = true; conn = c; bindConn(c);
-        UI.cArea.style.display = 'none'; UI.tArea.classList.add('on');
-        UI.connTo.textContent = c.peer;
-        if(navigator.vibrate) navigator.vibrate([50,50,50]);
-        log('✅ تم تأمين النفق (E2EE) بنجاح.', 'sys');
-        resetIdle(); reqWL();
-      } else if (d.type === 'auth-decline') {
-        clearTimeout(connTimer); c.off('data', onAuthData);
-        showToast('تم رفض طلبك.', true); try{c.close();}catch(e){} resetUI();
+    // بدء الاتصال كـ Caller
+    createPeerConnection(tid, true);
+    
+    // مهلة للاتصال
+    setTimeout(() => {
+      if (!authed && pc) {
+        UI.cErr.textContent='لم يرد الطرف الآخر أو الجهاز غير متاح.'; UI.cErr.style.display='block'; 
+        doDisconnect();
       }
-    };
-    c.on('data', onAuthData);
-    c.on('error', err => { clearTimeout(connTimer); UI.cErr.textContent='فشل الاتصال: '+err.message; UI.cErr.style.display='block'; resetUI(); });
-    c.on('close', () => { if(!conn) resetUI(); });
+    }, 30000);
   };
+  
   UI.tid.onkeypress = e => { if(e.key === 'Enter') handleConnect(); };
 
-  /* ── Initialize PeerJS ─────────────────────────────────────────────── */
-  try {
-    peer = new Peer(MY_ID, {
-      host: '0.peerjs.com', port: 443, path: '/', secure: true, debug: 0,
-      config: { iceServers:[ {urls:'stun:stun.l.google.com:19302'}, {urls:'stun:stun1.l.google.com:19302'} ] }
-    });
-  } catch(e) { setStatus('فشل الإعداد', 'err'); return; }
-
-  peer.on('open', () => {
-    setStatus('متصل بالشبكة الآمنة', 'ok');
-    const p = new URLSearchParams(location.search).get('pair');
-    if (p && /^\d{6}$/.test(p) && p !== MY_ID) { UI.tid.value = p; handleConnect(); }
-  });
-
-  peer.on('connection', c => {
-    if (conn || pending) { try { c.send({type:'auth-decline'}); c.close(); } catch(e){} return; }
-    pending = c;
-    c.on('open', () => { $id('reqId').textContent = c.peer; openModal('authModal'); if(navigator.vibrate) navigator.vibrate([60,100,60]); });
-    c.on('close', () => { if(pending===c){ closeModal('authModal'); pending=null; } });
-    c.on('error', () => { if(pending===c){ closeModal('authModal'); pending=null; } });
-  });
-
-  peer.on('disconnected', () => {
-    if (peer.destroyed) return;
-    setStatus('جاري استعادة الاتصال...', '');
-    setTimeout(() => { if (peer && !peer.destroyed && peer.disconnected) peer.reconnect(); }, 3000);
-  });
-
-  peer.on('error', err => {
-    if (err.type === 'peer-unavailable') {
-      UI.cErr.textContent='الجهاز غير متاح. تأكد من الرمز.'; UI.cErr.style.display='block'; resetUI();
-    } else if (err.type === 'unavailable-id') {
-      location.reload();
-    } else {
-      setStatus('تأكد من اتصالك بالإنترنت', 'err');
-    }
-  });
+  // بدء تشغيل Scaledrone
+  initScaledrone();
 }
 </script>
 </body>
