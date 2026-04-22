@@ -6,9 +6,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0a0f">
+<meta name="description" content="مِرسال - نقل ملفات آمن ومباشر بين الأجهزة بتشفير كامل (E2EE) دون خوادم وسيطة.">
 <title>مِرسال — نقل آمن ومباشر</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -20,18 +22,18 @@
   --red:#ef4444;--rdim:rgba(239,68,68,0.15);
   --amber:#f59e0b;
   --st:max(1.5rem,env(safe-area-inset-top));
-  --sb:max(1.5rem,env(safe-area-inset-bottom));
+  --sb:max(1.5rem,env(safe-area-inset-bottom))
 }
 html{height:100%;overscroll-behavior-y:none}
 body{
   min-height:100dvh;background:var(--bg0);color:var(--t0);
   font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;font-size:15px;line-height:1.6;
   overflow-x:hidden;padding-top:var(--st);padding-bottom:var(--sb);
-  padding-inline:1rem;display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  padding-inline:1rem;display:flex;flex-direction:column;align-items:center;gap:1.5rem
 }
 body::before{
   content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-  background-image:radial-gradient(circle,rgba(108,99,255,0.04) 1px,transparent 1px);background-size:32px 32px;
+  background-image:radial-gradient(circle,rgba(108,99,255,0.04) 1px,transparent 1px);background-size:32px 32px
 }
 .grid{width:100%;max-width:960px;display:grid;grid-template-columns:300px 1fr;gap:1.2rem;z-index:1;flex:1;align-items:start}
 @media(max-width:768px){.grid{grid-template-columns:1fr}}
@@ -55,7 +57,7 @@ input::placeholder{color:var(--t2);font-size:14px}
 .dot.ok{background:var(--green);box-shadow:0 0 10px rgba(34,197,94,0.4);animation:none}
 .dot.err{background:var(--red);box-shadow:0 0 10px rgba(239,68,68,0.4);animation:none}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
-.qr-wrapper{background:#fff;padding:14px;border-radius:20px;display:flex;align-items:center;justify-content:center;width:170px;height:170px;margin:0 auto;box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+.qr-wrapper{background:#ffffff;padding:14px;border-radius:20px;display:flex;align-items:center;justify-content:center;width:170px;height:170px;margin:0 auto;box-shadow:0 4px 20px rgba(0,0,0,0.3)}
 #qrcode{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
 #qrcode img,#qrcode canvas{width:100%!important;height:100%!important;object-fit:contain;border-radius:6px;display:block}
 .modal{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:1rem;opacity:0;transition:opacity 0.25s ease}
@@ -99,7 +101,7 @@ header,footer{width:100%;max-width:960px;z-index:1}
       <svg width="26" height="26" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
     </div>
     <h2 id="pmT" style="font-size:22px;font-weight:800;color:var(--t0);margin-bottom:0.5rem">الشفافية والأمان</h2>
-    <p style="font-size:14px;color:var(--t1);margin-bottom:1.5rem;line-height:1.7">مِرسال مصمم ليكون أداة نقل <strong style="color:var(--t0)">من جهاز إلى جهاز (P2P)</strong>. الخادم يُستخدم فقط لتبادل إشارات الاتصال الأولية، ولا يلمس ملفاتك أبداً.</p>
+    <p style="font-size:14px;color:var(--t1);margin-bottom:1.5rem;line-height:1.7">مِرسال مصمم ليكون أداة نقل <strong style="color:var(--t0)">من جهاز إلى جهاز (P2P)</strong>. Scaledrone يُستخدم <u>فقط</u> لتبادل إشارات WebRTC الأولية، وملفاتك تنتقل مباشرةً بين الجهازين.</p>
     <ul style="list-style:none;display:flex;flex-direction:column;gap:14px;margin-bottom:2rem">
       <li style="display:flex;gap:12px;align-items:flex-start">
         <div style="background:var(--adim);border-radius:10px;padding:8px;flex-shrink:0;margin-top:2px"><svg width="14" height="14" fill="var(--accent)" viewBox="0 0 24 24"><path d="M4.5 3.75a3 3 0 00-3 3v.75h21v-.75a3 3 0 00-3-3h-15zM1.5 10.5v6a3 3 0 003 3h15a3 3 0 003-3v-6h-21z"/></svg></div>
@@ -107,7 +109,7 @@ header,footer{width:100%;max-width:960px;z-index:1}
       </li>
       <li style="display:flex;gap:12px;align-items:flex-start">
         <div style="background:var(--adim);border-radius:10px;padding:8px;flex-shrink:0;margin-top:2px"><svg width="14" height="14" fill="var(--accent)" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg></div>
-        <p style="font-size:13px;color:var(--t1);line-height:1.6"><strong style="color:var(--t0);display:block;font-size:14px;margin-bottom:2px">تشفير E2EE عبر WebRTC</strong>البيانات مشفرة بروتوكولياً (DTLS/SRTP). لا يمكن لأي طرف ثالث قراءة المحتوى.</p>
+        <p style="font-size:13px;color:var(--t1);line-height:1.6"><strong style="color:var(--t0);display:block;font-size:14px;margin-bottom:2px">تشفير عسكري (E2EE)</strong>البيانات مشفرة بروتوكولياً عبر WebRTC (DTLS/SRTP). لا يمكن لأي طرف ثالث قراءة المحتوى.</p>
       </li>
     </ul>
     <button onclick="closeModal('privacyModal')" class="btn btn-p" style="width:100%;padding:14px;font-size:15px">فهمت ذلك، شكراً</button>
@@ -147,7 +149,7 @@ header,footer{width:100%;max-width:960px;z-index:1}
 </header>
 
 <main class="grid">
-  <!-- Left Column -->
+  <!-- Left Column: Identity Card -->
   <div class="card" style="padding:1.6rem;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1.4rem">
     <div style="width:100%">
       <p style="font-size:12px;font-weight:700;color:var(--t2);letter-spacing:0.1em;margin-bottom:10px;text-transform:uppercase">رمز جهازك المؤقت</p>
@@ -201,12 +203,12 @@ header,footer{width:100%;max-width:960px;z-index:1}
     <div class="card" id="transferArea" style="border-top:3px solid var(--accent)">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:1.2rem 1.6rem;border-bottom:1px solid var(--b0);background:var(--bg1)">
         <div style="display:flex;align-items:center;gap:12px;min-width:0">
-          <div style="width:44px;height:44px;border-radius:14px;background:var(--gdim);border:1px solid rgba(34,197,94,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <div style="width:44px;height:44px;border-radius:14px;background:var(--gdim);border:1px solid rgba(34,197,94,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative">
             <svg width="22" height="22" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
           </div>
           <div style="min-width:0">
             <p style="font-size:11px;color:var(--t1);font-weight:700;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">
-              <span style="display:inline-block;width:6px;height:6px;background:var(--green);border-radius:50%"></span> نفق مشفر نشط
+              <span style="display:inline-block;width:6px;height:6px;background:var(--green);border-radius:50%"></span> نفق مشفر
             </p>
             <p id="connTo" class="text-ellipsis" style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:800;color:var(--t0)">---</p>
           </div>
@@ -214,7 +216,7 @@ header,footer{width:100%;max-width:960px;z-index:1}
         <button id="discBtn" class="btn btn-d">إنهاء الاتصال</button>
       </div>
 
-      <div id="logs" style="flex:1;overflow-y:auto;padding:1.5rem;display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth;min-height:200px;max-height:400px">
+      <div id="logs" style="flex:1;overflow-y:auto;padding:1.5rem;display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth;min-height:300px;max-height:420px">
         <div id="logPH" style="margin:auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;opacity:0.6">
           <svg width="40" height="40" fill="none" stroke="var(--t2)" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
           <span style="font-size:14px;font-weight:600;color:var(--t1)">النفق الآمن جاهز. ابدأ الإرسال.</span>
@@ -222,7 +224,7 @@ header,footer{width:100%;max-width:960px;z-index:1}
       </div>
 
       <div id="progCont" style="display:none;padding:1rem 1.6rem;border-top:1px solid var(--b0);background:var(--bg1)">
-        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:16px;padding:16px">
+        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:16px;padding:16px;box-shadow:0 4px 15px rgba(0,0,0,0.2)">
           <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px">
             <div style="overflow:hidden;flex:1;padding-left:12px">
               <p style="font-size:11px;color:var(--accent2);font-weight:700;letter-spacing:0.05em;margin-bottom:4px">جارٍ النقل...</p>
@@ -241,7 +243,7 @@ header,footer{width:100%;max-width:960px;z-index:1}
       <div style="padding:1.2rem 1.6rem;border-top:1px solid var(--b0);background:var(--bg2);display:flex;flex-direction:column;gap:12px">
         <div style="display:flex;gap:10px;align-items:center">
           <input type="text" id="textInput" placeholder="اكتب رسالة أو الصق رابطاً..." style="flex:1;border-radius:16px;padding:16px">
-          <button onclick="document.getElementById('fileInput').click()" title="إرسال ملف" style="background:var(--bg3);border:1px solid var(--b1);color:var(--t0);width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all 0.2s" onmouseenter="this.style.background='var(--bg4)';this.style.borderColor='var(--accent)'" onmouseleave="this.style.background='var(--bg3)';this.style.borderColor='var(--b1)'">
+          <button onclick="document.getElementById('fileInput').click()" title="إرسال ملف" style="background:var(--bg3);border:1px solid var(--b1);color:var(--t0);width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all 0.2s" onmouseenter="this.style.background='var(--bg4)';this.style.borderColor='var(--accent)'" onmouseleave="this.style.background='var(--bg3)';this.style.borderColor='var(--b1)'" onmousedown="this.style.transform='scale(0.92)'" onmouseup="this.style.transform='scale(1)'">
             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
           </button>
           <input type="file" id="fileInput" multiple style="display:none">
@@ -253,703 +255,653 @@ header,footer{width:100%;max-width:960px;z-index:1}
       </div>
 
       <div id="dropZone">
-        <div style="width:80px;height:80px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center">
+        <div style="width:80px;height:80px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(255,255,255,0.1)">
           <svg width="36" height="36" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
         </div>
-        <p style="font-size:24px;font-weight:800;color:#fff;margin:0">أفلِت الملفات هنا</p>
-        <p style="font-size:15px;color:rgba(255,255,255,0.8);margin:0;font-weight:500">ستُشفَّر فوراً قبل النقل</p>
+        <p style="font-size:24px;font-weight:800;color:#fff;margin:0">أفلِت الملفات هنا للإرسال</p>
+        <p style="font-size:15px;color:rgba(255,255,255,0.8);margin:0;font-weight:500">سيتم تشفيرها فوراً قبل النقل</p>
       </div>
     </div>
   </div>
 </main>
 
 <footer style="text-align:center;padding-top:1rem">
-  <div style="display:inline-flex;align-items:center;gap:10px;padding:8px 20px;background:var(--bg2);border:1px solid var(--b0);border-radius:100px">
+  <div style="display:inline-flex;align-items:center;gap:10px;padding:8px 20px;background:var(--bg2);border:1px solid var(--b0);border-radius:100px;box-shadow:0 4px 15px rgba(0,0,0,0.1)">
     <span style="font-size:12px;font-weight:700;color:var(--t2);letter-spacing:0.05em">صُنِعَ بِفَخْرٍ فِي السُّعُودِيَّةِ</span>
     <span style="font-size:16px">🇸🇦</span>
   </div>
 </footer>
 
-<!-- PeerJS from CDN -->
-<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<!-- QRCode from CDN -->
+<!-- Scaledrone SDK -->
+<script src="https://cdn.scaledrone.com/scaledrone.min.js"></script>
+<!-- QRCode -->
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
 <script>
-/* ── UI Helpers ───────────────────────────────────────────────────── */
-let _toastTimer;
-function showToast(msg, isErr = false) {
-  const t = document.getElementById('toast');
-  document.getElementById('tMsg').textContent = msg;
-  const ti = document.getElementById('tIcon');
-  ti.textContent = isErr ? '✕' : '✓';
-  ti.style.color = isErr ? 'var(--red)' : 'var(--green)';
-  t.style.borderColor = isErr ? 'rgba(239,68,68,0.4)' : 'var(--b1)';
-  t.classList.add('show');
-  if (navigator.vibrate) navigator.vibrate(isErr ? [50,50,50] : 50);
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
-}
+/* ═══════════════════════════════════════════════════════════════════
+   مِرسال — Scaledrone Signaling + Native WebRTC
+   ═══════════════════════════════════════════════════════════════════
+   Flow:
+   1. Both peers open a Scaledrone "observable" room named after their MY_ID.
+   2. Initiator sends {type:'offer', sdp, from:MY_ID} to target room.
+   3. Target receives offer → shows auth modal.
+   4. On accept: target sends answer back to initiator's room.
+   5. ICE candidates are exchanged via Scaledrone rooms too.
+   6. Once RTCPeerConnection + DataChannel is established,
+      Scaledrone is no longer used for file/text transfer.
+   ═══════════════════════════════════════════════════════════════════ */
 
-function openModal(id) {
-  const m = document.getElementById(id);
-  m.classList.add('open');
-  requestAnimationFrame(() => requestAnimationFrame(() => m.classList.add('vis')));
-}
-function closeModal(id) {
-  const m = document.getElementById(id);
-  m.classList.remove('vis');
-  setTimeout(() => m.classList.remove('open'), 250);
-}
-function setStatus(txt, state) {
-  const d = document.getElementById('sDot');
-  const s = document.getElementById('sTxt');
-  if (s) s.textContent = txt;
-  if (d) d.className = 'dot' + (state === 'ok' ? ' ok' : state === 'err' ? ' err' : '');
-}
+  /* ── Constants ──────────────────────────────────────────────────── */
+  const SD_CHANNEL  = '6YAXNgoGaL9bjRrZ'; // ← ضع Channel ID الخاص بك هنا
+  const CHUNK_SIZE  = 65536;   // 64 KB per chunk
+  const BUF_HIGH    = 262144;  // 256 KB back-pressure threshold
+  const MAX_MEM     = 500 * 1024 * 1024; // 500 MB
+  const ICE_SERVERS = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' }
+  ];
 
-async function copyToClipboard(text, btnEl) {
-  let ok = false;
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text); ok = true;
-    } else {
-      const ta = document.createElement('textarea');
-      ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
-      document.body.appendChild(ta); ta.focus(); ta.select();
-      ok = document.execCommand('copy'); ta.remove();
-    }
-  } catch(e) { ok = false; }
-  if (ok) {
-    if (btnEl) {
-      const orig = btnEl.innerHTML;
-      btnEl.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>تم النسخ</span>`;
-      btnEl.style.color = 'var(--green)'; btnEl.style.borderColor = 'rgba(34,197,94,0.4)';
-      if (navigator.vibrate) navigator.vibrate(50);
-      setTimeout(() => { btnEl.innerHTML = orig; btnEl.style.color = ''; btnEl.style.borderColor = ''; }, 2000);
-    } else { showToast('تم النسخ بنجاح'); }
-  } else { showToast('فشل النسخ، يرجى النسخ يدوياً', true); }
-}
+  /* ── State ──────────────────────────────────────────────────────── */
+  const buf32 = new Uint32Array(1);
+  window.crypto.getRandomValues(buf32);
+  const MY_ID = String(Math.floor(100000 + (buf32[0] % 900000)));
 
-/* ═══════════════════════════════════════════════════════════
-   Main App
-   ═══════════════════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
-  if (typeof Peer === 'undefined') {
-    setStatus('خطأ في تحميل المكتبة', 'err');
-    return;
-  }
-  bootApp();
-});
-
-function bootApp() {
-  /* Generate a random 6-digit ID */
-  const arr = new Uint32Array(1);
-  window.crypto.getRandomValues(arr);
-  const MY_ID = String(100000 + (arr[0] % 900000));
-
-  let peer = null;
-  let conn = null;       // active authenticated connection
-  let pending = null;    // incoming connection waiting for user approval
-  let authed = false;
+  let drone = null;        // Scaledrone instance
+  let myRoom = null;       // my personal signaling room
+  let pc = null;           // RTCPeerConnection
+  let dc = null;           // RTCDataChannel
+  let isInitiator = false;
+  let remoteId = null;     // peer's 6-digit ID
+  let pendingOffer = null; // stored offer SDP waiting for user accept
 
   let fileQueue = [], sending = false, cancelTx = false;
-  let txStart = 0;
+  let txStart = 0, idleTimer = null, wakeLock = null;
   let rxBuf = [], rxBytes = 0, rxMeta = null;
   let dragCnt = 0;
-  let idleTimer = null, wakeLock = null;
 
-  const CHUNK    = 65536;   // 64 KB per chunk
-  const BUF_HIGH = 262144;  // pause sending when bufferedAmount > 256 KB
-  const MAX_WARN = 500 * 1024 * 1024; // warn above 500 MB
-
+  /* ── DOM shortcuts ──────────────────────────────────────────────── */
   const $ = id => document.getElementById(id);
   const UI = {
-    myId: $('myId'), qr: $('qrcode'), tid: $('targetId'),
-    cBtn: $('connectBtn'), cArea: $('connectArea'), cErr: $('cErr'),
-    tArea: $('transferArea'), connTo: $('connTo'),
-    fInp: $('fileInput'), txInp: $('textInput'),
-    logs: $('logs'), pCont: $('progCont'),
-    pFile: $('progFile'), pStats: $('progStats'),
-    pBar: $('progBar'), pPct: $('progPct'),
-    drop: $('dropZone'), shareB: $('shareBtn'), copyB: $('copyBtn'),
-    cancelTxBtn: $('cancelTxBtn')
+    myId:      $('myId'),
+    qr:        $('qrcode'),
+    tid:       $('targetId'),
+    cBtn:      $('connectBtn'),
+    cArea:     $('connectArea'),
+    cErr:      $('cErr'),
+    tArea:     $('transferArea'),
+    connTo:    $('connTo'),
+    fInp:      $('fileInput'),
+    txInp:     $('textInput'),
+    logs:      $('logs'),
+    pCont:     $('progCont'),
+    pFile:     $('progFile'),
+    pStats:    $('progStats'),
+    pBar:      $('progBar'),
+    pPct:      $('progPct'),
+    drop:      $('dropZone'),
+    shareB:    $('shareBtn'),
+    copyB:     $('copyBtn'),
+    cancelBtn: $('cancelTxBtn'),
+    discBtn:   $('discBtn')
   };
 
+  /* ── Bootstrap ──────────────────────────────────────────────────── */
   UI.myId.textContent = MY_ID;
   if (navigator.share) UI.shareB.style.display = 'inline-flex';
 
-  window.handleCopyId  = () => copyToClipboard(MY_ID, UI.copyB);
-  window.handleShareId = () => {
-    const url = `${location.origin}${location.pathname}?pair=${MY_ID}`;
-    if (navigator.share) {
-      navigator.share({ title:'مِرسال', text:`رمز جهازي: ${MY_ID}`, url }).catch(() => {});
-    } else {
-      copyToClipboard(url, UI.shareB);
-    }
-  };
-
-  /* QR Code */
   if (typeof QRCode !== 'undefined' && UI.qr) {
     try {
       new QRCode(UI.qr, {
         text: `${location.origin}${location.pathname}?pair=${MY_ID}`,
-        width: 142, height: 142,
-        colorDark: '#000000', colorLight: '#ffffff',
+        width:170, height:170, colorDark:'#000000', colorLight:'#ffffff',
         correctLevel: QRCode.CorrectLevel.L
       });
     } catch(e) { UI.qr.parentElement.style.display = 'none'; }
   }
 
-  /* Numeric-only input */
-  UI.tid.addEventListener('input', function() {
-    this.value = this.value.replace(/\D/g, '');
-  });
+  UI.tid.addEventListener('input', function(){ this.value = this.value.replace(/[^0-9]/g,''); });
+  UI.tid.onkeypress = e => { if(e.key === 'Enter') handleConnect(); };
 
-  /* ── Utilities ─────────────────────────────────────────── */
-  async function reqWakeLock() {
-    if ('wakeLock' in navigator && !wakeLock) {
-      try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
+  window.handleCopyId  = () => copyToClipboard(MY_ID, UI.copyB);
+  window.handleShareId = () => {
+    const url = `${location.origin}${location.pathname}?pair=${MY_ID}`;
+    if (navigator.share) {
+      navigator.share({ title:'مِرسال', text:`رمز جهازي: ${MY_ID}`, url }).catch(()=>{});
+    } else { copyToClipboard(url, UI.shareB); }
+  };
+
+  /* ── UI Helpers ─────────────────────────────────────────────────── */
+  let _toastTimer;
+  function showToast(msg, isErr=false){
+    const t=$('toast'), ti=$('tIcon'), tm=$('tMsg');
+    tm.textContent=msg; ti.textContent=isErr?'✕':'✓';
+    ti.style.color=isErr?'var(--red)':'var(--green)';
+    t.style.borderColor=isErr?'rgba(239,68,68,0.4)':'var(--b1)';
+    t.classList.add('show');
+    if(navigator.vibrate) navigator.vibrate(isErr?[50,50,50]:50);
+    clearTimeout(_toastTimer);
+    _toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
+  }
+
+  function openModal(id){ const m=$(id); m.classList.add('open'); requestAnimationFrame(()=>requestAnimationFrame(()=>m.classList.add('vis'))); }
+  function closeModal(id){ const m=$(id); m.classList.remove('vis'); setTimeout(()=>m.classList.remove('open'),250); }
+  window.openModal=openModal; window.closeModal=closeModal;
+
+  function setStatus(txt, state){
+    const d=$('sDot'), s=$('sTxt');
+    if(s) s.textContent=txt;
+    if(d) d.className='dot'+(state==='ok'?' ok':state==='err'?' err':'');
+  }
+
+  function fmtB(n){
+    if(!n) return '0 B';
+    const u=['B','KB','MB','GB'];
+    const i=Math.floor(Math.log(n)/Math.log(1024));
+    return parseFloat((n/Math.pow(1024,i)).toFixed(2))+' '+u[i];
+  }
+
+  function sanitizeFilename(name){
+    let s=name.replace(/[^a-zA-Z0-9.\-_ \u0600-\u06FF]/g,'_');
+    const ext=s.split('.').pop().toLowerCase();
+    const bad=['exe','bat','cmd','sh','js','vbs','html','htm','php','py','ps1','jar','msi','scr','apk'];
+    if(bad.includes(ext)) s+='.txt';
+    return s||'secure_file.bin';
+  }
+
+  function appendSafeText(container, text){
+    const re=/(https?:\/\/[^\s]+)/g; let last=0, m;
+    while((m=re.exec(text))!==null){
+      if(m.index>last) container.appendChild(document.createTextNode(text.substring(last,m.index)));
+      const a=document.createElement('a');
+      a.href=m[0]; a.target='_blank'; a.rel='noopener noreferrer';
+      a.style.cssText='color:var(--accent2);text-decoration:underline;text-underline-offset:3px';
+      a.textContent=m[0]; container.appendChild(a); last=re.lastIndex;
     }
+    if(last<text.length) container.appendChild(document.createTextNode(text.substring(last)));
   }
-  function relWakeLock() {
-    if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
-  }
-  document.addEventListener('visibilitychange', async () => {
-    if (wakeLock && document.visibilityState === 'visible') await reqWakeLock();
-  });
 
-  function resetIdle() {
+  async function copyToClipboard(text, btn){
+    let ok=false;
+    try {
+      if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(text); ok=true; }
+      else {
+        const ta=document.createElement('textarea'); ta.value=text;
+        ta.style.cssText='position:fixed;left:-999999px'; document.body.appendChild(ta);
+        ta.focus(); ta.select(); ok=document.execCommand('copy'); ta.remove();
+      }
+    } catch(e){ ok=false; }
+    if(ok){
+      if(btn){
+        const orig=btn.innerHTML;
+        btn.innerHTML=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>تم النسخ</span>`;
+        btn.style.color='var(--green)'; btn.style.borderColor='rgba(34,197,94,0.4)';
+        if(navigator.vibrate) navigator.vibrate(50);
+        setTimeout(()=>{ btn.innerHTML=orig; btn.style.color=''; btn.style.borderColor=''; },2000);
+      } else showToast('تم النسخ بنجاح');
+    } else showToast('فشل النسخ تلقائياً، يرجى التحديد يدوياً',true);
+  }
+
+  /* ── Wake Lock & Idle ───────────────────────────────────────────── */
+  async function reqWL(){ if('wakeLock' in navigator && !wakeLock) try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(e){} }
+  function relWL(){ if(wakeLock){ wakeLock.release(); wakeLock=null; } }
+  document.addEventListener('visibilitychange', async()=>{ if(wakeLock && document.visibilityState==='visible') await reqWL(); });
+
+  function resetIdle(){
     clearTimeout(idleTimer);
-    if (conn && authed) {
-      idleTimer = setTimeout(() => {
-        log('انتهت مهلة الخمول (15 دقيقة). تم إنهاء النفق.', 'sys');
-        doDisconnect();
-      }, 15 * 60 * 1000);
+    if(dc && dc.readyState==='open'){
+      idleTimer=setTimeout(()=>{ log('انتهت مهلة الخمول (15 دقيقة). تم إنهاء النفق.','sys'); doDisconnect(); }, 15*60*1000);
     }
   }
 
-  function fmtBytes(n) {
-    if (!n) return '0 B';
-    const u = ['B','KB','MB','GB'];
-    const i = Math.floor(Math.log(n) / Math.log(1024));
-    return (n / Math.pow(1024, i)).toFixed(2) + ' ' + u[i];
-  }
-
-  function sanitizeFilename(name) {
-    let safe = name.replace(/[^a-zA-Z0-9.\-_ \u0600-\u06FF]/g, '_');
-    const ext = safe.split('.').pop().toLowerCase();
-    const blocked = ['exe','bat','cmd','sh','js','vbs','html','htm','php','py','ps1','jar','msi','scr','apk'];
-    if (blocked.includes(ext)) safe += '.txt';
-    return safe || 'file.bin';
-  }
-
-  function appendSafeText(container, text) {
-    const urlRe = /(https?:\/\/[^\s]+)/g;
-    let last = 0, m;
-    while ((m = urlRe.exec(text)) !== null) {
-      if (m.index > last) container.appendChild(document.createTextNode(text.slice(last, m.index)));
-      const a = document.createElement('a');
-      a.href = m[0]; a.target = '_blank'; a.rel = 'noopener noreferrer';
-      a.style.cssText = 'color:var(--accent2);text-decoration:underline;text-underline-offset:3px';
-      a.textContent = m[0];
-      container.appendChild(a);
-      last = urlRe.lastIndex;
-    }
-    if (last < text.length) container.appendChild(document.createTextNode(text.slice(last)));
-  }
-
-  /* ── Logging ───────────────────────────────────────────── */
-  function log(msg, type, rawCopy) {
+  /* ── Log & Progress ─────────────────────────────────────────────── */
+  function log(msg, type, raw){
     resetIdle();
-    const ph = $('logPH'); if (ph) ph.remove();
-    const w = document.createElement('div');
-    if (type === 'sys') {
-      w.className = 'sys'; w.textContent = msg;
+    const ph=$('logPH'); if(ph) ph.remove();
+    const w=document.createElement('div');
+    if(type==='sys'){
+      w.className='sys'; w.textContent=msg;
     } else {
-      w.className = `mwrap ${type}`;
-      const b = document.createElement('div');
-      b.className = `bubble ${type}`;
-      appendSafeText(b, msg);
-      w.appendChild(b);
-      if (type === 'in') {
-        const cp = document.createElement('button');
-        cp.style.cssText = 'font-size:11px;font-weight:700;color:var(--t2);background:transparent;border:none;cursor:pointer;padding:2px 6px;margin-top:2px';
-        cp.textContent = 'نسخ';
-        cp.onclick = () => copyToClipboard(rawCopy || msg, cp);
-        w.appendChild(cp);
+      w.className=`mwrap ${type}`;
+      const b=document.createElement('div'); b.className=`bubble ${type}`;
+      appendSafeText(b, msg); w.appendChild(b);
+      if(type==='in'){
+        const cp=document.createElement('button');
+        cp.style.cssText='font-size:11px;font-weight:700;color:var(--t2);background:transparent;border:none;cursor:pointer;padding:2px 6px;margin-top:2px;transition:0.2s';
+        cp.textContent='نسخ'; cp.onclick=()=>copyToClipboard(raw||msg,cp); w.appendChild(cp);
       }
     }
     UI.logs.appendChild(w);
-    setTimeout(() => UI.logs.scrollTop = UI.logs.scrollHeight, 50);
+    setTimeout(()=>UI.logs.scrollTop=UI.logs.scrollHeight,50);
   }
 
-  function updProgress(cur, total) {
-    const pct = Math.min(100, Math.round(cur / (total || 1) * 100));
-    UI.pBar.style.width = pct + '%';
-    UI.pPct.textContent = pct + '%';
-    const elapsed = (Date.now() - txStart) / 1000;
-    UI.pStats.textContent = (elapsed > 0.5 && cur > 0)
-      ? `${fmtBytes(cur)} / ${fmtBytes(total)} — ${fmtBytes(cur / elapsed)}/s`
-      : `${fmtBytes(cur)} / ${fmtBytes(total)}`;
+  function updProg(cur, total){
+    const pct=Math.min(100,Math.round(cur/(total||1)*100));
+    UI.pBar.style.width=pct+'%'; UI.pPct.textContent=pct+'%';
+    const el=(Date.now()-txStart)/1000;
+    UI.pStats.textContent= el>0.5 && cur>0
+      ? `${fmtB(cur)} / ${fmtB(total)} — ${fmtB(cur/el)}/s`
+      : `${fmtB(cur)} / ${fmtB(total)}`;
   }
 
-  /* ── Reset / Disconnect ────────────────────────────────── */
-  function resetUI() {
-    clearTimeout(idleTimer);
-    conn = null; pending = null; authed = false;
-    fileQueue = []; sending = false; cancelTx = false;
-    rxBuf = []; rxBytes = 0; rxMeta = null;
-    closeModal('authModal');
-    UI.cArea.style.display = '';
-    UI.tArea.classList.remove('on');
-    UI.tid.value = '';
-    UI.cBtn.textContent = 'اقتران آمن';
-    UI.cBtn.disabled = false;
-    UI.cErr.style.display = 'none';
-    UI.pCont.style.display = 'none';
-    relWakeLock();
-    history.replaceState({}, '', location.pathname);
-  }
+  /* ══════════════════════════════════════════════════════════════════
+     Scaledrone Signaling
+     ══════════════════════════════════════════════════════════════════ */
 
-  function doDisconnect() {
-    if (conn) { try { conn.close(); } catch(e) {} }
-    resetUI();
-  }
-  $('discBtn').onclick = doDisconnect;
+  function initScaledrone(onReady){
+    drone = new Scaledrone(SD_CHANNEL);
 
-  /* ── Bind active connection events ────────────────────── */
-  function bindConn(c) {
-    c.on('data', d => {
-      if (!authed || !d || typeof d !== 'object') return;
-      resetIdle();
+    drone.on('open', err => {
+      if(err){ setStatus('خطأ في الاتصال بالشبكة','err'); console.error('Scaledrone open error:',err); return; }
 
-      switch (d.type) {
-        case 'text':
-          if (navigator.vibrate) navigator.vibrate(100);
-          log(d.content, 'in', d.content);
-          break;
+      // Subscribe to MY personal signaling room
+      myRoom = drone.subscribe('room-' + MY_ID);
 
-        case 'file-start':
-          reqWakeLock();
-          rxMeta = d; rxBuf = []; rxBytes = 0; txStart = Date.now();
-          UI.pCont.style.display = 'block';
-          UI.pFile.textContent = 'استلام: ' + sanitizeFilename(d.name);
-          UI.cancelTxBtn.style.display = 'none';
-          updProgress(0, d.size);
-          break;
-
-        case 'file-chunk':
-          if (!rxMeta) break;
-          rxBuf.push(d.data);
-          rxBytes += d.data.byteLength;
-          updProgress(rxBytes, rxMeta.size);
-          break;
-
-        case 'file-end':
-          if (!rxMeta) break;
-          UI.pCont.style.display = 'none';
-          const meta = rxMeta, buf = rxBuf;
-          rxMeta = null; rxBuf = []; rxBytes = 0;
-          log('⏳ جاري تجهيز الملف...', 'sys');
-          setTimeout(() => { saveToDisk(new Blob(buf, { type: meta.filetype || 'application/octet-stream' }), sanitizeFilename(meta.name)); relWakeLock(); }, 50);
-          break;
-
-        case 'file-cancel':
-          log('⚠️ تم إلغاء النقل من قِبل الطرف الآخر.', 'sys');
-          UI.pCont.style.display = 'none';
-          rxMeta = null; rxBuf = [];
-          relWakeLock();
-          break;
-
-        case 'file-ack':
-          log('✅ استلم الطرف الآخر الملف وحفظه بنجاح.', 'sys');
-          break;
-      }
-    });
-
-    c.on('close', () => {
-      if (c === conn) { showToast('أنهى الطرف الآخر الاتصال', true); resetUI(); }
-      if (c === pending) { closeModal('authModal'); pending = null; }
-    });
-
-    c.on('error', err => {
-      log('خطأ في القناة: ' + (err.message || err), 'sys');
-      if (c === conn) { showToast('انقطع الاتصال', true); resetUI(); }
-    });
-  }
-
-  /* ── Save file to disk ─────────────────────────────────── */
-  async function saveToDisk(blob, name) {
-    const url = URL.createObjectURL(blob);
-
-    // File System Access API (desktop)
-    if (window.showSaveFilePicker && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
-      try {
-        const handle = await window.showSaveFilePicker({ suggestedName: name });
-        const writable = await handle.createWritable();
-        await writable.write(blob);
-        await writable.close();
-        URL.revokeObjectURL(url);
-        log('💾 تم حفظ الملف في جهازك.', 'sys');
-        if (conn && conn.open) conn.send({ type: 'file-ack', name });
-        return;
-      } catch(e) {
-        if (e.name === 'AbortError') { URL.revokeObjectURL(url); return; }
-        // Fall through to anchor method
-      }
-    }
-
-    // Anchor fallback
-    const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;justify-content:flex-end;width:100%;margin-bottom:10px';
-    const a = document.createElement('a');
-    a.href = url; a.download = name;
-    a.style.cssText = 'background:var(--accent);color:#fff;padding:12px 20px;border-radius:16px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:12px;text-decoration:none;box-shadow:0 6px 20px rgba(108,99,255,0.2);max-width:85%';
-
-    const iconDiv = document.createElement('div');
-    iconDiv.style.cssText = 'background:rgba(255,255,255,0.2);padding:8px;border-radius:10px;flex-shrink:0';
-    iconDiv.innerHTML = `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>`;
-
-    const textDiv = document.createElement('div');
-    textDiv.style.cssText = 'display:flex;flex-direction:column;overflow:hidden';
-    const nameSpan = document.createElement('span');
-    nameSpan.className = 'text-ellipsis';
-    nameSpan.style.cssText = 'max-width:180px;direction:ltr;text-align:right';
-    nameSpan.textContent = name;
-    const sizeSpan = document.createElement('span');
-    sizeSpan.style.cssText = 'font-size:11px;opacity:0.8;font-family:"JetBrains Mono",monospace';
-    sizeSpan.textContent = fmtBytes(blob.size);
-    textDiv.appendChild(nameSpan); textDiv.appendChild(sizeSpan);
-    a.appendChild(iconDiv); a.appendChild(textDiv);
-
-    a.onclick = () => {
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-        a.style.background = 'var(--green)';
-        nameSpan.textContent = 'تم الحفظ ✓';
-        a.style.pointerEvents = 'none';
-      }, 2000);
-    };
-
-    wrap.appendChild(a); UI.logs.appendChild(wrap);
-    setTimeout(() => UI.logs.scrollTop = UI.logs.scrollHeight, 50);
-    log('✅ اكتمل الاستلام. اضغط الزر أعلاه للحفظ.', 'sys');
-    if (conn && conn.open) conn.send({ type: 'file-ack', name });
-  }
-
-  /* ── Send text ─────────────────────────────────────────── */
-  function sendText() {
-    const t = UI.txInp.value.trim();
-    if (!t || !conn || !conn.open || !authed) return;
-    conn.send({ type: 'text', content: t });
-    log(t, 'out');
-    UI.txInp.value = '';
-    UI.txInp.focus();
-    resetIdle();
-  }
-  $('sendBtn').onclick = sendText;
-  UI.txInp.onkeypress = e => { if (e.key === 'Enter') sendText(); };
-
-  /* ── File queue ────────────────────────────────────────── */
-  UI.fInp.onchange = e => {
-    Array.from(e.target.files).forEach(f => fileQueue.push(f));
-    UI.fInp.value = '';
-    if (!sending) processQueue();
-  };
-
-  UI.cancelTxBtn.onclick = () => { cancelTx = true; };
-
-  async function processQueue() {
-    if (!fileQueue.length || !conn || !conn.open || !authed) {
-      sending = false; relWakeLock(); return;
-    }
-    sending = true; cancelTx = false;
-    await reqWakeLock(); resetIdle();
-
-    const file = fileQueue.shift();
-    if (file.size > MAX_WARN) {
-      if (!confirm(`الملف كبير (${fmtBytes(file.size)}). هل تريد المتابعة؟`)) {
-        sending = false; relWakeLock(); processQueue(); return;
-      }
-    }
-
-    const name = sanitizeFilename(file.name);
-    txStart = Date.now();
-    UI.pCont.style.display = 'block';
-    UI.pFile.textContent = 'إرسال: ' + name;
-    UI.cancelTxBtn.style.display = 'inline-flex';
-    updProgress(0, file.size);
-
-    conn.send({ type: 'file-start', name, size: file.size, filetype: file.type || 'application/octet-stream' });
-
-    if (file.size > 0) {
-      let offset = 0;
-      while (offset < file.size) {
-        if (!sending || !conn || !conn.open || cancelTx) break;
-
-        // Backpressure: wait if buffer is full
-        if (conn.dataChannel && conn.dataChannel.bufferedAmount > BUF_HIGH) {
-          await new Promise(r => setTimeout(r, 30));
-          continue;
-        }
-
-        const chunk = await file.slice(offset, offset + CHUNK).arrayBuffer();
-        if (!sending || !conn || !conn.open || cancelTx) break;
-        conn.send({ type: 'file-chunk', data: chunk });
-        offset += chunk.byteLength;
-        updProgress(offset, file.size);
-        resetIdle();
-      }
-    }
-
-    if (cancelTx) {
-      if (conn && conn.open) conn.send({ type: 'file-cancel' });
-      log(`⚠️ تم إلغاء إرسال "${name}".`, 'sys');
-    } else if (conn && conn.open) {
-      conn.send({ type: 'file-end' });
-      log(`🚀 تم إرسال "${name}" بنجاح.`, 'sys');
-    } else {
-      log('❌ فشل الإرسال: انقطع الاتصال.', 'sys');
-    }
-
-    UI.pCont.style.display = 'none';
-    setTimeout(processQueue, 300);
-  }
-
-  /* ── Drag & Drop ───────────────────────────────────────── */
-  document.ondragenter = e => {
-    if (!conn || !authed) return;
-    e.preventDefault(); dragCnt++;
-    UI.drop.style.display = 'flex';
-  };
-  document.ondragleave = e => {
-    if (!conn || !authed) return;
-    e.preventDefault();
-    if (--dragCnt === 0) UI.drop.style.display = 'none';
-  };
-  document.ondragover = e => e.preventDefault();
-  document.ondrop = e => {
-    e.preventDefault(); dragCnt = 0; UI.drop.style.display = 'none';
-    if (!conn || !authed) return;
-    Array.from(e.dataTransfer.files).forEach(f => fileQueue.push(f));
-    if (!sending) processQueue();
-  };
-
-  /* ── Auth modal actions ────────────────────────────────── */
-  $('acceptBtn').onclick = () => {
-    if (!pending) return;
-    const c = pending; pending = null;
-    closeModal('authModal');
-    authed = true; conn = c;
-    try { c.send({ type: 'auth-accept' }); } catch(e) {}
-    bindConn(c);
-    UI.cArea.style.display = 'none';
-    UI.tArea.classList.add('on');
-    UI.connTo.textContent = c.peer;
-    if (navigator.vibrate) navigator.vibrate([50,50,50]);
-    log('✅ تم تأمين النفق (E2EE) بنجاح.', 'sys');
-    resetIdle(); reqWakeLock();
-  };
-
-  $('declineBtn').onclick = () => {
-    if (pending) {
-      try { pending.send({ type: 'auth-decline' }); pending.close(); } catch(e) {}
-    }
-    pending = null; closeModal('authModal');
-  };
-
-  /* ── Initiate outgoing connection ──────────────────────── */
-  window.handleConnect = () => {
-    const tid = UI.tid.value.trim();
-    UI.cErr.style.display = 'none';
-
-    if (!/^\d{6}$/.test(tid)) {
-      UI.cErr.textContent = 'أدخل رمزاً صحيحاً من 6 أرقام.';
-      UI.cErr.style.display = 'block'; return;
-    }
-    if (tid === MY_ID) {
-      UI.cErr.textContent = 'لا يمكنك الاتصال بنفس جهازك.';
-      UI.cErr.style.display = 'block'; return;
-    }
-    if (!peer || peer.destroyed) {
-      UI.cErr.textContent = 'الخادم غير متاح. جاري إعادة الاتصال...';
-      UI.cErr.style.display = 'block';
-      initPeer(); return;
-    }
-    if (peer.disconnected) {
-      UI.cErr.textContent = 'جاري استعادة الاتصال بالخادم...';
-      UI.cErr.style.display = 'block';
-      peer.reconnect();
-      setTimeout(() => window.handleConnect(), 2000);
-      return;
-    }
-
-    UI.cBtn.innerHTML = `<svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 2a10 10 0 0110 10" stroke-linecap="round"/></svg> جارٍ الاتصال...`;
-    UI.cBtn.disabled = true;
-
-    let c;
-    try {
-      c = peer.connect(tid, { reliable: true, serialization: 'binary' });
-    } catch(e) {
-      UI.cErr.textContent = 'فشل إنشاء الاتصال: ' + e.message;
-      UI.cErr.style.display = 'block';
-      resetUI(); return;
-    }
-
-    const connTimeout = setTimeout(() => {
-      if (!authed) {
-        UI.cErr.textContent = 'انتهت مهلة الاتصال. تأكد أن الطرف الآخر فاتح التطبيق.';
-        UI.cErr.style.display = 'block';
-        try { c.close(); } catch(e) {}
-        resetUI();
-      }
-    }, 30000);
-
-    // Listen only for auth handshake messages on this connection
-    const onAuthData = d => {
-      if (!d || typeof d !== 'object') return;
-      if (d.type === 'auth-accept') {
-        clearTimeout(connTimeout);
-        c.off('data', onAuthData);
-        authed = true; conn = c;
-        bindConn(c);
-        UI.cArea.style.display = 'none';
-        UI.tArea.classList.add('on');
-        UI.connTo.textContent = c.peer;
-        if (navigator.vibrate) navigator.vibrate([50,50,50]);
-        log('✅ تم تأمين النفق (E2EE) بنجاح.', 'sys');
-        resetIdle(); reqWakeLock();
-      } else if (d.type === 'auth-decline') {
-        clearTimeout(connTimeout);
-        c.off('data', onAuthData);
-        showToast('رفض الطرف الآخر طلبك.', true);
-        try { c.close(); } catch(e) {}
-        resetUI();
-      }
-    };
-
-    c.on('open', () => {
-      // Connection is open — now wait for the remote user to accept/decline
-    });
-
-    c.on('data', onAuthData);
-
-    c.on('error', err => {
-      clearTimeout(connTimeout);
-      UI.cErr.textContent = 'فشل الاتصال: ' + (err.message || err.type || err);
-      UI.cErr.style.display = 'block';
-      resetUI();
-    });
-
-    c.on('close', () => {
-      if (!authed) {
-        clearTimeout(connTimeout);
-        resetUI();
-      }
-    });
-  };
-
-  UI.tid.onkeypress = e => { if (e.key === 'Enter') handleConnect(); };
-
-  /* ── Initialize PeerJS ─────────────────────────────────── */
-  function initPeer() {
-    // Destroy existing peer if any
-    if (peer && !peer.destroyed) { try { peer.destroy(); } catch(e) {} }
-
-    /*
-     * We use PeerJS's default cloud broker (api.peerjs.com).
-     * It's free, reliable, and requires no self-hosting.
-     * The broker only exchanges WebRTC signaling — it never touches file data.
-     */
-    try {
-      peer = new Peer(MY_ID, {
-        // Using the official PeerJS cloud broker
-        host: '0.peerjs.com',
-        port: 443,
-        path: '/',
-        secure: true,
-        debug: 0,
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' },
-            { urls: 'stun:stun3.l.google.com:19302' },
-          ]
-        }
-      });
-    } catch(e) {
-      setStatus('فشل التهيئة', 'err');
-      return;
-    }
-
-    peer.on('open', id => {
-      setStatus('متصل • جاهز للاقتران', 'ok');
-      // Auto-connect if URL has ?pair=XXXXXX
-      const p = new URLSearchParams(location.search).get('pair');
-      if (p && /^\d{6}$/.test(p) && p !== MY_ID) {
-        UI.tid.value = p;
-        handleConnect();
-      }
-    });
-
-    // Handle incoming connections
-    peer.on('connection', c => {
-      // Reject if already connected or has a pending request
-      if (conn || pending) {
-        try { c.on('open', () => { c.send({ type: 'auth-decline' }); c.close(); }); } catch(e) {}
-        return;
-      }
-      pending = c;
-
-      c.on('open', () => {
-        $('reqId').textContent = c.peer;
-        openModal('authModal');
-        if (navigator.vibrate) navigator.vibrate([60,100,60]);
+      myRoom.on('open', err => {
+        if(err){ setStatus('خطأ في الغرفة','err'); return; }
+        setStatus('متصل بالشبكة الآمنة','ok');
+        onReady && onReady();
       });
 
-      c.on('close', () => {
-        if (pending === c) { closeModal('authModal'); pending = null; }
-      });
-
-      c.on('error', () => {
-        if (pending === c) { closeModal('authModal'); pending = null; }
+      // Listen for incoming signaling messages addressed to me
+      myRoom.on('data', (msg) => {
+        handleSignal(msg);
       });
     });
 
-    peer.on('disconnected', () => {
-      if (peer.destroyed) return;
-      setStatus('جاري استعادة الاتصال...', '');
-      // Attempt reconnect after a short delay
-      setTimeout(() => {
-        if (peer && !peer.destroyed && peer.disconnected) {
-          peer.reconnect();
-        }
+    drone.on('close', evt => {
+      setStatus('انقطع الاتصال بالشبكة...','');
+      // Attempt reconnect after 3s
+      setTimeout(()=>{
+        if(!dc || dc.readyState!=='open') initScaledrone(null);
       }, 3000);
     });
 
-    peer.on('error', err => {
-      console.error('PeerJS error:', err.type, err.message);
-      if (err.type === 'peer-unavailable') {
-        UI.cErr.textContent = 'الجهاز غير متاح أو الرمز خاطئ.';
-        UI.cErr.style.display = 'block';
-        resetUI();
-      } else if (err.type === 'unavailable-id') {
-        // ID already taken — regenerate
-        location.reload();
-      } else if (err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error' || err.type === 'socket-closed') {
-        setStatus('خطأ في الاتصال. جاري إعادة المحاولة...', 'err');
-        setTimeout(initPeer, 4000);
-      } else {
-        setStatus('تأكد من اتصالك بالإنترنت', 'err');
-      }
+    drone.on('error', err => {
+      console.error('Scaledrone error:', err);
+      setStatus('تأكد من اتصالك بالإنترنت','err');
     });
   }
 
-  // Start!
-  initPeer();
-}
+  // Send a signaling message to a target room
+  function sendSignal(targetRoomId, payload){
+    if(!drone) return;
+    drone.publish({ room: 'room-' + targetRoomId, message: payload });
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     WebRTC Core
+     ══════════════════════════════════════════════════════════════════ */
+
+  function createPC(){
+    const p = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+
+    p.onicecandidate = e => {
+      if(e.candidate && remoteId){
+        sendSignal(remoteId, { type:'ice', candidate: e.candidate, from: MY_ID });
+      }
+    };
+
+    p.onconnectionstatechange = () => {
+      if(p.connectionState === 'failed' || p.connectionState === 'disconnected' || p.connectionState === 'closed'){
+        if(dc && dc.readyState !== 'open'){
+          showToast('فشل الاتصال المباشر','true');
+          resetAll();
+        }
+      }
+    };
+
+    p.ondatachannel = e => {
+      bindDataChannel(e.channel);
+    };
+
+    return p;
+  }
+
+  function bindDataChannel(channel){
+    dc = channel;
+    dc.binaryType = 'arraybuffer';
+
+    dc.onopen = () => {
+      UI.cArea.style.display='none';
+      UI.tArea.classList.add('on');
+      UI.connTo.textContent=remoteId;
+      if(navigator.vibrate) navigator.vibrate([50,50,50]);
+      log('✅ تم تأمين النفق (E2EE) بنجاح.','sys');
+      resetIdle(); reqWL();
+    };
+
+    dc.onclose = () => {
+      showToast('تم إنهاء الاتصال','true');
+      resetAll();
+    };
+
+    dc.onerror = e => {
+      log('خطأ في القناة: '+(e.message||'unknown'),'sys');
+      resetAll();
+    };
+
+    dc.onmessage = e => handleDCMessage(e.data);
+  }
+
+  /* ── Signal Router ──────────────────────────────────────────────── */
+  async function handleSignal(msg){
+    if(!msg || typeof msg !== 'object') return;
+
+    switch(msg.type){
+
+      case 'offer':
+        // Incoming connection request
+        if(dc && dc.readyState==='open'){ sendSignal(msg.from,{type:'decline',from:MY_ID}); return; }
+        pendingOffer = msg;
+        remoteId = msg.from;
+        $('reqId').textContent = msg.from;
+        openModal('authModal');
+        if(navigator.vibrate) navigator.vibrate([60,100,60]);
+        break;
+
+      case 'answer':
+        if(!pc) return;
+        try { await pc.setRemoteDescription(new RTCSessionDescription({type:'answer',sdp:msg.sdp})); }
+        catch(e){ console.error('setRemoteDescription answer error:',e); }
+        break;
+
+      case 'ice':
+        if(!pc) return;
+        try { await pc.addIceCandidate(new RTCIceCandidate(msg.candidate)); }
+        catch(e){ /* ignore benign ICE errors */ }
+        break;
+
+      case 'decline':
+        showToast('تم رفض طلبك.',true);
+        resetAll();
+        break;
+    }
+  }
+
+  /* ── Initiate connection ────────────────────────────────────────── */
+  window.handleConnect = async function(){
+    const tid = UI.tid.value.trim();
+    UI.cErr.style.display='none';
+
+    if(!/^\d{6}$/.test(tid)){ UI.cErr.textContent='أدخل رمزاً صحيحاً من 6 أرقام.'; UI.cErr.style.display='block'; return; }
+    if(tid===MY_ID){ UI.cErr.textContent='لا يمكنك الاتصال بنفس جهازك.'; UI.cErr.style.display='block'; return; }
+    if(!drone){ UI.cErr.textContent='جاري الاتصال بالشبكة، انتظر...'; UI.cErr.style.display='block'; return; }
+
+    remoteId = tid; isInitiator = true;
+    UI.cBtn.innerHTML='<svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 2a10 10 0 0110 10" stroke-linecap="round"/></svg>';
+    UI.cBtn.disabled=true;
+
+    pc = createPC();
+    dc = pc.createDataChannel('mirsaal', { ordered:true });
+    bindDataChannel(dc);
+
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      sendSignal(remoteId, { type:'offer', sdp:offer.sdp, from:MY_ID });
+    } catch(e){
+      UI.cErr.textContent='فشل إنشاء العرض: '+e.message;
+      UI.cErr.style.display='block';
+      resetAll();
+    }
+
+    // Timeout if no answer in 30s
+    setTimeout(()=>{
+      if(!dc || dc.readyState!=='open'){
+        UI.cErr.textContent='لم يرد الطرف الآخر خلال 30 ثانية.';
+        UI.cErr.style.display='block';
+        resetAll();
+      }
+    }, 30000);
+  };
+
+  /* ── Accept / Decline ───────────────────────────────────────────── */
+  $('acceptBtn').onclick = async function(){
+    if(!pendingOffer) return;
+    const offer = pendingOffer; pendingOffer=null;
+    closeModal('authModal');
+    isInitiator=false;
+
+    pc = createPC();
+
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription({type:'offer',sdp:offer.sdp}));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      sendSignal(remoteId, { type:'answer', sdp:answer.sdp, from:MY_ID });
+    } catch(e){
+      log('خطأ في قبول الاتصال: '+e.message,'sys');
+      resetAll();
+    }
+  };
+
+  $('declineBtn').onclick = function(){
+    if(pendingOffer){ sendSignal(pendingOffer.from,{type:'decline',from:MY_ID}); pendingOffer=null; }
+    remoteId=null;
+    closeModal('authModal');
+  };
+
+  /* ── Disconnect ─────────────────────────────────────────────────── */
+  function doDisconnect(){
+    if(dc) try{ dc.close(); }catch(e){}
+    if(pc) try{ pc.close(); }catch(e){}
+    resetAll();
+  }
+  UI.discBtn.onclick = doDisconnect;
+
+  function resetAll(){
+    clearTimeout(idleTimer);
+    pc=null; dc=null; remoteId=null; pendingOffer=null; isInitiator=false;
+    fileQueue=[]; sending=false; cancelTx=false;
+    rxBuf=[]; rxBytes=0; rxMeta=null;
+    closeModal('authModal');
+    UI.cArea.style.display='';
+    UI.tArea.classList.remove('on');
+    UI.tid.value='';
+    UI.cBtn.textContent='اقتران آمن'; UI.cBtn.disabled=false;
+    UI.cErr.style.display='none';
+    UI.pCont.style.display='none';
+    relWL();
+    history.replaceState({},'',location.pathname);
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     DataChannel Message Handling
+     ══════════════════════════════════════════════════════════════════ */
+
+  function handleDCMessage(data){
+    resetIdle();
+
+    // Binary chunk
+    if(data instanceof ArrayBuffer){
+      if(!rxMeta) return;
+      rxBuf.push(data); rxBytes+=data.byteLength;
+      updProg(rxBytes, rxMeta.size);
+      return;
+    }
+
+    // JSON control messages
+    let msg;
+    try{ msg=JSON.parse(data); }catch(e){ return; }
+    if(!msg || typeof msg!=='object') return;
+
+    switch(msg.type){
+      case 'text':
+        if(navigator.vibrate) navigator.vibrate(100);
+        log(msg.content,'in',msg.content);
+        break;
+
+      case 'file-ack':
+        log('✅ تم استلام الملف وحفظه لدى الطرف الآخر بنجاح.','sys');
+        break;
+
+      case 'file-cancel':
+        log('⚠️ تم إلغاء نقل الملف من قبل الطرف الآخر.','sys');
+        UI.pCont.style.display='none'; rxMeta=null; rxBuf=[]; relWL();
+        break;
+
+      case 'file-start':
+        reqWL(); rxMeta=msg; rxBuf=[]; rxBytes=0; txStart=Date.now();
+        UI.pCont.style.display='block';
+        UI.pFile.textContent='استلام: '+sanitizeFilename(msg.name);
+        UI.cancelBtn.style.display='none';
+        updProg(0, msg.size);
+        break;
+
+      case 'file-end':
+        if(!rxMeta) break;
+        UI.pCont.style.display='none';
+        const meta=rxMeta, buf=rxBuf.slice();
+        rxMeta=null; rxBuf=[]; rxBytes=0;
+        log('⏳ جاري تجهيز الملف...','sys');
+        setTimeout(()=>{
+          const safeName=sanitizeFilename(meta.name);
+          let mime=meta.filetype||'application/octet-stream';
+          if(safeName.endsWith('.txt') && !meta.name.endsWith('.txt')) mime='text/plain';
+          saveToDisk(new Blob(buf,{type:mime}), safeName);
+          relWL();
+        },50);
+        break;
+    }
+  }
+
+  /* ── Send Text ──────────────────────────────────────────────────── */
+  function sendText(){
+    const t=UI.txInp.value.trim();
+    if(!t||!dc||dc.readyState!=='open') return;
+    dc.send(JSON.stringify({type:'text',content:t}));
+    log(t,'out'); UI.txInp.value=''; UI.txInp.focus(); resetIdle();
+  }
+  $('sendBtn').onclick = sendText;
+  UI.txInp.onkeypress = e=>{ if(e.key==='Enter') sendText(); };
+
+  /* ── File Queue ─────────────────────────────────────────────────── */
+  UI.fInp.onchange = e=>{
+    Array.from(e.target.files).forEach(f=>fileQueue.push(f));
+    UI.fInp.value='';
+    if(!sending) processQueue();
+  };
+  UI.cancelBtn.onclick = ()=>{ cancelTx=true; };
+
+  async function processQueue(){
+    if(!fileQueue.length||!dc||dc.readyState!=='open'){ sending=false; relWL(); return; }
+    sending=true; cancelTx=false; reqWL(); resetIdle();
+    const file=fileQueue.shift();
+
+    if(file.size>MAX_MEM && !confirm(`الملف كبير (${fmtB(file.size)}). هل تريد الاستمرار؟`)){ sending=false; relWL(); processQueue(); return; }
+
+    const name=sanitizeFilename(file.name);
+    txStart=Date.now();
+    UI.pCont.style.display='block';
+    UI.pFile.textContent='إرسال مشفر: '+name;
+    UI.cancelBtn.style.display='inline-flex';
+    updProg(0,file.size);
+
+    // Send metadata as JSON
+    dc.send(JSON.stringify({type:'file-start',name,size:file.size,filetype:file.type||'application/octet-stream'}));
+
+    if(file.size>0){
+      let off=0;
+      while(off<file.size){
+        if(!sending||!dc||dc.readyState!=='open'||cancelTx) break;
+        resetIdle();
+
+        // Back-pressure: wait if buffer is full
+        while(dc.bufferedAmount>BUF_HIGH){
+          await new Promise(r=>setTimeout(r,20));
+          if(!sending||!dc||dc.readyState!=='open'||cancelTx) break;
+        }
+        if(!sending||!dc||dc.readyState!=='open'||cancelTx) break;
+
+        const slice=file.slice(off,off+CHUNK_SIZE);
+        const ab=await slice.arrayBuffer();
+        dc.send(ab); // Send raw binary for efficiency
+        off+=ab.byteLength;
+        updProg(off,file.size);
+      }
+    }
+
+    if(cancelTx){
+      if(dc&&dc.readyState==='open') dc.send(JSON.stringify({type:'file-cancel'}));
+      log(`⚠️ تم إلغاء إرسال (${name}).`,'sys');
+    } else if(dc&&dc.readyState==='open'){
+      dc.send(JSON.stringify({type:'file-end'}));
+      log(`🚀 تم الإرسال (${name}) بنجاح.`,'sys');
+    } else {
+      log('❌ فشل الإرسال بسبب انقطاع الاتصال.','sys');
+    }
+
+    UI.pCont.style.display='none';
+    setTimeout(processQueue,300);
+  }
+
+  /* ── Save to Disk ───────────────────────────────────────────────── */
+  async function saveToDisk(blob, name){
+    const url=URL.createObjectURL(blob);
+    if(window.showSaveFilePicker && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
+      try {
+        const h=await window.showSaveFilePicker({suggestedName:name});
+        const w=await h.createWritable();
+        await w.write(blob); await w.close();
+        URL.revokeObjectURL(url);
+        log('💾 تم حفظ الملف في جهازك.','sys');
+        if(dc&&dc.readyState==='open') dc.send(JSON.stringify({type:'file-ack',name}));
+        return;
+      } catch(e){ if(e.name==='AbortError'){ URL.revokeObjectURL(url); return; } }
+    }
+
+    const wrap=document.createElement('div');
+    wrap.style.cssText='display:flex;justify-content:flex-end;width:100%;margin-bottom:10px';
+    const a=document.createElement('a');
+    a.href=url; a.download=name;
+    a.style.cssText='background:var(--accent);color:#fff;padding:12px 20px;border-radius:16px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:12px;text-decoration:none;box-shadow:0 6px 20px rgba(108,99,255,0.2);max-width:85%';
+    const iconDiv=document.createElement('div');
+    iconDiv.style.cssText='background:rgba(255,255,255,0.2);padding:8px;border-radius:10px;flex-shrink:0';
+    iconDiv.innerHTML='<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>';
+    const textDiv=document.createElement('div');
+    textDiv.style.cssText='display:flex;flex-direction:column;overflow:hidden';
+    const nameSpan=document.createElement('span');
+    nameSpan.className='text-ellipsis';
+    nameSpan.style.cssText='max-width:180px;direction:ltr;text-align:right';
+    nameSpan.textContent='Save '+name;
+    const sizeSpan=document.createElement('span');
+    sizeSpan.style.cssText='font-size:11px;opacity:0.8;font-family:"JetBrains Mono",monospace';
+    sizeSpan.textContent=fmtB(blob.size);
+    textDiv.appendChild(nameSpan); textDiv.appendChild(sizeSpan);
+    a.appendChild(iconDiv); a.appendChild(textDiv);
+    a.onclick=()=>setTimeout(()=>{
+      URL.revokeObjectURL(url);
+      a.style.background='var(--green)'; a.style.boxShadow='0 6px 20px rgba(34,197,94,0.2)';
+      nameSpan.textContent='تم الحفظ ✓'; a.style.pointerEvents='none';
+    },2000);
+    wrap.appendChild(a); UI.logs.appendChild(wrap);
+    setTimeout(()=>UI.logs.scrollTop=UI.logs.scrollHeight,50);
+    log('✅ اكتمل النقل. اضغط على الزر أعلاه للحفظ.','sys');
+    if(dc&&dc.readyState==='open') dc.send(JSON.stringify({type:'file-ack',name}));
+  }
+
+  /* ── Drag & Drop ────────────────────────────────────────────────── */
+  document.ondragenter = e=>{ if(!dc||dc.readyState!=='open') return; e.preventDefault(); dragCnt++; UI.drop.style.display='flex'; };
+  document.ondragleave = e=>{ if(!dc||dc.readyState!=='open') return; e.preventDefault(); if(--dragCnt===0) UI.drop.style.display='none'; };
+  document.ondragover  = e=>e.preventDefault();
+  document.ondrop      = e=>{
+    e.preventDefault(); dragCnt=0; UI.drop.style.display='none';
+    if(!dc||dc.readyState!=='open') return;
+    Array.from(e.dataTransfer.files).forEach(f=>fileQueue.push(f));
+    if(!sending) processQueue();
+  };
+
+  /* ── Kick off ───────────────────────────────────────────────────── */
+  if(typeof Scaledrone === 'undefined'){
+    setStatus('خطأ في تحميل مكتبة الاتصال','err');
+  } else {
+    initScaledrone(()=>{
+      // Auto-connect if ?pair= is in the URL
+      const p=new URLSearchParams(location.search).get('pair');
+      if(p && /^\d{6}$/.test(p) && p!==MY_ID){ UI.tid.value=p; handleConnect(); }
+    });
+  }
 </script>
 </body>
 </html>
