@@ -10,7 +10,6 @@
 <title>مِرسال — نقل آمن ومباشر</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
-
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -57,7 +56,7 @@ input::placeholder{color:var(--t2);font-size:14px}
 .dot.ok{background:var(--green);box-shadow:0 0 10px rgba(34,197,94,0.4);animation:none}
 .dot.err{background:var(--red);box-shadow:0 0 10px rgba(239,68,68,0.4);animation:none}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
-.qr-wrapper{background:#ffffff;padding:14px;border-radius:20px;display:flex;align-items:center;justify-content:center;width:170px;height:170px;margin:0 auto;box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+.qr-wrapper{background:#fff;padding:14px;border-radius:20px;display:flex;align-items:center;justify-content:center;width:170px;height:170px;margin:0 auto;box-shadow:0 4px 20px rgba(0,0,0,0.3)}
 #qrcode{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
 #qrcode img,#qrcode canvas{width:100%!important;height:100%!important;object-fit:contain;border-radius:6px;display:block}
 .modal{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:1rem;opacity:0;transition:opacity 0.25s ease}
@@ -70,7 +69,7 @@ input::placeholder{color:var(--t2);font-size:14px}
 .bubble{max-width:85%;padding:14px 18px;font-size:15px;line-height:1.6;word-break:break-word;border-radius:20px}
 .bubble.out{background:var(--accent);color:#fff;border-bottom-right-radius:4px}
 .bubble.in{background:var(--bg3);border:1px solid var(--b0);color:var(--t0);border-bottom-left-radius:4px}
-.sys{margin:6px auto;background:var(--bg3);border:1px solid var(--b0);color:var(--t1);font-size:12px;font-weight:600;padding:6px 18px;border-radius:100px;text-align:center}
+.sys{margin:6px auto;background:var(--bg3);border:1px solid var(--b0);color:var(--t1);font-size:12px;font-weight:600;padding:6px 18px;border-radius:100px;text-align:center;max-width:90%}
 .ptrack{background:var(--bg1);border-radius:100px;height:8px;overflow:hidden;margin-top:8px;box-shadow:inset 0 1px 3px rgba(0,0,0,0.2)}
 .pfill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:100px;transition:width 0.2s linear}
 #toast{position:fixed;bottom:var(--sb);left:50%;transform:translateX(-50%) translateY(20px);z-index:300;display:flex;align-items:center;gap:12px;padding:14px 24px;background:var(--bg3);border:1px solid var(--b1);border-radius:100px;font-size:14px;font-weight:600;color:var(--t0);pointer-events:none;opacity:0;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);white-space:nowrap;max-width:90vw;box-shadow:0 10px 30px rgba(0,0,0,0.4)}
@@ -96,12 +95,12 @@ header,footer{width:100%;max-width:960px;z-index:1}
 <!-- Privacy Modal -->
 <div id="privacyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="pmT">
   <div class="mbox">
-    <button onclick="closeModal('privacyModal')" aria-label="إغلاق" style="position:absolute;top:1.2rem;left:1.2rem;background:var(--bg3);border:1px solid var(--b1);color:var(--t1);border-radius:14px;width:40px;height:40px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:0.2s">×</button>
+    <button onclick="closeModal('privacyModal')" aria-label="إغلاق" style="position:absolute;top:1.2rem;left:1.2rem;background:var(--bg3);border:1px solid var(--b1);color:var(--t1);border-radius:14px;width:40px;height:40px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
     <div style="width:54px;height:54px;background:var(--gdim);border:1px solid rgba(34,197,94,0.3);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:1.2rem">
       <svg width="26" height="26" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
     </div>
     <h2 id="pmT" style="font-size:22px;font-weight:800;color:var(--t0);margin-bottom:0.5rem">الشفافية والأمان</h2>
-    <p style="font-size:14px;color:var(--t1);margin-bottom:1.5rem;line-height:1.7">مِرسال مصمم ليكون أداة نقل <strong style="color:var(--t0)">من جهاز إلى جهاز (P2P)</strong>. Scaledrone يُستخدم <u>فقط</u> لتبادل إشارات WebRTC الأولية، وملفاتك تنتقل مباشرةً بين الجهازين.</p>
+    <p style="font-size:14px;color:var(--t1);margin-bottom:1.5rem;line-height:1.7">مِرسال مصمم ليكون أداة نقل <strong style="color:var(--t0)">من جهاز إلى جهاز (P2P)</strong>. Scaledrone يُستخدم <u>فقط</u> لتبادل إشارات WebRTC الأولية، وملفاتك تنتقل مباشرةً دون خوادم وسيطة.</p>
     <ul style="list-style:none;display:flex;flex-direction:column;gap:14px;margin-bottom:2rem">
       <li style="display:flex;gap:12px;align-items:flex-start">
         <div style="background:var(--adim);border-radius:10px;padding:8px;flex-shrink:0;margin-top:2px"><svg width="14" height="14" fill="var(--accent)" viewBox="0 0 24 24"><path d="M4.5 3.75a3 3 0 00-3 3v.75h21v-.75a3 3 0 00-3-3h-15zM1.5 10.5v6a3 3 0 003 3h15a3 3 0 003-3v-6h-21z"/></svg></div>
@@ -109,7 +108,7 @@ header,footer{width:100%;max-width:960px;z-index:1}
       </li>
       <li style="display:flex;gap:12px;align-items:flex-start">
         <div style="background:var(--adim);border-radius:10px;padding:8px;flex-shrink:0;margin-top:2px"><svg width="14" height="14" fill="var(--accent)" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg></div>
-        <p style="font-size:13px;color:var(--t1);line-height:1.6"><strong style="color:var(--t0);display:block;font-size:14px;margin-bottom:2px">تشفير عسكري (E2EE)</strong>البيانات مشفرة بروتوكولياً عبر WebRTC (DTLS/SRTP). لا يمكن لأي طرف ثالث قراءة المحتوى.</p>
+        <p style="font-size:13px;color:var(--t1);line-height:1.6"><strong style="color:var(--t0);display:block;font-size:14px;margin-bottom:2px">تشفير عسكري (E2EE)</strong>البيانات مشفرة عبر WebRTC (DTLS/SRTP). لا يمكن لأي طرف ثالث قراءة المحتوى.</p>
       </li>
     </ul>
     <button onclick="closeModal('privacyModal')" class="btn btn-p" style="width:100%;padding:14px;font-size:15px">فهمت ذلك، شكراً</button>
@@ -137,10 +136,7 @@ header,footer{width:100%;max-width:960px;z-index:1}
       مِرسال
       <span style="font-size:11px;font-weight:700;background:var(--adim);color:var(--accent);border:1px solid rgba(108,99,255,0.25);padding:4px 10px;border-radius:8px;letter-spacing:0.05em">آمن</span>
     </h1>
-    <div class="pill">
-      <span id="sDot" class="dot"></span>
-      <span id="sTxt">تهيئة الاتصال...</span>
-    </div>
+    <div class="pill"><span id="sDot" class="dot"></span><span id="sTxt">تهيئة الاتصال...</span></div>
   </div>
   <button onclick="openModal('privacyModal')" class="btn btn-g" style="font-size:13px;padding:10px 16px;border-radius:14px;gap:8px">
     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
@@ -149,7 +145,7 @@ header,footer{width:100%;max-width:960px;z-index:1}
 </header>
 
 <main class="grid">
-  <!-- Left Column: Identity Card -->
+  <!-- Left Column -->
   <div class="card" style="padding:1.6rem;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1.4rem">
     <div style="width:100%">
       <p style="font-size:12px;font-weight:700;color:var(--t2);letter-spacing:0.1em;margin-bottom:10px;text-transform:uppercase">رمز جهازك المؤقت</p>
@@ -203,12 +199,12 @@ header,footer{width:100%;max-width:960px;z-index:1}
     <div class="card" id="transferArea" style="border-top:3px solid var(--accent)">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:1.2rem 1.6rem;border-bottom:1px solid var(--b0);background:var(--bg1)">
         <div style="display:flex;align-items:center;gap:12px;min-width:0">
-          <div style="width:44px;height:44px;border-radius:14px;background:var(--gdim);border:1px solid rgba(34,197,94,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative">
+          <div style="width:44px;height:44px;border-radius:14px;background:var(--gdim);border:1px solid rgba(34,197,94,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <svg width="22" height="22" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
           </div>
           <div style="min-width:0">
             <p style="font-size:11px;color:var(--t1);font-weight:700;letter-spacing:0.05em;display:flex;align-items:center;gap:4px">
-              <span style="display:inline-block;width:6px;height:6px;background:var(--green);border-radius:50%"></span> نفق مشفر
+              <span style="display:inline-block;width:6px;height:6px;background:var(--green);border-radius:50%"></span> نفق مشفر نشط
             </p>
             <p id="connTo" class="text-ellipsis" style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:800;color:var(--t0)">---</p>
           </div>
@@ -231,7 +227,7 @@ header,footer{width:100%;max-width:960px;z-index:1}
               <p id="progFile" class="text-ellipsis" style="font-size:14px;font-weight:700;color:var(--t0)">ملف</p>
             </div>
             <div style="display:flex;align-items:center;gap:12px">
-              <button id="cancelTxBtn" class="btn btn-d" style="min-height:30px;padding:4px 10px;border-radius:8px;font-size:11px">إلغاء</button>
+              <button id="cancelTxBtn" class="btn btn-d" style="min-height:30px;padding:4px 10px;border-radius:8px;font-size:11px;display:none">إلغاء</button>
               <span id="progPct" style="font-size:24px;font-weight:800;color:var(--accent);font-family:'JetBrains Mono',monospace">0%</span>
             </div>
           </div>
@@ -255,7 +251,7 @@ header,footer{width:100%;max-width:960px;z-index:1}
       </div>
 
       <div id="dropZone">
-        <div style="width:80px;height:80px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(255,255,255,0.1)">
+        <div style="width:80px;height:80px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center">
           <svg width="36" height="36" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
         </div>
         <p style="font-size:24px;font-weight:800;color:#fff;margin:0">أفلِت الملفات هنا للإرسال</p>
@@ -266,7 +262,7 @@ header,footer{width:100%;max-width:960px;z-index:1}
 </main>
 
 <footer style="text-align:center;padding-top:1rem">
-  <div style="display:inline-flex;align-items:center;gap:10px;padding:8px 20px;background:var(--bg2);border:1px solid var(--b0);border-radius:100px;box-shadow:0 4px 15px rgba(0,0,0,0.1)">
+  <div style="display:inline-flex;align-items:center;gap:10px;padding:8px 20px;background:var(--bg2);border:1px solid var(--b0);border-radius:100px">
     <span style="font-size:12px;font-weight:700;color:var(--t2);letter-spacing:0.05em">صُنِعَ بِفَخْرٍ فِي السُّعُودِيَّةِ</span>
     <span style="font-size:16px">🇸🇦</span>
   </div>
@@ -278,75 +274,83 @@ header,footer{width:100%;max-width:960px;z-index:1}
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
 <script>
-/* ═══════════════════════════════════════════════════════════════════
-   مِرسال — Scaledrone Signaling + Native WebRTC
-   ═══════════════════════════════════════════════════════════════════
-   Flow:
-   1. Both peers open a Scaledrone "observable" room named after their MY_ID.
-   2. Initiator sends {type:'offer', sdp, from:MY_ID} to target room.
-   3. Target receives offer → shows auth modal.
-   4. On accept: target sends answer back to initiator's room.
-   5. ICE candidates are exchanged via Scaledrone rooms too.
-   6. Once RTCPeerConnection + DataChannel is established,
-      Scaledrone is no longer used for file/text transfer.
-   ═══════════════════════════════════════════════════════════════════ */
+'use strict';
+/* ═══════════════════════════════════════════════════════════════════════
+   مِرسال  —  Scaledrone Signaling  +  Native WebRTC DataChannel
+   ═══════════════════════════════════════════════════════════════════════
+   SIGNALING FLOW
+   ─────────────
+   Each peer subscribes to ONE shared room called "observable-mirsaal".
+   Scaledrone observable rooms broadcast every message to all members,
+   so every signal carries  { to, from }  and each peer ignores messages
+   not addressed to itself.
 
-  /* ── Constants ──────────────────────────────────────────────────── */
-  const SD_CHANNEL  = '6YAXNgoGaL9bjRrZ'; // ← ضع Channel ID الخاص بك هنا
-  const CHUNK_SIZE  = 65536;   // 64 KB per chunk
-  const BUF_HIGH    = 262144;  // 256 KB back-pressure threshold
-  const MAX_MEM     = 500 * 1024 * 1024; // 500 MB
+   1. Initiator subscribes → sends  offer  { to: targetId, from: MY_ID, sdp }
+   2. Target receives offer → shows auth modal (stores offer + queues ICE)
+   3. On accept → target creates answer → sends  answer  { to: initiatorId, … }
+   4. ICE candidates sent as  { type:'ice', to, from, candidate }
+      BEFORE setRemoteDescription completes → buffered in pendingIce[]
+   5. After setRemoteDescription → flush buffered ICE candidates
+   6. DataChannel 'open' event → switch UI to transfer mode
+   ═══════════════════════════════════════════════════════════════════════ */
+
+  /* ── Configuration ───────────────────────────────────────────────── */
+  const SD_CHANNEL  = '6YAXNgoGaL9bjRrZ';   // ← your Scaledrone channel ID
+  const SD_ROOM     = 'observable-mirsaal';  // single shared signaling room
+  const CHUNK_SIZE  = 65536;                 // 64 KB
+  const BUF_HIGH    = 262144;                // 256 KB back-pressure threshold
+  const MAX_MEM     = 500 * 1024 * 1024;    // 500 MB file size warning
   const ICE_SERVERS = [
-    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun.l.google.com:19302'  },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' }
   ];
+  const CONNECT_TIMEOUT = 35000; // ms
 
-  /* ── State ──────────────────────────────────────────────────────── */
-  const buf32 = new Uint32Array(1);
-  window.crypto.getRandomValues(buf32);
-  const MY_ID = String(Math.floor(100000 + (buf32[0] % 900000)));
+  /* ── Identity ────────────────────────────────────────────────────── */
+  const rnd = new Uint32Array(1);
+  window.crypto.getRandomValues(rnd);
+  const MY_ID = String(Math.floor(100000 + (rnd[0] % 900000)));
 
-  let drone = null;        // Scaledrone instance
-  let myRoom = null;       // my personal signaling room
-  let pc = null;           // RTCPeerConnection
-  let dc = null;           // RTCDataChannel
+  /* ── Mutable state ───────────────────────────────────────────────── */
+  let drone       = null;   // Scaledrone instance
+  let sdRoom      = null;   // shared observable room subscription
+  let sdReady     = false;  // true once Scaledrone room is open
+
+  let pc          = null;   // RTCPeerConnection
+  let dc          = null;   // RTCDataChannel (our single channel)
+  let remoteId    = null;   // peer's 6-digit ID string
   let isInitiator = false;
-  let remoteId = null;     // peer's 6-digit ID
-  let pendingOffer = null; // stored offer SDP waiting for user accept
 
+  // ICE candidate buffer — filled before setRemoteDescription completes
+  let pendingIce      = [];
+  let remoteDescSet   = false;  // true once setRemoteDescription is done
+  let connectTimer    = null;
+
+  // Pending offer waiting for user to accept/decline
+  let pendingOffer    = null;
+
+  // Transfer state
   let fileQueue = [], sending = false, cancelTx = false;
   let txStart = 0, idleTimer = null, wakeLock = null;
   let rxBuf = [], rxBytes = 0, rxMeta = null;
+  let rxExpectBinary = false;
   let dragCnt = 0;
 
-  /* ── DOM shortcuts ──────────────────────────────────────────────── */
+  /* ── DOM ─────────────────────────────────────────────────────────── */
   const $ = id => document.getElementById(id);
   const UI = {
-    myId:      $('myId'),
-    qr:        $('qrcode'),
-    tid:       $('targetId'),
-    cBtn:      $('connectBtn'),
-    cArea:     $('connectArea'),
-    cErr:      $('cErr'),
-    tArea:     $('transferArea'),
-    connTo:    $('connTo'),
-    fInp:      $('fileInput'),
-    txInp:     $('textInput'),
-    logs:      $('logs'),
-    pCont:     $('progCont'),
-    pFile:     $('progFile'),
-    pStats:    $('progStats'),
-    pBar:      $('progBar'),
-    pPct:      $('progPct'),
-    drop:      $('dropZone'),
-    shareB:    $('shareBtn'),
-    copyB:     $('copyBtn'),
-    cancelBtn: $('cancelTxBtn'),
-    discBtn:   $('discBtn')
+    myId:    $('myId'),    qr:     $('qrcode'),    tid:    $('targetId'),
+    cBtn:    $('connectBtn'), cArea: $('connectArea'), cErr: $('cErr'),
+    tArea:   $('transferArea'), connTo: $('connTo'),
+    fInp:    $('fileInput'), txInp: $('textInput'), logs: $('logs'),
+    pCont:   $('progCont'), pFile: $('progFile'), pStats: $('progStats'),
+    pBar:    $('progBar'),  pPct:  $('progPct'),  drop:  $('dropZone'),
+    shareB:  $('shareBtn'), copyB: $('copyBtn'),  cancelBtn: $('cancelTxBtn'),
+    discBtn: $('discBtn')
   };
 
-  /* ── Bootstrap ──────────────────────────────────────────────────── */
+  /* ── Bootstrap ───────────────────────────────────────────────────── */
   UI.myId.textContent = MY_ID;
   if (navigator.share) UI.shareB.style.display = 'inline-flex';
 
@@ -354,552 +358,717 @@ header,footer{width:100%;max-width:960px;z-index:1}
     try {
       new QRCode(UI.qr, {
         text: `${location.origin}${location.pathname}?pair=${MY_ID}`,
-        width:170, height:170, colorDark:'#000000', colorLight:'#ffffff',
+        width: 170, height: 170,
+        colorDark: '#000000', colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.L
       });
     } catch(e) { UI.qr.parentElement.style.display = 'none'; }
   }
 
   UI.tid.addEventListener('input', function(){ this.value = this.value.replace(/[^0-9]/g,''); });
-  UI.tid.onkeypress = e => { if(e.key === 'Enter') handleConnect(); };
+  UI.tid.onkeypress = e => { if (e.key === 'Enter') handleConnect(); };
 
   window.handleCopyId  = () => copyToClipboard(MY_ID, UI.copyB);
   window.handleShareId = () => {
     const url = `${location.origin}${location.pathname}?pair=${MY_ID}`;
-    if (navigator.share) {
-      navigator.share({ title:'مِرسال', text:`رمز جهازي: ${MY_ID}`, url }).catch(()=>{});
-    } else { copyToClipboard(url, UI.shareB); }
+    if (navigator.share) navigator.share({ title:'مِرسال', text:`رمز جهازي: ${MY_ID}`, url }).catch(()=>{});
+    else copyToClipboard(url, UI.shareB);
   };
 
-  /* ── UI Helpers ─────────────────────────────────────────────────── */
-  let _toastTimer;
+  /* ═══════════════════════════════════════════════════════════════════
+     UI Helpers
+     ═══════════════════════════════════════════════════════════════════ */
+  let toastTimer;
   function showToast(msg, isErr=false){
     const t=$('toast'), ti=$('tIcon'), tm=$('tMsg');
-    tm.textContent=msg; ti.textContent=isErr?'✕':'✓';
-    ti.style.color=isErr?'var(--red)':'var(--green)';
-    t.style.borderColor=isErr?'rgba(239,68,68,0.4)':'var(--b1)';
+    tm.textContent = msg;
+    ti.textContent = isErr ? '✕' : '✓';
+    ti.style.color = isErr ? 'var(--red)' : 'var(--green)';
+    t.style.borderColor = isErr ? 'rgba(239,68,68,0.4)' : 'var(--b1)';
     t.classList.add('show');
-    if(navigator.vibrate) navigator.vibrate(isErr?[50,50,50]:50);
-    clearTimeout(_toastTimer);
-    _toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
+    if (navigator.vibrate) navigator.vibrate(isErr ? [50,50,50] : 50);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
   }
 
   function openModal(id){ const m=$(id); m.classList.add('open'); requestAnimationFrame(()=>requestAnimationFrame(()=>m.classList.add('vis'))); }
   function closeModal(id){ const m=$(id); m.classList.remove('vis'); setTimeout(()=>m.classList.remove('open'),250); }
-  window.openModal=openModal; window.closeModal=closeModal;
+  window.openModal  = openModal;
+  window.closeModal = closeModal;
 
   function setStatus(txt, state){
     const d=$('sDot'), s=$('sTxt');
-    if(s) s.textContent=txt;
-    if(d) d.className='dot'+(state==='ok'?' ok':state==='err'?' err':'');
+    if (s) s.textContent = txt;
+    if (d) d.className = 'dot' + (state==='ok' ? ' ok' : state==='err' ? ' err' : '');
   }
 
   function fmtB(n){
-    if(!n) return '0 B';
-    const u=['B','KB','MB','GB'];
-    const i=Math.floor(Math.log(n)/Math.log(1024));
-    return parseFloat((n/Math.pow(1024,i)).toFixed(2))+' '+u[i];
+    if (!n) return '0 B';
+    const u = ['B','KB','MB','GB'];
+    const i = Math.floor(Math.log(n)/Math.log(1024));
+    return parseFloat((n/Math.pow(1024,i)).toFixed(2)) + ' ' + u[i];
   }
 
   function sanitizeFilename(name){
-    let s=name.replace(/[^a-zA-Z0-9.\-_ \u0600-\u06FF]/g,'_');
-    const ext=s.split('.').pop().toLowerCase();
-    const bad=['exe','bat','cmd','sh','js','vbs','html','htm','php','py','ps1','jar','msi','scr','apk'];
-    if(bad.includes(ext)) s+='.txt';
-    return s||'secure_file.bin';
+    let s = name.replace(/[^a-zA-Z0-9.\-_ \u0600-\u06FF]/g,'_');
+    const ext = s.split('.').pop().toLowerCase();
+    const bad = ['exe','bat','cmd','sh','js','vbs','html','htm','php','py','ps1','jar','msi','scr','apk'];
+    if (bad.includes(ext)) s += '.txt';
+    return s || 'secure_file.bin';
   }
 
   function appendSafeText(container, text){
-    const re=/(https?:\/\/[^\s]+)/g; let last=0, m;
-    while((m=re.exec(text))!==null){
-      if(m.index>last) container.appendChild(document.createTextNode(text.substring(last,m.index)));
-      const a=document.createElement('a');
-      a.href=m[0]; a.target='_blank'; a.rel='noopener noreferrer';
-      a.style.cssText='color:var(--accent2);text-decoration:underline;text-underline-offset:3px';
-      a.textContent=m[0]; container.appendChild(a); last=re.lastIndex;
+    const re = /(https?:\/\/[^\s]+)/g;
+    let last = 0, m;
+    while ((m = re.exec(text)) !== null){
+      if (m.index > last) container.appendChild(document.createTextNode(text.substring(last, m.index)));
+      const a = document.createElement('a');
+      a.href = m[0]; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.style.cssText = 'color:var(--accent2);text-decoration:underline;text-underline-offset:3px';
+      a.textContent = m[0];
+      container.appendChild(a);
+      last = re.lastIndex;
     }
-    if(last<text.length) container.appendChild(document.createTextNode(text.substring(last)));
+    if (last < text.length) container.appendChild(document.createTextNode(text.substring(last)));
   }
 
   async function copyToClipboard(text, btn){
-    let ok=false;
+    let ok = false;
     try {
-      if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(text); ok=true; }
+      if (navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(text); ok=true; }
       else {
-        const ta=document.createElement('textarea'); ta.value=text;
-        ta.style.cssText='position:fixed;left:-999999px'; document.body.appendChild(ta);
-        ta.focus(); ta.select(); ok=document.execCommand('copy'); ta.remove();
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.cssText = 'position:fixed;left:-999999px';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        ok = document.execCommand('copy'); ta.remove();
       }
-    } catch(e){ ok=false; }
-    if(ok){
-      if(btn){
-        const orig=btn.innerHTML;
-        btn.innerHTML=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>تم النسخ</span>`;
-        btn.style.color='var(--green)'; btn.style.borderColor='rgba(34,197,94,0.4)';
-        if(navigator.vibrate) navigator.vibrate(50);
-        setTimeout(()=>{ btn.innerHTML=orig; btn.style.color=''; btn.style.borderColor=''; },2000);
+    } catch(e){ ok = false; }
+    if (ok){
+      if (btn){
+        const orig = btn.innerHTML;
+        btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg><span>تم النسخ</span>`;
+        btn.style.color = 'var(--green)'; btn.style.borderColor = 'rgba(34,197,94,0.4)';
+        if (navigator.vibrate) navigator.vibrate(50);
+        setTimeout(()=>{ btn.innerHTML=orig; btn.style.color=''; btn.style.borderColor=''; }, 2000);
       } else showToast('تم النسخ بنجاح');
-    } else showToast('فشل النسخ تلقائياً، يرجى التحديد يدوياً',true);
+    } else showToast('فشل النسخ، يرجى التحديد يدوياً', true);
   }
 
-  /* ── Wake Lock & Idle ───────────────────────────────────────────── */
-  async function reqWL(){ if('wakeLock' in navigator && !wakeLock) try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(e){} }
-  function relWL(){ if(wakeLock){ wakeLock.release(); wakeLock=null; } }
-  document.addEventListener('visibilitychange', async()=>{ if(wakeLock && document.visibilityState==='visible') await reqWL(); });
+  /* ─── Wake Lock & Idle ────────────────────────────────────────────── */
+  async function reqWL(){ if ('wakeLock' in navigator && !wakeLock) try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(e){} }
+  function relWL(){ if (wakeLock){ wakeLock.release(); wakeLock=null; } }
+  document.addEventListener('visibilitychange', async()=>{ if (wakeLock && document.visibilityState==='visible') await reqWL(); });
 
   function resetIdle(){
     clearTimeout(idleTimer);
-    if(dc && dc.readyState==='open'){
-      idleTimer=setTimeout(()=>{ log('انتهت مهلة الخمول (15 دقيقة). تم إنهاء النفق.','sys'); doDisconnect(); }, 15*60*1000);
-    }
+    if (dc && dc.readyState==='open')
+      idleTimer = setTimeout(()=>{ log('انتهت مهلة الخمول (15 دقيقة). تم إنهاء النفق.','sys'); doDisconnect(); }, 15*60*1000);
   }
 
-  /* ── Log & Progress ─────────────────────────────────────────────── */
+  /* ─── Log & Progress ─────────────────────────────────────────────── */
   function log(msg, type, raw){
     resetIdle();
-    const ph=$('logPH'); if(ph) ph.remove();
-    const w=document.createElement('div');
-    if(type==='sys'){
-      w.className='sys'; w.textContent=msg;
+    const ph = $('logPH'); if (ph) ph.remove();
+    const w = document.createElement('div');
+    if (type === 'sys'){
+      w.className = 'sys'; w.textContent = msg;
     } else {
-      w.className=`mwrap ${type}`;
-      const b=document.createElement('div'); b.className=`bubble ${type}`;
-      appendSafeText(b, msg); w.appendChild(b);
-      if(type==='in'){
-        const cp=document.createElement('button');
-        cp.style.cssText='font-size:11px;font-weight:700;color:var(--t2);background:transparent;border:none;cursor:pointer;padding:2px 6px;margin-top:2px;transition:0.2s';
-        cp.textContent='نسخ'; cp.onclick=()=>copyToClipboard(raw||msg,cp); w.appendChild(cp);
+      w.className = `mwrap ${type}`;
+      const b = document.createElement('div');
+      b.className = `bubble ${type}`;
+      appendSafeText(b, msg);
+      w.appendChild(b);
+      if (type === 'in'){
+        const cp = document.createElement('button');
+        cp.style.cssText = 'font-size:11px;font-weight:700;color:var(--t2);background:transparent;border:none;cursor:pointer;padding:2px 6px;margin-top:2px';
+        cp.textContent = 'نسخ';
+        cp.onclick = () => copyToClipboard(raw || msg, cp);
+        w.appendChild(cp);
       }
     }
     UI.logs.appendChild(w);
-    setTimeout(()=>UI.logs.scrollTop=UI.logs.scrollHeight,50);
+    setTimeout(()=> UI.logs.scrollTop = UI.logs.scrollHeight, 50);
   }
 
   function updProg(cur, total){
-    const pct=Math.min(100,Math.round(cur/(total||1)*100));
-    UI.pBar.style.width=pct+'%'; UI.pPct.textContent=pct+'%';
-    const el=(Date.now()-txStart)/1000;
-    UI.pStats.textContent= el>0.5 && cur>0
+    const pct = Math.min(100, Math.round(cur / (total||1) * 100));
+    UI.pBar.style.width = pct + '%';
+    UI.pPct.textContent = pct + '%';
+    const el = (Date.now() - txStart) / 1000;
+    UI.pStats.textContent = el > 0.5 && cur > 0
       ? `${fmtB(cur)} / ${fmtB(total)} — ${fmtB(cur/el)}/s`
       : `${fmtB(cur)} / ${fmtB(total)}`;
   }
 
-  /* ══════════════════════════════════════════════════════════════════
-     Scaledrone Signaling
-     ══════════════════════════════════════════════════════════════════ */
-
+  /* ═══════════════════════════════════════════════════════════════════
+     Scaledrone — single shared observable room for signaling only
+     ═══════════════════════════════════════════════════════════════════ */
   function initScaledrone(onReady){
     drone = new Scaledrone(SD_CHANNEL);
 
     drone.on('open', err => {
-      if(err){ setStatus('خطأ في الاتصال بالشبكة','err'); console.error('Scaledrone open error:',err); return; }
+      if (err){ setStatus('خطأ في Scaledrone','err'); console.error('SD open:', err); return; }
 
-      // Subscribe to MY personal signaling room
-      myRoom = drone.subscribe('room-' + MY_ID);
+      // Subscribe to the ONE shared signaling room
+      sdRoom = drone.subscribe(SD_ROOM);
 
-      myRoom.on('open', err => {
-        if(err){ setStatus('خطأ في الغرفة','err'); return; }
+      sdRoom.on('open', err => {
+        if (err){ setStatus('خطأ في الغرفة','err'); console.error('SD room:', err); return; }
+        sdReady = true;
         setStatus('متصل بالشبكة الآمنة','ok');
-        onReady && onReady();
+        if (onReady) onReady();
       });
 
-      // Listen for incoming signaling messages addressed to me
-      myRoom.on('data', (msg) => {
+      // All signaling happens here
+      sdRoom.on('data', (msg) => {
+        // msg is the JS object we published
+        if (!msg || typeof msg !== 'object') return;
+        // Ignore messages not addressed to us, and ignore our own echoes
+        if (msg.to !== MY_ID || msg.from === MY_ID) return;
         handleSignal(msg);
       });
     });
 
-    drone.on('close', evt => {
-      setStatus('انقطع الاتصال بالشبكة...','');
-      // Attempt reconnect after 3s
-      setTimeout(()=>{
-        if(!dc || dc.readyState!=='open') initScaledrone(null);
-      }, 3000);
+    drone.on('close', () => {
+      sdReady = false;
+      setStatus('انقطع الاتصال، جاري إعادة الربط...','');
+      // Only reconnect if no active DC
+      setTimeout(()=>{ if (!dc || dc.readyState !== 'open') initScaledrone(null); }, 3000);
     });
 
     drone.on('error', err => {
       console.error('Scaledrone error:', err);
-      setStatus('تأكد من اتصالك بالإنترنت','err');
+      setStatus('خطأ في الشبكة','err');
     });
   }
 
-  // Send a signaling message to a target room
-  function sendSignal(targetRoomId, payload){
-    if(!drone) return;
-    drone.publish({ room: 'room-' + targetRoomId, message: payload });
+  // Send a signaling message to a peer via the shared room
+  function sendSignal(payload){
+    if (!drone || !sdReady){ console.warn('Scaledrone not ready'); return; }
+    drone.publish({ room: SD_ROOM, message: payload });
   }
 
-  /* ══════════════════════════════════════════════════════════════════
-     WebRTC Core
-     ══════════════════════════════════════════════════════════════════ */
+  /* ═══════════════════════════════════════════════════════════════════
+     WebRTC — RTCPeerConnection + DataChannel
+     ═══════════════════════════════════════════════════════════════════ */
 
+  // ── Create a fresh PeerConnection ──────────────────────────────────
   function createPC(){
     const p = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
-    p.onicecandidate = e => {
-      if(e.candidate && remoteId){
-        sendSignal(remoteId, { type:'ice', candidate: e.candidate, from: MY_ID });
+    // Send ICE candidates to the remote peer via Scaledrone
+    p.onicecandidate = evt => {
+      if (evt.candidate && remoteId){
+        sendSignal({ type:'ice', to:remoteId, from:MY_ID, candidate: evt.candidate.toJSON() });
       }
+    };
+
+    p.onicegatheringstatechange = () => {
+      console.log('[ICE gathering]', p.iceGatheringState);
     };
 
     p.onconnectionstatechange = () => {
-      if(p.connectionState === 'failed' || p.connectionState === 'disconnected' || p.connectionState === 'closed'){
-        if(dc && dc.readyState !== 'open'){
-          showToast('فشل الاتصال المباشر','true');
-          resetAll();
-        }
+      console.log('[PC state]', p.connectionState);
+      if (p.connectionState === 'connected'){
+        // Belt-and-suspenders: if DC opened before this fires, we're fine
+      }
+      if (p.connectionState === 'failed'){
+        log('❌ فشل الاتصال المباشر (ICE). تحقق من شبكتك.','sys');
+        resetAll();
       }
     };
 
-    p.ondatachannel = e => {
-      bindDataChannel(e.channel);
+    p.onsignalingstatechange = () => {
+      console.log('[Signaling state]', p.signalingState);
+    };
+
+    // ── Answerer receives DataChannel here ────────────────────────────
+    // CRITICAL: set BEFORE setRemoteDescription so it's ready if
+    // the event fires synchronously on some browsers.
+    p.ondatachannel = evt => {
+      console.log('[ondatachannel] received channel:', evt.channel.label);
+      bindDataChannel(evt.channel);
     };
 
     return p;
   }
 
+  // ── Bind a DataChannel to our message handler ──────────────────────
   function bindDataChannel(channel){
     dc = channel;
     dc.binaryType = 'arraybuffer';
 
     dc.onopen = () => {
-      UI.cArea.style.display='none';
-      UI.tArea.classList.add('on');
-      UI.connTo.textContent=remoteId;
-      if(navigator.vibrate) navigator.vibrate([50,50,50]);
-      log('✅ تم تأمين النفق (E2EE) بنجاح.','sys');
-      resetIdle(); reqWL();
+      console.log('[DC] open');
+      clearTimeout(connectTimer);
+      openTransferUI();
     };
 
     dc.onclose = () => {
-      showToast('تم إنهاء الاتصال','true');
+      console.log('[DC] closed');
+      if (UI.tArea.classList.contains('on')){
+        showToast('انقطع الاتصال بالطرف الآخر', true);
+      }
       resetAll();
     };
 
     dc.onerror = e => {
-      log('خطأ في القناة: '+(e.message||'unknown'),'sys');
+      console.error('[DC] error', e);
+      log('خطأ في قناة البيانات.','sys');
       resetAll();
     };
 
     dc.onmessage = e => handleDCMessage(e.data);
   }
 
-  /* ── Signal Router ──────────────────────────────────────────────── */
+  // ── Open the transfer UI once DC is up ────────────────────────────
+  function openTransferUI(){
+    UI.cArea.style.display = 'none';
+    UI.tArea.classList.add('on');
+    UI.connTo.textContent = remoteId;
+    if (navigator.vibrate) navigator.vibrate([50,50,50]);
+    log('✅ تم تأمين النفق (E2EE) بنجاح.','sys');
+    resetIdle();
+    reqWL();
+  }
+
+  /* ── Flush buffered ICE candidates after setRemoteDescription ──── */
+  async function flushPendingIce(){
+    remoteDescSet = true;
+    console.log(`[ICE flush] applying ${pendingIce.length} buffered candidates`);
+    for (const c of pendingIce){
+      try { await pc.addIceCandidate(new RTCIceCandidate(c)); }
+      catch(e){ console.warn('[ICE flush] ignored:', e.message); }
+    }
+    pendingIce = [];
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     Signal Router  — handles messages from Scaledrone
+     ═══════════════════════════════════════════════════════════════════ */
   async function handleSignal(msg){
-    if(!msg || typeof msg !== 'object') return;
+    console.log('[Signal in]', msg.type, 'from', msg.from);
 
     switch(msg.type){
 
+      /* ── Incoming offer (we are the answerer) ─────────────────── */
       case 'offer':
-        // Incoming connection request
-        if(dc && dc.readyState==='open'){ sendSignal(msg.from,{type:'decline',from:MY_ID}); return; }
-        pendingOffer = msg;
-        remoteId = msg.from;
+        if (dc && dc.readyState === 'open'){
+          // Already connected — reject silently
+          sendSignal({ type:'busy', to:msg.from, from:MY_ID });
+          return;
+        }
+        if (pendingOffer){
+          // Already have a pending offer — ignore
+          return;
+        }
+        pendingOffer  = msg;
+        remoteId      = msg.from;
+        remoteDescSet = false;
+        pendingIce    = [];
         $('reqId').textContent = msg.from;
         openModal('authModal');
-        if(navigator.vibrate) navigator.vibrate([60,100,60]);
+        if (navigator.vibrate) navigator.vibrate([60,100,60]);
         break;
 
+      /* ── Answer received (we are the initiator) ───────────────── */
       case 'answer':
-        if(!pc) return;
-        try { await pc.setRemoteDescription(new RTCSessionDescription({type:'answer',sdp:msg.sdp})); }
-        catch(e){ console.error('setRemoteDescription answer error:',e); }
+        if (!pc || pc.signalingState !== 'have-local-offer'){
+          console.warn('[Signal] answer ignored, signalingState:', pc && pc.signalingState);
+          return;
+        }
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription({ type:'answer', sdp:msg.sdp }));
+          await flushPendingIce();
+        } catch(e){ console.error('[setRemoteDescription answer]', e); }
         break;
 
+      /* ── ICE candidate from remote ────────────────────────────── */
       case 'ice':
-        if(!pc) return;
-        try { await pc.addIceCandidate(new RTCIceCandidate(msg.candidate)); }
-        catch(e){ /* ignore benign ICE errors */ }
+        if (!pc) return;
+        if (remoteDescSet){
+          try { await pc.addIceCandidate(new RTCIceCandidate(msg.candidate)); }
+          catch(e){ console.warn('[ICE add]', e.message); }
+        } else {
+          // Buffer until setRemoteDescription completes
+          pendingIce.push(msg.candidate);
+          console.log('[ICE] buffered (remoteDescSet=false), total:', pendingIce.length);
+        }
         break;
 
+      /* ── Declined ─────────────────────────────────────────────── */
       case 'decline':
-        showToast('تم رفض طلبك.',true);
+        showToast('تم رفض طلبك.', true);
+        resetAll();
+        break;
+
+      /* ── Busy ─────────────────────────────────────────────────── */
+      case 'busy':
+        showToast('الجهاز مشغول بالفعل.', true);
         resetAll();
         break;
     }
   }
 
-  /* ── Initiate connection ────────────────────────────────────────── */
+  /* ═══════════════════════════════════════════════════════════════════
+     Initiate Connection  (we are the initiator)
+     ═══════════════════════════════════════════════════════════════════ */
   window.handleConnect = async function(){
     const tid = UI.tid.value.trim();
-    UI.cErr.style.display='none';
+    UI.cErr.style.display = 'none';
 
-    if(!/^\d{6}$/.test(tid)){ UI.cErr.textContent='أدخل رمزاً صحيحاً من 6 أرقام.'; UI.cErr.style.display='block'; return; }
-    if(tid===MY_ID){ UI.cErr.textContent='لا يمكنك الاتصال بنفس جهازك.'; UI.cErr.style.display='block'; return; }
-    if(!drone){ UI.cErr.textContent='جاري الاتصال بالشبكة، انتظر...'; UI.cErr.style.display='block'; return; }
+    if (!/^\d{6}$/.test(tid)){
+      UI.cErr.textContent = 'أدخل رمزاً صحيحاً من 6 أرقام.';
+      UI.cErr.style.display = 'block'; return;
+    }
+    if (tid === MY_ID){
+      UI.cErr.textContent = 'لا يمكنك الاتصال بنفس جهازك.';
+      UI.cErr.style.display = 'block'; return;
+    }
+    if (!sdReady){
+      UI.cErr.textContent = 'جاري الاتصال بالشبكة، انتظر...';
+      UI.cErr.style.display = 'block'; return;
+    }
 
-    remoteId = tid; isInitiator = true;
-    UI.cBtn.innerHTML='<svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 2a10 10 0 0110 10" stroke-linecap="round"/></svg>';
-    UI.cBtn.disabled=true;
+    remoteId      = tid;
+    isInitiator   = true;
+    remoteDescSet = false;
+    pendingIce    = [];
 
+    UI.cBtn.innerHTML = '<svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 2a10 10 0 0110 10" stroke-linecap="round"/></svg> جاري الاتصال...';
+    UI.cBtn.disabled = true;
+
+    // Create PC first, THEN create DataChannel
     pc = createPC();
-    dc = pc.createDataChannel('mirsaal', { ordered:true });
-    bindDataChannel(dc);
+    const channel = pc.createDataChannel('mirsaal', { ordered:true });
+    bindDataChannel(channel);
+
+    // Timeout guard
+    connectTimer = setTimeout(()=>{
+      if (!dc || dc.readyState !== 'open'){
+        UI.cErr.textContent = 'لم يرد الطرف الآخر خلال 35 ثانية.';
+        UI.cErr.style.display = 'block';
+        resetAll();
+      }
+    }, CONNECT_TIMEOUT);
 
     try {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      sendSignal(remoteId, { type:'offer', sdp:offer.sdp, from:MY_ID });
+      sendSignal({ type:'offer', to:tid, from:MY_ID, sdp:offer.sdp });
+      console.log('[Offer sent] to', tid);
     } catch(e){
-      UI.cErr.textContent='فشل إنشاء العرض: '+e.message;
-      UI.cErr.style.display='block';
+      clearTimeout(connectTimer);
+      UI.cErr.textContent = 'فشل إنشاء الاتصال: ' + e.message;
+      UI.cErr.style.display = 'block';
       resetAll();
     }
-
-    // Timeout if no answer in 30s
-    setTimeout(()=>{
-      if(!dc || dc.readyState!=='open'){
-        UI.cErr.textContent='لم يرد الطرف الآخر خلال 30 ثانية.';
-        UI.cErr.style.display='block';
-        resetAll();
-      }
-    }, 30000);
   };
 
-  /* ── Accept / Decline ───────────────────────────────────────────── */
+  /* ═══════════════════════════════════════════════════════════════════
+     Accept / Decline  (we are the answerer)
+     ═══════════════════════════════════════════════════════════════════ */
   $('acceptBtn').onclick = async function(){
-    if(!pendingOffer) return;
-    const offer = pendingOffer; pendingOffer=null;
+    if (!pendingOffer) return;
+    const offer = pendingOffer;
+    pendingOffer = null;
     closeModal('authModal');
-    isInitiator=false;
+    isInitiator = false;
 
+    // Create PC BEFORE setRemoteDescription so ondatachannel is wired up
     pc = createPC();
 
+    // Timeout guard for answerer too
+    connectTimer = setTimeout(()=>{
+      if (!dc || dc.readyState !== 'open'){
+        showToast('انتهت مهلة الاتصال.', true);
+        resetAll();
+      }
+    }, CONNECT_TIMEOUT);
+
     try {
-      await pc.setRemoteDescription(new RTCSessionDescription({type:'offer',sdp:offer.sdp}));
+      // setRemoteDescription triggers ondatachannel on some browsers —
+      // pc.ondatachannel is already wired in createPC() above ✓
+      await pc.setRemoteDescription(new RTCSessionDescription({ type:'offer', sdp:offer.sdp }));
+      // Flush any ICE candidates that arrived before accept
+      await flushPendingIce();
+
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
-      sendSignal(remoteId, { type:'answer', sdp:answer.sdp, from:MY_ID });
+      sendSignal({ type:'answer', to:remoteId, from:MY_ID, sdp:answer.sdp });
+      console.log('[Answer sent] to', remoteId);
     } catch(e){
-      log('خطأ في قبول الاتصال: '+e.message,'sys');
+      clearTimeout(connectTimer);
+      console.error('[Accept error]', e);
+      log('خطأ أثناء قبول الاتصال: ' + e.message, 'sys');
       resetAll();
     }
   };
 
   $('declineBtn').onclick = function(){
-    if(pendingOffer){ sendSignal(pendingOffer.from,{type:'decline',from:MY_ID}); pendingOffer=null; }
-    remoteId=null;
+    if (pendingOffer){
+      sendSignal({ type:'decline', to:pendingOffer.from, from:MY_ID });
+      pendingOffer = null;
+    }
+    remoteId = null;
     closeModal('authModal');
   };
 
-  /* ── Disconnect ─────────────────────────────────────────────────── */
+  /* ═══════════════════════════════════════════════════════════════════
+     Disconnect & Reset
+     ═══════════════════════════════════════════════════════════════════ */
   function doDisconnect(){
-    if(dc) try{ dc.close(); }catch(e){}
-    if(pc) try{ pc.close(); }catch(e){}
+    if (dc)  try{ dc.close();  }catch(e){}
+    if (pc)  try{ pc.close();  }catch(e){}
     resetAll();
   }
   UI.discBtn.onclick = doDisconnect;
 
   function resetAll(){
     clearTimeout(idleTimer);
-    pc=null; dc=null; remoteId=null; pendingOffer=null; isInitiator=false;
-    fileQueue=[]; sending=false; cancelTx=false;
-    rxBuf=[]; rxBytes=0; rxMeta=null;
+    clearTimeout(connectTimer);
+
+    if (dc)  try{ dc.close();  }catch(e){}
+    if (pc)  try{ pc.close();  }catch(e){}
+
+    pc = null; dc = null;
+    remoteId = null; pendingOffer = null; isInitiator = false;
+    remoteDescSet = false; pendingIce = [];
+
+    fileQueue = []; sending = false; cancelTx = false;
+    rxBuf = []; rxBytes = 0; rxMeta = null; rxExpectBinary = false;
+
     closeModal('authModal');
-    UI.cArea.style.display='';
+    UI.cArea.style.display = '';
     UI.tArea.classList.remove('on');
-    UI.tid.value='';
-    UI.cBtn.textContent='اقتران آمن'; UI.cBtn.disabled=false;
-    UI.cErr.style.display='none';
-    UI.pCont.style.display='none';
+    UI.tid.value = '';
+    UI.cBtn.textContent = 'اقتران آمن';
+    UI.cBtn.disabled = false;
+    UI.cErr.style.display = 'none';
+    UI.pCont.style.display = 'none';
     relWL();
-    history.replaceState({},'',location.pathname);
+    history.replaceState({}, '', location.pathname);
   }
 
-  /* ══════════════════════════════════════════════════════════════════
-     DataChannel Message Handling
-     ══════════════════════════════════════════════════════════════════ */
-
+  /* ═══════════════════════════════════════════════════════════════════
+     DataChannel  — receive messages
+     ═══════════════════════════════════════════════════════════════════ */
   function handleDCMessage(data){
     resetIdle();
 
-    // Binary chunk
-    if(data instanceof ArrayBuffer){
-      if(!rxMeta) return;
-      rxBuf.push(data); rxBytes+=data.byteLength;
+    // Binary frame → file chunk
+    if (data instanceof ArrayBuffer){
+      if (!rxMeta){ console.warn('[DC] binary without file-start'); return; }
+      rxBuf.push(data);
+      rxBytes += data.byteLength;
       updProg(rxBytes, rxMeta.size);
       return;
     }
 
-    // JSON control messages
+    // Text frame → JSON control message
     let msg;
-    try{ msg=JSON.parse(data); }catch(e){ return; }
-    if(!msg || typeof msg!=='object') return;
+    try { msg = JSON.parse(data); }
+    catch(e){ console.warn('[DC] bad JSON:', data); return; }
+    if (!msg || typeof msg !== 'object') return;
 
     switch(msg.type){
+
       case 'text':
-        if(navigator.vibrate) navigator.vibrate(100);
-        log(msg.content,'in',msg.content);
+        if (navigator.vibrate) navigator.vibrate(100);
+        log(msg.content, 'in', msg.content);
         break;
 
       case 'file-ack':
-        log('✅ تم استلام الملف وحفظه لدى الطرف الآخر بنجاح.','sys');
+        log('✅ تم استلام الملف وحفظه لدى الطرف الآخر.','sys');
         break;
 
       case 'file-cancel':
-        log('⚠️ تم إلغاء نقل الملف من قبل الطرف الآخر.','sys');
-        UI.pCont.style.display='none'; rxMeta=null; rxBuf=[]; relWL();
+        log('⚠️ تم إلغاء نقل الملف من الطرف الآخر.','sys');
+        UI.pCont.style.display = 'none';
+        rxMeta = null; rxBuf = []; rxBytes = 0; relWL();
         break;
 
       case 'file-start':
-        reqWL(); rxMeta=msg; rxBuf=[]; rxBytes=0; txStart=Date.now();
-        UI.pCont.style.display='block';
-        UI.pFile.textContent='استلام: '+sanitizeFilename(msg.name);
-        UI.cancelBtn.style.display='none';
+        reqWL();
+        rxMeta  = msg;
+        rxBuf   = [];
+        rxBytes = 0;
+        txStart = Date.now();
+        UI.pCont.style.display = 'block';
+        UI.pFile.textContent   = 'استلام: ' + sanitizeFilename(msg.name);
+        UI.cancelBtn.style.display = 'none';
         updProg(0, msg.size);
         break;
 
       case 'file-end':
-        if(!rxMeta) break;
-        UI.pCont.style.display='none';
-        const meta=rxMeta, buf=rxBuf.slice();
-        rxMeta=null; rxBuf=[]; rxBytes=0;
+        if (!rxMeta) break;
+        UI.pCont.style.display = 'none';
+        const meta = rxMeta, buf = rxBuf.slice();
+        rxMeta = null; rxBuf = []; rxBytes = 0;
         log('⏳ جاري تجهيز الملف...','sys');
         setTimeout(()=>{
-          const safeName=sanitizeFilename(meta.name);
-          let mime=meta.filetype||'application/octet-stream';
-          if(safeName.endsWith('.txt') && !meta.name.endsWith('.txt')) mime='text/plain';
-          saveToDisk(new Blob(buf,{type:mime}), safeName);
+          const safeName = sanitizeFilename(meta.name);
+          let mime = meta.filetype || 'application/octet-stream';
+          if (safeName.endsWith('.txt') && !meta.name.endsWith('.txt')) mime = 'text/plain';
+          saveToDisk(new Blob(buf, {type:mime}), safeName);
           relWL();
-        },50);
+        }, 50);
         break;
     }
   }
 
   /* ── Send Text ──────────────────────────────────────────────────── */
   function sendText(){
-    const t=UI.txInp.value.trim();
-    if(!t||!dc||dc.readyState!=='open') return;
-    dc.send(JSON.stringify({type:'text',content:t}));
-    log(t,'out'); UI.txInp.value=''; UI.txInp.focus(); resetIdle();
+    const t = UI.txInp.value.trim();
+    if (!t || !dc || dc.readyState !== 'open') return;
+    dc.send(JSON.stringify({ type:'text', content:t }));
+    log(t, 'out');
+    UI.txInp.value = '';
+    UI.txInp.focus();
+    resetIdle();
   }
   $('sendBtn').onclick = sendText;
-  UI.txInp.onkeypress = e=>{ if(e.key==='Enter') sendText(); };
+  UI.txInp.onkeypress  = e => { if (e.key === 'Enter') sendText(); };
 
   /* ── File Queue ─────────────────────────────────────────────────── */
-  UI.fInp.onchange = e=>{
-    Array.from(e.target.files).forEach(f=>fileQueue.push(f));
-    UI.fInp.value='';
-    if(!sending) processQueue();
+  UI.fInp.onchange = e => {
+    Array.from(e.target.files).forEach(f => fileQueue.push(f));
+    UI.fInp.value = '';
+    if (!sending) processQueue();
   };
-  UI.cancelBtn.onclick = ()=>{ cancelTx=true; };
+  UI.cancelBtn.onclick = () => { cancelTx = true; };
 
   async function processQueue(){
-    if(!fileQueue.length||!dc||dc.readyState!=='open'){ sending=false; relWL(); return; }
-    sending=true; cancelTx=false; reqWL(); resetIdle();
-    const file=fileQueue.shift();
+    if (!fileQueue.length || !dc || dc.readyState !== 'open'){ sending = false; relWL(); return; }
+    sending = true; cancelTx = false; reqWL(); resetIdle();
 
-    if(file.size>MAX_MEM && !confirm(`الملف كبير (${fmtB(file.size)}). هل تريد الاستمرار؟`)){ sending=false; relWL(); processQueue(); return; }
+    const file = fileQueue.shift();
+    if (file.size > MAX_MEM && !confirm(`الملف كبير جداً (${fmtB(file.size)}). هل تريد الاستمرار؟`)){
+      sending = false; relWL(); processQueue(); return;
+    }
 
-    const name=sanitizeFilename(file.name);
-    txStart=Date.now();
-    UI.pCont.style.display='block';
-    UI.pFile.textContent='إرسال مشفر: '+name;
-    UI.cancelBtn.style.display='inline-flex';
-    updProg(0,file.size);
+    const name = sanitizeFilename(file.name);
+    txStart = Date.now();
+    UI.pCont.style.display = 'block';
+    UI.pFile.textContent   = 'إرسال مشفر: ' + name;
+    UI.cancelBtn.style.display = 'inline-flex';
+    updProg(0, file.size);
 
-    // Send metadata as JSON
-    dc.send(JSON.stringify({type:'file-start',name,size:file.size,filetype:file.type||'application/octet-stream'}));
+    dc.send(JSON.stringify({ type:'file-start', name, size:file.size, filetype:file.type||'application/octet-stream' }));
 
-    if(file.size>0){
-      let off=0;
-      while(off<file.size){
-        if(!sending||!dc||dc.readyState!=='open'||cancelTx) break;
+    if (file.size > 0){
+      let off = 0;
+      while (off < file.size){
+        if (!sending || !dc || dc.readyState !== 'open' || cancelTx) break;
         resetIdle();
 
-        // Back-pressure: wait if buffer is full
-        while(dc.bufferedAmount>BUF_HIGH){
-          await new Promise(r=>setTimeout(r,20));
-          if(!sending||!dc||dc.readyState!=='open'||cancelTx) break;
+        // Back-pressure
+        while (dc.bufferedAmount > BUF_HIGH){
+          await new Promise(r => setTimeout(r, 20));
+          if (!sending || !dc || dc.readyState !== 'open' || cancelTx) break;
         }
-        if(!sending||!dc||dc.readyState!=='open'||cancelTx) break;
+        if (!sending || !dc || dc.readyState !== 'open' || cancelTx) break;
 
-        const slice=file.slice(off,off+CHUNK_SIZE);
-        const ab=await slice.arrayBuffer();
-        dc.send(ab); // Send raw binary for efficiency
-        off+=ab.byteLength;
-        updProg(off,file.size);
+        const slice = file.slice(off, off + CHUNK_SIZE);
+        const ab    = await slice.arrayBuffer();
+        dc.send(ab);
+        off += ab.byteLength;
+        updProg(off, file.size);
       }
     }
 
-    if(cancelTx){
-      if(dc&&dc.readyState==='open') dc.send(JSON.stringify({type:'file-cancel'}));
+    if (cancelTx){
+      if (dc && dc.readyState === 'open') dc.send(JSON.stringify({ type:'file-cancel' }));
       log(`⚠️ تم إلغاء إرسال (${name}).`,'sys');
-    } else if(dc&&dc.readyState==='open'){
-      dc.send(JSON.stringify({type:'file-end'}));
-      log(`🚀 تم الإرسال (${name}) بنجاح.`,'sys');
+    } else if (dc && dc.readyState === 'open'){
+      dc.send(JSON.stringify({ type:'file-end' }));
+      log(`🚀 تم إرسال (${name}) بنجاح.`,'sys');
     } else {
       log('❌ فشل الإرسال بسبب انقطاع الاتصال.','sys');
     }
 
-    UI.pCont.style.display='none';
-    setTimeout(processQueue,300);
+    UI.pCont.style.display = 'none';
+    setTimeout(processQueue, 300);
   }
 
   /* ── Save to Disk ───────────────────────────────────────────────── */
   async function saveToDisk(blob, name){
-    const url=URL.createObjectURL(blob);
-    if(window.showSaveFilePicker && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
+    const url = URL.createObjectURL(blob);
+
+    // Use File System Access API on desktop
+    if (window.showSaveFilePicker && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
       try {
-        const h=await window.showSaveFilePicker({suggestedName:name});
-        const w=await h.createWritable();
+        const h = await window.showSaveFilePicker({ suggestedName: name });
+        const w = await h.createWritable();
         await w.write(blob); await w.close();
         URL.revokeObjectURL(url);
         log('💾 تم حفظ الملف في جهازك.','sys');
-        if(dc&&dc.readyState==='open') dc.send(JSON.stringify({type:'file-ack',name}));
+        if (dc && dc.readyState === 'open') dc.send(JSON.stringify({ type:'file-ack', name }));
         return;
-      } catch(e){ if(e.name==='AbortError'){ URL.revokeObjectURL(url); return; } }
+      } catch(e){ if (e.name === 'AbortError'){ URL.revokeObjectURL(url); return; } }
     }
 
-    const wrap=document.createElement('div');
-    wrap.style.cssText='display:flex;justify-content:flex-end;width:100%;margin-bottom:10px';
-    const a=document.createElement('a');
-    a.href=url; a.download=name;
-    a.style.cssText='background:var(--accent);color:#fff;padding:12px 20px;border-radius:16px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:12px;text-decoration:none;box-shadow:0 6px 20px rgba(108,99,255,0.2);max-width:85%';
-    const iconDiv=document.createElement('div');
-    iconDiv.style.cssText='background:rgba(255,255,255,0.2);padding:8px;border-radius:10px;flex-shrink:0';
-    iconDiv.innerHTML='<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>';
-    const textDiv=document.createElement('div');
-    textDiv.style.cssText='display:flex;flex-direction:column;overflow:hidden';
-    const nameSpan=document.createElement('span');
-    nameSpan.className='text-ellipsis';
-    nameSpan.style.cssText='max-width:180px;direction:ltr;text-align:right';
-    nameSpan.textContent='Save '+name;
-    const sizeSpan=document.createElement('span');
-    sizeSpan.style.cssText='font-size:11px;opacity:0.8;font-family:"JetBrains Mono",monospace';
-    sizeSpan.textContent=fmtB(blob.size);
+    // Fallback: download link
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;justify-content:flex-end;width:100%;margin-bottom:10px';
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    a.style.cssText = 'background:var(--accent);color:#fff;padding:12px 20px;border-radius:16px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:12px;text-decoration:none;box-shadow:0 6px 20px rgba(108,99,255,0.2);max-width:85%';
+
+    const iconDiv = document.createElement('div');
+    iconDiv.style.cssText = 'background:rgba(255,255,255,0.2);padding:8px;border-radius:10px;flex-shrink:0';
+    iconDiv.innerHTML = '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>';
+
+    const textDiv  = document.createElement('div');
+    textDiv.style.cssText = 'display:flex;flex-direction:column;overflow:hidden';
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'text-ellipsis';
+    nameSpan.style.cssText = 'max-width:180px;direction:ltr;text-align:right';
+    nameSpan.textContent = 'Save ' + name;
+    const sizeSpan = document.createElement('span');
+    sizeSpan.style.cssText = 'font-size:11px;opacity:0.8;font-family:"JetBrains Mono",monospace';
+    sizeSpan.textContent = fmtB(blob.size);
+
     textDiv.appendChild(nameSpan); textDiv.appendChild(sizeSpan);
     a.appendChild(iconDiv); a.appendChild(textDiv);
-    a.onclick=()=>setTimeout(()=>{
+    a.onclick = () => setTimeout(()=>{
       URL.revokeObjectURL(url);
-      a.style.background='var(--green)'; a.style.boxShadow='0 6px 20px rgba(34,197,94,0.2)';
-      nameSpan.textContent='تم الحفظ ✓'; a.style.pointerEvents='none';
-    },2000);
-    wrap.appendChild(a); UI.logs.appendChild(wrap);
-    setTimeout(()=>UI.logs.scrollTop=UI.logs.scrollHeight,50);
+      a.style.background = 'var(--green)';
+      a.style.boxShadow  = '0 6px 20px rgba(34,197,94,0.2)';
+      nameSpan.textContent = 'تم الحفظ ✓';
+      a.style.pointerEvents = 'none';
+    }, 2000);
+
+    wrap.appendChild(a);
+    UI.logs.appendChild(wrap);
+    setTimeout(()=> UI.logs.scrollTop = UI.logs.scrollHeight, 50);
     log('✅ اكتمل النقل. اضغط على الزر أعلاه للحفظ.','sys');
-    if(dc&&dc.readyState==='open') dc.send(JSON.stringify({type:'file-ack',name}));
+    if (dc && dc.readyState === 'open') dc.send(JSON.stringify({ type:'file-ack', name }));
   }
 
   /* ── Drag & Drop ────────────────────────────────────────────────── */
-  document.ondragenter = e=>{ if(!dc||dc.readyState!=='open') return; e.preventDefault(); dragCnt++; UI.drop.style.display='flex'; };
-  document.ondragleave = e=>{ if(!dc||dc.readyState!=='open') return; e.preventDefault(); if(--dragCnt===0) UI.drop.style.display='none'; };
-  document.ondragover  = e=>e.preventDefault();
-  document.ondrop      = e=>{
+  document.ondragenter = e => { if (!dc||dc.readyState!=='open') return; e.preventDefault(); dragCnt++; UI.drop.style.display='flex'; };
+  document.ondragleave = e => { if (!dc||dc.readyState!=='open') return; e.preventDefault(); if(--dragCnt===0) UI.drop.style.display='none'; };
+  document.ondragover  = e => e.preventDefault();
+  document.ondrop      = e => {
     e.preventDefault(); dragCnt=0; UI.drop.style.display='none';
-    if(!dc||dc.readyState!=='open') return;
-    Array.from(e.dataTransfer.files).forEach(f=>fileQueue.push(f));
-    if(!sending) processQueue();
+    if (!dc||dc.readyState!=='open') return;
+    Array.from(e.dataTransfer.files).forEach(f => fileQueue.push(f));
+    if (!sending) processQueue();
   };
 
-  /* ── Kick off ───────────────────────────────────────────────────── */
-  if(typeof Scaledrone === 'undefined'){
-    setStatus('خطأ في تحميل مكتبة الاتصال','err');
+  /* ═══════════════════════════════════════════════════════════════════
+     Kick-off
+     ═══════════════════════════════════════════════════════════════════ */
+  if (typeof Scaledrone === 'undefined'){
+    setStatus('خطأ: تعذّر تحميل مكتبة الاتصال','err');
   } else {
     initScaledrone(()=>{
-      // Auto-connect if ?pair= is in the URL
-      const p=new URLSearchParams(location.search).get('pair');
-      if(p && /^\d{6}$/.test(p) && p!==MY_ID){ UI.tid.value=p; handleConnect(); }
+      const p = new URLSearchParams(location.search).get('pair');
+      if (p && /^\d{6}$/.test(p) && p !== MY_ID){
+        UI.tid.value = p;
+        handleConnect();
+      }
     });
   }
 </script>
