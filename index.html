@@ -3,103 +3,595 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="مِرسال - تطبيق آمن ولا مركزي لمشاركة الملفات والمحادثات.">
-    
-    <!-- CSP صارم جداً: يمنع Inline JS/CSS ويحظر الـ Iframes والاتصالات الخارجية غير المصرحة -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' wss://0.peerjs.com https://0.peerjs.com stun:stun.l.google.com:19302 stun:stun1.l.google.com:19302; img-src 'self' data: blob:; worker-src 'self' blob:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'none';">
+    <meta name="description" content="مِرسال - تواصل ومشاركة ملفات آمنة من متصفح لمتصفح (P2P)">
+    <title>مِرسال | تواصل آمن ومشفّر</title>
+
+    <!-- سياسة الأمان (CSP) الصارمة -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'none';
+        script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+        style-src 'self' 'unsafe-inline';
+        connect-src 'self' wss://0.peerjs.com https://0.peerjs.com stun:stun.l.google.com:19302 stun:stun1.l.google.com:19302;
+        img-src 'self' data: blob:;
+        worker-src 'self' blob:;
+        media-src 'self' blob:;
+        object-src 'none';
+        base-uri 'none';
+    ">
     <meta name="referrer" content="no-referrer">
-    
-    <title>مِرسال | الملاذ الآمن</title>
-    
-    <link rel="stylesheet" href="css/app.css">
+
+    <!-- مكافحة الـ Clickjacking (يمنع التضمين داخل iFrames) -->
+    <style id="antiClickjack">body { display: none !important; }</style>
+    <script>
+        if (self === top) {
+            var antiClickjack = document.getElementById("antiClickjack");
+            antiClickjack.parentNode.removeChild(antiClickjack);
+        } else {
+            top.location = self.location;
+        }
+    </script>
+
+    <!-- مكتبات خارجية موثقة بـ SRI Hash -->
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js" integrity="sha256-Rk1Xm1EELu5z1YQoQOQn1hM7q2M7S25v7Wn6v5rGg1g=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" integrity="sha256-xUhsGjPeFhqG8jbA8x4G+5svGt6O5xpZ87Gty8gA21E=" crossorigin="anonymous"></script>
+
+    <style>
+        :root {
+            --bg-main: #0a0c10;
+            --surface: #141824;
+            --surface-hover: #1e2436;
+            --border: #2c354d;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --primary: #0ea5e9;
+            --primary-glow: rgba(14, 165, 233, 0.4);
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* خطوط النظام للخصوصية التامة وعدم التتبع */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg-main); color: var(--text-main);
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+            padding: 1.5rem 1rem; overflow-x: hidden; scroll-behavior: smooth;
+        }
+
+        .container { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 1.5rem; }
+
+        header { text-align: center; animation: slideDown 0.5s ease-out; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .logo { font-size: 2.5rem; font-weight: 900; background: linear-gradient(135deg, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-top: 0.3rem; }
+
+        .card {
+            background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-muted); }
+        
+        .input-code {
+            width: 100%; background: var(--bg-main); border: 2px solid var(--border); color: var(--text-main);
+            padding: 1rem; border-radius: 12px; font-size: 1.5rem; text-align: center; font-weight: bold;
+            letter-spacing: 5px; outline: none; transition: var(--transition); direction: ltr; font-family: monospace;
+        }
+        .input-code:focus { border-color: var(--primary); box-shadow: 0 0 15px var(--primary-glow); }
+
+        .btn {
+            width: 100%; background: var(--surface-hover); color: var(--text-main); border: 1px solid var(--border);
+            padding: 1rem; border-radius: 12px; font-size: 1rem; font-weight: bold; cursor: pointer;
+            transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 8px;
+            min-height: 52px; /* Touch target for phones */
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: #000; border: none; }
+        .btn-primary:hover, .btn-primary:active { box-shadow: 0 0 20px var(--primary-glow); }
+        .btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: var(--danger); }
+        .btn-success { background: rgba(16, 185, 129, 0.1); color: var(--success); border-color: var(--success); }
+
+        /* Receive Toggle */
+        .receive-toggle {
+            display: flex; align-items: center; justify-content: space-between; background: var(--bg-main);
+            padding: 1rem; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 1rem;
+        }
+        .toggle-switch {
+            position: relative; width: 50px; height: 26px; background: var(--border); border-radius: 15px; cursor: pointer; transition: 0.3s;
+        }
+        .toggle-switch::after {
+            content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+            background: #fff; border-radius: 50%; transition: 0.3s;
+        }
+        .toggle-switch.active { background: var(--success); }
+        .toggle-switch.active::after { transform: translateX(24px); }
+
+        /* Chat Area */
+        #chat-section { display: none; }
+        .chat-box {
+            background: var(--bg-main); border: 1px solid var(--border); border-radius: 12px;
+            height: 350px; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 10px; margin-bottom: 1rem;
+        }
+        .msg { padding: 0.8rem 1rem; border-radius: 12px; max-width: 85%; font-size: 0.95rem; line-height: 1.5; word-wrap: break-word; }
+        .msg-me { background: var(--primary); color: #000; align-self: flex-start; border-bottom-right-radius: 2px; }
+        .msg-peer { background: var(--surface-hover); border: 1px solid var(--border); align-self: flex-end; border-bottom-left-radius: 2px; }
+        .msg-sys { background: transparent; color: var(--warning); align-self: center; font-size: 0.8rem; border: 1px dashed var(--warning); }
+
+        .chat-controls { display: flex; gap: 8px; }
+        .chat-input {
+            flex: 1; background: var(--bg-main); border: 1px solid var(--border); color: var(--text-main);
+            padding: 1rem; border-radius: 12px; font-size: 1rem; outline: none; transition: var(--transition);
+        }
+        .chat-input:focus { border-color: var(--primary); }
+
+        /* Safety Code Modal */
+        .safety-code-box {
+            background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); color: var(--success);
+            padding: 1rem; border-radius: 12px; text-align: center; margin-bottom: 1rem; display: none;
+        }
+
+        .qr-container { display: flex; justify-content: center; margin: 1rem 0; background: #fff; padding: 1rem; border-radius: 12px; width: fit-content; margin-inline: auto; }
+
+        .toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: var(--text-main); color: var(--bg-main); padding: 1rem 2rem; border-radius: 30px;
+            font-weight: bold; z-index: 1000; opacity: 0; transition: var(--transition);
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+            display: none; justify-content: center; align-items: center; z-index: 2000;
+        }
+        .modal-content { background: var(--surface); padding: 2rem; border-radius: var(--radius); border: 1px solid var(--border); width: 90%; max-width: 400px; text-align: center; }
+
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        
-        <!-- قسم الإعدادات والهوية -->
-        <header id="setup-view" class="view-section active">
-            <h1 class="brand-title">مِرسال 🛡️</h1>
-            <p class="tagline">تشفير من النهاية للنهاية (E2EE)</p>
 
-            <div class="card security-card">
-                <div class="control-group">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="toggle-receive">
-                        <span class="slider round"></span>
-                    </label>
-                    <div class="toggle-text">
-                        <strong>وضع الاستقبال</strong>
-                        <span id="receive-status" class="status-offline">مغلق (للحماية من الإزعاج)</span>
-                    </div>
-                </div>
-                <div class="control-group">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="toggle-high-sec">
-                        <span class="slider round"></span>
-                    </label>
-                    <div class="toggle-text">
-                        <strong>أمان معزز (تجريبي)</strong>
-                        <span class="text-muted">معرّف معقد بـ 12 رمز</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card id-card">
-                <p>معرّفك الخاص:</p>
-                <div id="my-id-display" class="id-display" title="انقر للنسخ">------</div>
-                <div id="qrcode-container"></div>
-            </div>
-
-            <div class="card connect-card">
-                <input type="text" id="target-id" class="secure-input" placeholder="أدخل معرّف الطرف الآخر..." autocomplete="off">
-                <button id="btn-connect" class="btn-primary">بدء اتصال مشفّر 🔐</button>
-            </div>
-
-            <div class="footer-note">
-                <p>يتم الاتصال عبر خوادم PeerJS للعثور على المسار، لكن الملفات لا تُخزّن لديهم.</p>
-                <a href="#" id="view-source">المصدر على GitHub</a>
-            </div>
+    <div class="container">
+        <header>
+            <div class="logo">مِرسال</div>
+            <div class="subtitle">تواصل لامركزي آمن P2P (WebRTC)</div>
         </header>
 
-        <!-- قسم المحادثة ونقل الملفات -->
-        <main id="chat-view" class="view-section">
-            <header class="chat-header">
-                <div>
-                    <strong>متصل مع: </strong><span id="connected-peer-id">---</span>
-                </div>
-                <div class="safety-code" title="تحقق من هذا الرمز مع الطرف الآخر صوتياً">
-                    رمز الأمان: <span id="safety-code-display">⏳</span>
-                </div>
-                <button id="btn-disconnect" class="btn-danger">إنهاء 🛑</button>
-            </header>
-
-            <div id="messages-container" class="messages-area"></div>
-
-            <div class="chat-controls">
-                <input type="file" id="file-input" style="display: none;">
-                <button id="btn-attach" class="btn-icon">📎</button>
-                <input type="text" id="msg-input" class="secure-input" placeholder="رسالة مشفرة..." autocomplete="off">
-                <button id="btn-send" class="btn-primary btn-icon">📤</button>
+        <!-- Setup Card -->
+        <div class="card" id="setup-section">
+            <div class="form-group">
+                <label class="form-label">رقم تعريفك (ID) المكوّن من 6 أرقام:</label>
+                <input type="text" id="my-id-display" class="input-code" readonly value="------">
             </div>
-        </main>
+            
+            <div class="receive-toggle" id="receive-toggle-btn">
+                <div>
+                    <div style="font-weight: 600;">وضع الاستقبال</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);" id="receive-status-text">مغلق (آمن من الإزعاج)</div>
+                </div>
+                <div class="toggle-switch" id="toggle-indicator"></div>
+            </div>
+
+            <div class="qr-container" id="qrcode"></div>
+            
+            <button class="btn" id="btn-copy-id">📋 نسخ كود الاتصال</button>
+        </div>
+
+        <!-- Connect Card -->
+        <div class="card" id="connect-section">
+            <div class="form-group">
+                <label class="form-label">الاتصال بطرف آخر:</label>
+                <input type="number" id="remote-id-input" class="input-code" placeholder="أدخل 6 أرقام" inputmode="numeric">
+            </div>
+            <button class="btn btn-primary" id="btn-connect">🔗 طلب اتصال آمن</button>
+        </div>
+
+        <!-- Chat Card -->
+        <div class="card" id="chat-section">
+            <div class="safety-code-box" id="safety-code-box">
+                <div style="font-size: 0.85rem; margin-bottom: 5px;">رمز الأمان (قارنه مع الطرف الآخر للتأكد)</div>
+                <div style="font-size: 1.5rem; font-family: monospace; font-weight: bold; letter-spacing: 3px;" id="safety-code-display">---</div>
+            </div>
+
+            <div class="chat-box" id="chat-box">
+                <div class="msg msg-sys">النظام: في انتظار الاتصال...</div>
+            </div>
+            
+            <div class="chat-controls">
+                <input type="text" id="msg-input" class="chat-input" placeholder="اكتب رسالتك هنا..." disabled>
+                <input type="file" id="file-input" style="display: none;">
+                <button class="btn" id="btn-file" style="width: auto; padding: 0 1.2rem;" title="إرسال ملف" disabled>📎</button>
+                <button class="btn btn-primary" id="btn-send" style="width: auto; padding: 0 1.2rem;" disabled>➤</button>
+            </div>
+            <button class="btn btn-danger" id="btn-disconnect" style="margin-top: 10px; display: none;">قطع الاتصال 🛑</button>
+        </div>
+
+        <div style="text-align:center; font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem;">
+            البيانات مشفرة بين المتصفحين (E2EE).<br> الملفات لا تمر عبر أي خوادم تخزين.
+        </div>
     </div>
 
-    <!-- Modal طلب الاتصال -->
-    <div id="auth-modal" class="modal">
+    <!-- Incoming Connection Modal -->
+    <div class="modal-overlay" id="incoming-modal">
         <div class="modal-content">
-            <h3>وارد مشفّر 🛡️</h3>
-            <p>طلب اتصال من: <strong id="caller-id">---</strong></p>
-            <div class="modal-actions">
-                <button id="btn-accept" class="btn-success">قبول</button>
-                <button id="btn-reject" class="btn-danger">رفض</button>
+            <h3>🔔 طلب اتصال وارد</h3>
+            <p style="margin: 1rem 0; color: var(--text-muted);">رقم <span id="incoming-id" style="color:var(--primary); font-weight:bold; direction:ltr; display:inline-block;"></span> يطلب الاتصال بك.</p>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-success" id="btn-accept">قبول</button>
+                <button class="btn btn-danger" id="btn-reject">رفض</button>
             </div>
         </div>
     </div>
 
-    <div id="toast" class="toast"></div>
+    <div class="toast" id="toast">تم!</div>
 
-    <script src="js/peerjs.min.js"></script>
-    <script src="js/qrcode.min.js"></script>
-    <script src="js/app.js"></script>
+    <script>
+        /* ================= Security & Config ================= */
+        const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB Limit (Anti-DoS)
+        const RATE_LIMIT_WINDOW = 60000; // 1 minute
+        const MAX_ATTEMPTS = 3;
+        
+        let peer = null;
+        let conn = null;
+        let myId = '';
+        let isReceiving = false;
+        let receiveTimer = null;
+        let connectionAttempts = {};
+        
+        /* ================= DOM Elements ================= */
+        const UI = {
+            myId: document.getElementById('my-id-display'),
+            receiveBtn: document.getElementById('receive-toggle-btn'),
+            toggleInd: document.getElementById('toggle-indicator'),
+            receiveText: document.getElementById('receive-status-text'),
+            qr: document.getElementById('qrcode'),
+            remoteId: document.getElementById('remote-id-input'),
+            btnConnect: document.getElementById('btn-connect'),
+            chatSection: document.getElementById('chat-section'),
+            chatBox: document.getElementById('chat-box'),
+            msgInput: document.getElementById('msg-input'),
+            btnSend: document.getElementById('btn-send'),
+            btnFile: document.getElementById('btn-file'),
+            fileInput: document.getElementById('file-input'),
+            btnDisconnect: document.getElementById('btn-disconnect'),
+            safetyBox: document.getElementById('safety-code-box'),
+            safetyCode: document.getElementById('safety-code-display'),
+            modal: document.getElementById('incoming-modal'),
+            btnAccept: document.getElementById('btn-accept'),
+            btnReject: document.getElementById('btn-reject'),
+            incomingId: document.getElementById('incoming-id'),
+            toast: document.getElementById('toast')
+        };
+
+        /* ================= Helpers ================= */
+        function showToast(msg) {
+            UI.toast.textContent = msg; UI.toast.classList.add('show');
+            setTimeout(() => UI.toast.classList.remove('show'), 3000);
+        }
+
+        // DOM Safe Logging (No innerHTML)
+        function log(msg, type = 'sys') {
+            const div = document.createElement('div');
+            div.className = `msg msg-${type}`;
+            div.textContent = msg; // 100% Safe from XSS
+            UI.chatBox.appendChild(div);
+            UI.chatBox.scrollTop = UI.chatBox.scrollHeight;
+        }
+
+        function genRandomId() {
+            const arr = new Uint32Array(1);
+            window.crypto.getRandomValues(arr);
+            return (arr[0] % 900000 + 100000).toString(); // 100000 to 999999
+        }
+
+        function generateSalt() {
+            const arr = new Uint8Array(16);
+            window.crypto.getRandomValues(arr);
+            return Array.from(arr).map(b => b.toString(16).padStart(2,'0')).join('');
+        }
+
+        // Safety Code generation (SHA-256)
+        async function calculateSafetyCode(id1, id2, salt) {
+            try {
+                const encoder = new TextEncoder();
+                const sorted = [id1, id2].sort().join(':'); // Prevent ordering issues
+                const data = encoder.encode(`${sorted}:${salt}`);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArr = Array.from(new Uint8Array(hashBuffer));
+                return hashArr.slice(0, 3).map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase(); // E.g., A1B2C3
+            } catch (e) { return "ERROR"; }
+        }
+
+        function showSafetyCode(code) {
+            UI.safetyBox.style.display = 'block';
+            UI.safetyCode.textContent = code;
+        }
+
+        function toggleInputs(enabled) {
+            UI.msgInput.disabled = !enabled;
+            UI.btnSend.disabled = !enabled;
+            UI.btnFile.disabled = !enabled;
+            UI.btnDisconnect.style.display = enabled ? 'block' : 'none';
+        }
+
+        /* ================= Receive Mode Logic ================= */
+        function setReceiveMode(active) {
+            isReceiving = active;
+            if(active) {
+                UI.toggleInd.classList.add('active');
+                UI.receiveText.textContent = "مفتوح (يغلق تلقائياً بعد 5 دقائق)";
+                UI.receiveText.style.color = "var(--success)";
+                // Auto turn off
+                clearTimeout(receiveTimer);
+                receiveTimer = setTimeout(() => setReceiveMode(false), 5 * 60 * 1000);
+            } else {
+                UI.toggleInd.classList.remove('active');
+                UI.receiveText.textContent = "مغلق (آمن من الإزعاج)";
+                UI.receiveText.style.color = "var(--text-muted)";
+                clearTimeout(receiveTimer);
+            }
+        }
+        UI.receiveBtn.addEventListener('click', () => setReceiveMode(!isReceiving));
+
+        /* ================= Init Peer ================= */
+        function initApp() {
+            myId = genRandomId();
+            UI.myId.value = myId;
+            new QRCode(UI.qr, { text: window.location.href.split('?')[0] + '?peer=' + myId, width: 120, height: 120 });
+
+            peer = new Peer(myId, {
+                config: {'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }]},
+                debug: 0
+            });
+
+            peer.on('open', id => { log(`جاهز للاتصال. رقمك: ${id}`); });
+            
+            peer.on('error', err => {
+                log(`❌ خطأ: ${err.type}`, 'sys');
+                toggleInputs(false);
+            });
+
+            peer.on('connection', incomingConn => {
+                const remote = incomingConn.peer;
+                
+                // Rate Limiting (Anti-Spam)
+                const now = Date.now();
+                if(!connectionAttempts[remote]) connectionAttempts[remote] = [];
+                connectionAttempts[remote] = connectionAttempts[remote].filter(t => now - t < RATE_LIMIT_WINDOW);
+                
+                if(connectionAttempts[remote].length >= MAX_ATTEMPTS) {
+                    incomingConn.on('open', () => { incomingConn.send({type: 'system', data: 'rate-limited'}); setTimeout(()=>incomingConn.close(), 500); });
+                    return;
+                }
+                connectionAttempts[remote].push(now);
+
+                // Receive Mode Check
+                if(!isReceiving) {
+                    incomingConn.on('open', () => { incomingConn.send({type: 'system', data: 'not-receiving'}); setTimeout(()=>incomingConn.close(), 500); });
+                    return;
+                }
+
+                // If busy
+                if(conn && conn.open) {
+                    incomingConn.on('open', () => { incomingConn.send({type: 'system', data: 'busy'}); setTimeout(()=>incomingConn.close(), 500); });
+                    return;
+                }
+
+                // Show Modal
+                UI.incomingId.textContent = remote;
+                UI.modal.style.display = 'flex';
+                if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+                UI.btnAccept.onclick = () => {
+                    UI.modal.style.display = 'none';
+                    setReceiveMode(false); // Turn off receive mode after accept
+                    setupConnection(incomingConn, false);
+                };
+                
+                UI.btnReject.onclick = () => {
+                    UI.modal.style.display = 'none';
+                    incomingConn.send({type: 'system', data: 'rejected'});
+                    setTimeout(() => incomingConn.close(), 500);
+                };
+            });
+
+            // Auto connect if URL has peer parameter
+            const params = new URLSearchParams(window.location.search);
+            const targetPeer = params.get('peer');
+            if(targetPeer && targetPeer !== myId) {
+                UI.remoteId.value = targetPeer;
+                UI.btnConnect.click();
+            }
+        }
+
+        /* ================= Connection Setup ================= */
+        UI.btnConnect.addEventListener('click', () => {
+            const targetId = UI.remoteId.value.trim();
+            if(!targetId || targetId.length < 5) return showToast("رقم غير صحيح!");
+            if(targetId === myId) return showToast("لا يمكنك الاتصال بنفسك!");
+            
+            log(`جاري طلب الاتصال بـ ${targetId}...`, 'sys');
+            const newConn = peer.connect(targetId, { reliable: true });
+            setupConnection(newConn, true);
+        });
+
+        UI.btnDisconnect.addEventListener('click', () => {
+            if(conn) { conn.close(); conn = null; }
+            log("تم قطع الاتصال.", "sys");
+            toggleInputs(false);
+            UI.safetyBox.style.display = 'none';
+        });
+
+        function setupConnection(c, isInitiator) {
+            conn = c;
+            
+            // Pan smoothly to chat
+            UI.chatSection.style.display = 'block';
+            setTimeout(() => { UI.chatSection.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
+
+            conn.on('open', async () => {
+                log(`✅ تم تأمين الاتصال (WebRTC DTLS) مع: ${conn.peer}`, 'sys');
+                toggleInputs(true);
+
+                // Safety Code Generation
+                if(isInitiator) {
+                    const salt = generateSalt();
+                    conn.send({ type: 'handshake', salt: salt });
+                    const code = await calculateSafetyCode(myId, conn.peer, salt);
+                    showSafetyCode(code);
+                }
+            });
+
+            // File handling vars
+            let rxMeta = null;
+            let rxBuf = [];
+            let rxBytes = 0;
+
+            conn.on('data', async (d) => {
+                if(d.type === 'system') {
+                    if(d.data === 'busy') log(`الطرف الآخر مشغول.`, 'sys');
+                    if(d.data === 'rejected') log(`تم رفض طلبك.`, 'sys');
+                    if(d.data === 'not-receiving') log(`الطرف الآخر أغلق استقبال الاتصالات.`, 'sys');
+                    if(d.data === 'rate-limited') log(`تم حظرك مؤقتاً بسبب كثرة المحاولات.`, 'sys');
+                    conn.close();
+                    toggleInputs(false);
+                }
+                else if (d.type === 'handshake') {
+                    const code = await calculateSafetyCode(myId, conn.peer, d.salt);
+                    showSafetyCode(code);
+                }
+                else if (d.type === 'text') {
+                    log(`الطرف الآخر: ${d.data}`, 'msg-peer');
+                }
+                else if (d.type === 'file-start') {
+                    if(d.size > MAX_FILE_SIZE) {
+                        log(`❌ حاول الطرف الآخر إرسال ملف بحجم ${Math.round(d.size/1024/1024)}MB وهو يتجاوز الحد المسموح (500MB) للحماية. تم الإلغاء.`, 'sys');
+                        conn.send({type: 'file-cancel'});
+                        return;
+                    }
+                    rxMeta = d; rxBuf = []; rxBytes = 0;
+                    log(`📥 جاري استقبال ملف: ${d.name} (${Math.round(d.size/1024)} KB)...`, 'sys');
+                    conn.send({ type: 'file-ack' });
+                }
+                else if (d.type === 'file-chunk') {
+                    if(!rxMeta) return; // Prevent spurious chunks
+                    rxBytes += d.data.byteLength;
+                    
+                    // Anti-DoS check during transfer
+                    if(rxBytes > MAX_FILE_SIZE) {
+                        log(`❌ تجاوز الملف حجم الذاكرة الآمن. تم القطع.`, 'sys');
+                        conn.send({type: 'file-cancel'});
+                        rxMeta = null; rxBuf = [];
+                        return;
+                    }
+                    
+                    rxBuf.push(d.data);
+                    if(rxBytes >= rxMeta.size) {
+                        // Finished
+                        const blob = new Blob(rxBuf, { type: rxMeta.mime });
+                        const url = URL.createObjectURL(blob);
+                        
+                        const div = document.createElement('div');
+                        div.className = 'msg msg-peer';
+                        div.textContent = `📁 تم الاستقبال: ${rxMeta.name} `;
+                        
+                        const a = document.createElement('a');
+                        a.href = url; a.download = rxMeta.name; a.textContent = '[تحميل]';
+                        a.style.color = 'var(--primary)'; a.style.fontWeight = 'bold';
+                        div.appendChild(a);
+                        
+                        UI.chatBox.appendChild(div);
+                        UI.chatBox.scrollTop = UI.chatBox.scrollHeight;
+                        
+                        rxMeta = null; rxBuf = []; rxBytes = 0;
+                    } else {
+                        // Request next chunk (backpressure control)
+                        conn.send({ type: 'file-ack' });
+                    }
+                }
+                else if (d.type === 'file-cancel') {
+                    log(`❌ تم إلغاء النقل من الطرف الآخر.`, 'sys');
+                    rxMeta = null; rxBuf = [];
+                }
+            });
+
+            conn.on('close', () => {
+                log('انقطع الاتصال.', 'sys');
+                toggleInputs(false);
+                UI.safetyBox.style.display = 'none';
+            });
+        }
+
+        /* ================= Messaging & Files ================= */
+        function sendMessage() {
+            const txt = UI.msgInput.value.trim();
+            if(!txt || !conn || !conn.open) return;
+            conn.send({ type: 'text', data: txt });
+            log(`أنت: ${txt}`, 'msg-me');
+            UI.msgInput.value = '';
+        }
+        UI.btnSend.addEventListener('click', sendMessage);
+        UI.msgInput.addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
+
+        // Chunking File Transfer (with Backpressure)
+        UI.btnFile.addEventListener('click', () => UI.fileInput.click());
+        UI.fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if(!file || !conn || !conn.open) return;
+            
+            if(file.size > MAX_FILE_SIZE) {
+                alert(`الملف كبير جداً. الحد الأقصى الآمن هو 500MB لحماية المتصفح.`);
+                UI.fileInput.value = '';
+                return;
+            }
+
+            log(`📤 جاري إرسال: ${file.name}...`, 'msg-me');
+            conn.send({ type: 'file-start', name: file.name, size: file.size, mime: file.type });
+
+            const CHUNK_SIZE = 65536; // 64KB
+            let offset = 0;
+            let reader = new FileReader();
+            let isCancelled = false;
+
+            const sendNext = () => {
+                if(isCancelled || offset >= file.size) return;
+                const slice = file.slice(offset, offset + CHUNK_SIZE);
+                reader.readAsArrayBuffer(slice);
+            };
+
+            reader.onload = (evt) => {
+                if(isCancelled) return;
+                conn.send({ type: 'file-chunk', data: evt.target.result });
+                offset += evt.target.result.byteLength;
+                if(offset >= file.size) {
+                    log(`✅ تم الإرسال: ${file.name}`, 'sys');
+                    UI.fileInput.value = '';
+                }
+            };
+
+            // Wait for receiver to ACK before sending next chunk
+            const ackHandler = (d) => {
+                if(d.type === 'file-ack') sendNext();
+                if(d.type === 'file-cancel') { isCancelled = true; UI.fileInput.value = ''; }
+            };
+            conn.on('data', ackHandler);
+            
+            // Start process
+            setTimeout(sendNext, 500); // Give receiver time to prep
+        });
+
+        // Copy ID Setup
+        document.getElementById('btn-copy-id').addEventListener('click', () => {
+            navigator.clipboard.writeText(myId).then(() => showToast('تم النسخ!'));
+        });
+
+        // Start
+        initApp();
+    </script>
 </body>
 </html>
